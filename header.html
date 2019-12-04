@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head><script> <!--
+    function subst() {
+        var vars = {};
+        var query_strings_from_url = document.location.search.substring(1).split('&');
+        for (var query_string in query_strings_from_url) {
+            if (query_strings_from_url.hasOwnProperty(query_string)) {
+                var temp_var =
+                    query_strings_from_url[query_string].split('=', 2);
+                vars[temp_var[0]] = decodeURI(temp_var[1]);
+            }
+        }
+        var css_selector_classes = [
+                'page', 'frompage', 'topage', 'webpage', 'section',
+                'subsection', 'date', 'isodate', 'time', 'title', 'doctitle',
+                'sitepage', 'sitepages'];
+        for (var css_class in css_selector_classes) {
+            if (css_selector_classes.hasOwnProperty(css_class)) {
+                var element = document.getElementsByClassName(
+                        css_selector_classes[css_class]);
+                for (var j = 0; j < element.length; ++j) {
+                    element[j].textContent =
+                            vars[css_selector_classes[css_class]];
+                }
+            }
+        }
+    }
+  --> </script> </head>
+  <body style="margin: 0; padding: 0;" onload="subst();">
+     <div style="
+        border: 1pt solid black;
+        position: absolute;
+        /* top: 0; left: 0; right: 0; bottom: 0; */
+        width: 16.9cm;
+        height: 25.2cm;
+        top: 1em; left: 0;
+        ">
+        &nbsp;
+     </div>
+     <div style="margin: 0; padding: 0;
+                 text-align: right;
+                 width: 16.9cm;
+                 text-decoration: underline;
+                 border: 1pt solid red;
+        ">MDDV-19-nnnn-01(<span class="page">
+          </span>/<span class="topage"></span>)</div>
+  </body>
+</html>
