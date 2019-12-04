@@ -1,2 +1,46 @@
 /* page setup {{{1 */
+@page {
+    size: A4 portrait;
+    margin: 20mm 20mm 20mm 20mm;
+    border: 1px solid #000;
+
+    /* this script is not support at 2019/11...
+    @top-right {
+        content: 'doc-title (' counter(page) '/' counter(pages) ')';
+    }
+    */
+}
+
+@media print {
+    body {
+        /*! padding-left: 3mm; */
+        min-height: 24cm;
+        margin: 0px;
+    }
+
+    div.border {
+        display: none;
+    }
+}
+
+@media screen {
+    body {
+        margin: 10px;
+        width: 17cm;  /* margin 2cm: 21-4cm */
+        /*! padding-left: 3mm; */
+        min-height: 400px;
+        border: solid 1px #000;
+        margin: 0px;
+    }
+    div.border {
+        margin: 0px;
+        position:fixed;
+        z-index: -999;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        border: 2px solid black;
+    }
+}
 
