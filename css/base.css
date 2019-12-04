@@ -45,6 +45,10 @@
 }
 
 /* basic styles {{{1 */
+body > * {
+    margin-left: 2mm;
+}
+
 table {
     max-width: 98%;
     border-collapse: collapse;
