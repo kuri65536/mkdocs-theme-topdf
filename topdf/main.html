@@ -17,39 +17,9 @@
       {%- endblock %}
 
       {%- block styles %}
-        <!--
-        <link href="{{ 'css/bootstrap-custom.min.css'|url }}" rel="stylesheet">
-        -->
-        <link href="{{ 'css/font-awesome.min.css'|url }}" rel="stylesheet">
-        <link href="{{ 'css/base.css'|url }}" rel="stylesheet">
-        <!-- 
-        {%- if config.theme.highlightjs %}
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/{{ config.theme.hljs_style }}.min.css">
-        {%- endif %}
-        -->
         {%- for path in config['extra_css'] %}
         <link href="{{ path|url }}" rel="stylesheet">
         {%- endfor %}
-      {%- endblock %}
-
-      {%- block libs %}
-        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-        <!--[if lt IE 9]>
-            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-        <![endif]-->
-
-        <script src="{{ 'js/jquery-1.10.2.min.js'|url }}" defer></script>
-        <!--
-        <script src="{{ 'js/bootstrap-3.0.3.min.js'|url }}" defer></script>
-        {%- if config.theme.highlightjs %}
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-        {%- for lang in config.theme.hljs_languages %}
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/{{lang}}.min.js"></script>
-        {%- endfor %}
-        <script>hljs.initHighlightingOnLoad();</script>
-        {%- endif %}
-        -->
       {%- endblock %}
 
       {%- block extrahead %} {% endblock %}
@@ -64,18 +34,10 @@
         </div>
 
       {%- block scripts %}
-        <script>
-            var base_url = {{ base_url | tojson }},
-                shortcuts = {{ config.theme.shortcuts | tojson }};
-        </script>
-        <script src="{{ 'js/base.js'|url }}" defer></script>
         {%- for path in config['extra_javascript'] %}
         <script src="{{ path|url }}" defer></script>
         {%- endfor %}
       {%- endblock %}
-
-        {% if 'search' in config['plugins'] %}{%- include "search-modal.html" %}{% endif %}
-
     </body>
 </html>
 {% if page and page.is_homepage %}
