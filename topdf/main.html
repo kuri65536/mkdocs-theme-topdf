@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
+  <head>
       {%- block site_meta %}
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -16,16 +16,21 @@
         <title>{% if page and page.title and not page.is_homepage %}{{ page.title }} - {% endif %}{{ config.site_name }}</title>
       {%- endblock %}
 
-      {%- block styles %}
+    {%- block styles %}
+      <link href="{{ 'topdf.css'|url }}" rel="stylesheet">
+      {% if config.topdf_simple %}{% else %}
+      <link href="{{ 'topdf_extra.css'|url }}" rel="stylesheet">
+      {% endif %}
+
         {%- for path in config['extra_css'] %}
         <link href="{{ path|url }}" rel="stylesheet">
         {%- endfor %}
-      {%- endblock %}
+    {%- endblock %}
 
       {%- block extrahead %} {% endblock %}
-    </head>
+  </head>
 
-    <body{% if page and page.is_homepage %} class="homepage"{% endif %}>
+  <body{% if page and page.is_homepage %} class="homepage"{% endif %}>
 
         <div class="container">
             {%- block content %}
