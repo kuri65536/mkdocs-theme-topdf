@@ -44,3 +44,12 @@
     }
 }
 
+img {
+    max-width: 99%;
+    display: inline-block;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 1mm auto 1mm auto;
+}
+
