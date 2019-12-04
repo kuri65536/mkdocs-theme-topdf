@@ -1,11 +1,11 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages  # type: ignore
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 
 setup(
-    name="mkdocs-to-pdf",
+    name="mkdocs-topdf",
     version=VERSION,
-    url='https://github.com/kuri65536/mkdocs-to-pdf',
+    url='https://github.com/kuri65536/mkdocs-topdf',
     license='MPL2',
     description='a mkdocs theme for generate pdf or printing',
     author='shimoda',
@@ -14,7 +14,7 @@ setup(
     include_package_data=True,
     entry_points={
         'mkdocs.themes': [
-            'themename = to_pdf',
+            'themename = topdf',
         ]
     },
     zip_safe=False
