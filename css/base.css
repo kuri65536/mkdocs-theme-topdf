@@ -63,6 +63,10 @@ td, th {
     border: 1pt solid #000;
     padding: 1.0mm;
 }
+ul {
+    padding-left: 1.1em;
+    margin: 0 0 0 0;
+}
 
 img {
     max-width: 99%;
