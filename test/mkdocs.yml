@@ -1,0 +1,7 @@
+site_name: the test document
+theme:
+    name: topdf
+
+nav:
+    - readme.md
+

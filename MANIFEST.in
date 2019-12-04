@@ -1,4 +1,6 @@
 recursive-include topdf *.css *.html *.yml
+recursive-exclude * test
 recursive-exclude * __pycache__
+recursive-exclude * .mypy_cache
 recursive-exclude * *.py[co]
 
