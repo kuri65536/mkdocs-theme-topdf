@@ -42,12 +42,15 @@ write your document
 ### convert with wkhtmltopdf
 
 ```bash
-header:=$(./venv/bin/python -m topdf --header)
-wkhtmltopdf --print-media-type -T 20 -B 20 -L 20 -R 20 \
+$ header:=$(./venv/bin/python -m topdf --header)
+$ wkhtmltopdf --print-media-type -T 20 -B 20 -L 20 -R 20 \
     --disable-smart-shrinking --javascript-delay 1000 --debug-javascript \
     --header-html $header \
     --title ISO-nnnn-nn
 ```
+
+
+---
 
 
 

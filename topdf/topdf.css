@@ -77,6 +77,13 @@ img {
     margin: 1mm auto 1mm auto;
 }
 
+@media print {
+    hr {
+        border: none;
+        page-break-after: always;
+    }
+}
+
 
 /* vi: ft=css:fdm=marker
  */
