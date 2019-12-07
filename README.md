@@ -66,7 +66,11 @@ Demo
 
 History
 --------------------------
-{: .before-dl-table }
+<!-- this comment is needed for paragraph class -->
+{: .before-dl-table .table2-8 }
+
+version
+: desc
 
 0.0.6
 : start to edit

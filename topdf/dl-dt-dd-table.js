@@ -1,38 +1,45 @@
 function dldtdd_tables() {
-    seq_dl.forEach(function(dl) {
-    var dl = $(".before-dl-table + dl");
-    dl.each(function(i) {
-        var dom = $('<table class="dl-table"><thead><tr></tr></thead>' +
-                    '<tbody><tr></tr></tbody></table>');
-        var _dl = $(dl[i]);
-        dom.addClass(_dl.prev().attr("class"));
-        dom.removeClass("before-dl-table");
+    var seq_dl = document.querySelectorAll(".before-dl-table + dl");
+    for (var i in seq_dl) {
+        var dl = seq_dl[i];
+        if (typeof(dl.parentNode) == "undefined") {
+            continue;
+        }
+
+        var tbl = document.createElement("table");
+        var tbody = document.createElement("thead");
+        var tr = document.createElement("tr");
+        tbl.appendChild(tbody);
+        tbody.appendChild(tr);
+
         var f_head = 0;
-        var seq = $(dl[i]).children();
-        seq.each(function(i) {
-            var elm = seq[i];
-            if (elm.nodeName == "DD" && f_head < 2) {
-                html = elm.innerHTML;
-                $("thead > tr", dom).append("<td>" + html + "</td>");
-            } else if (elm.nodeName == "DD") {
-                html = elm.innerHTML;
-                $("tbody > tr:last", dom).append("<td>" + html + "</td>");
+        var seq_dl_children = dl.childNodes;
+        for (var j in seq_dl_children) {
+            var elm = seq_dl_children[j];
+            if (elm.nodeName == "DD") {
+                //
             } else if (elm.nodeName == "DT" && f_head == 0) {
                 f_head += 1;
-                html = elm.innerHTML;
-                $("thead > tr", dom).append("<td>" + html + "</td>");
             } else if (elm.nodeName == "DT" && f_head == 1) {
+                var tbody = document.createElement("tbody")
+                tbl.appendChild(tbody);
+                tr = document.createElement("tr")
+                tbody.appendChild(tr);
+            } else if (elm.nodeName == "DT" && f_head == 1) {
+                tr = document.createElement("tr")
+                tbody.appendChild(tr);
                 f_head += 1;
-                html = elm.innerHTML;
-                $("tbody > tr", dom).append("<td>" + html + "</td>");
-            } else if (elm.nodeName == "DT") {
-                html = elm.innerHTML;
-                $("tbody", dom).append("<tr><td>" + html + "</td></tr>");
+            } else {
+                continue;
             }
-        });
-        console.log(dom);
-        dom.insertAfter(_dl);
-        $(_dl).remove();
+
+            var td = document.createElement("td");
+            td.innerHTML = elm.innerHTML;
+            tr.appendChild(td);
+        }
+        var par = dl.parentNode;
+        par.insertBefore(tbl, dl);
+        par.removeChild(dl);
     }
 }
 
