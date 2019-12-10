@@ -21,16 +21,11 @@
     div.border {
         display: none;
     }
-}
 
-@media screen {
-    body {
-        margin: 10px;
-        width: 17cm;  /* margin 2cm: 21-4cm */
-        /*! padding-left: 3mm; */
-        min-height: 400px;
-        border: solid 1px #000;
-        margin: 0px;
+    /* border for paged.js {{{1 */
+    .pagedjs_area {
+        border: 1pt solid #000;
+        padding: 2mm;
     }
     div.border {
         margin: 0px;
@@ -42,6 +37,10 @@
         bottom: 0;
         border: 2px solid black;
     }
+}
+
+/* page setup for screen {{{1 */
+@media screen {
 }
 
 /* basic styles {{{1 */
