@@ -27,15 +27,29 @@
         border: 1pt solid #000;
         padding: 2mm;
     }
-    div.border {
-        margin: 0px;
-        position:fixed;
-        z-index: -999;
-        left: 0;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        border: 2px solid black;
+    .pagedjs_margin-top-right {
+        margin-top: auto;
+    }
+
+    /* toc for paged.js {{{1 */
+    .toc li:before {
+        float: left;
+        width: 0;
+        white-space: nowrap;
+        /* overflow: hidden; */
+        content: ". . . . . . . . . . . . . . . . . . . . . . . . . "
+                 ". . . . . . . . . . . . . . . . . . . . . . . . . "
+                 ". . . . . . . . . . . . . . . ";
+    }
+    .toc a {
+        background: white;
+        padding-right: 1em;
+    }
+    .toc a::after {
+        float: right;
+        content: target-counter(attr(href), page);
+        background: white;
+        padding: 0 1em 0 1em;;
     }
 }
 

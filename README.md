@@ -2,6 +2,7 @@ mkdocs-topdf
 =========================================================
 a mkdocs theme for generate pdf or printing
 
+[TOC]
 
 
 Installation
