@@ -2,14 +2,14 @@
 @page {
     size: A4 portrait;
     margin: 20mm 20mm 20mm 20mm;
-    border: 1px solid #000;
+    /* border: 1px solid #000;  page overrun effect with paged.js */
 
-    /* this script is not support at 2019/11...
+    /* page setup for paged.js {{{1 */
     @top-right {
         content: 'doc-title (' counter(page) '/' counter(pages) ')';
     }
-    */
 }
+
 
 @media print {
     body {
