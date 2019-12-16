@@ -1,7 +1,9 @@
 test: readme.pdf
 
+### readme.pdf
 readme.pdf: site/readme/index.html
-	wkhtmltopdf $(opt_pdf) $^ $@
+	# wkhtmltopdf $(opt_pdf) $^ $@
+	./node_modules/.bin/pagedjs-cli $^ -o $@
 
 site/readme/index.html: docs/readme.md $(venv)mkdocs
 	$(venv)mkdocs build
@@ -10,6 +12,10 @@ docs/readme.md:
 	mkdir -p docs
 	ln -sf ../../README.md $@
 
+
+
+
+### setup tools
 $(venv)mkdocs: venv
 	$(venv)pip install mkdocs
 	cd ..; test/$(venv)python setup.py install

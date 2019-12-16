@@ -6,7 +6,7 @@
 
     /* page setup for paged.js {{{1 */
     @top-right {
-        content: 'doc-title (' counter(page) '/' counter(pages) ')';
+        content: string(doc_title) '(' counter(page) '/' counter(pages) ')';
     }
 }
 
@@ -95,8 +95,19 @@ img {
         border: none;
         page-break-after: always;
     }
+
+    /* document number for paged.js {{{1 */
+    .doc-num {
+        display: none;
+        string-set: doc_title content(text);
+    }
 }
 
+.doc-num {
+    font-size: 10pt;
+    text-align: right;
+    width: 100%;
+}
 
 /* vi: ft=css:fdm=marker
  */
