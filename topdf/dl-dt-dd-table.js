@@ -1,3 +1,4 @@
+/* dl-dt-dd for tables {{{1 */
 function dldtdd_tables() {
     var seq_dl = document.querySelectorAll(".before-dl-table + dl");
     for (var i in seq_dl) {
@@ -44,6 +45,26 @@ function dldtdd_tables() {
 }
 
 
+/* 3stamps {{{1 */
+function table_3stamps() {
+    var seq_tbl = document.querySelectorAll(".table-3stamps");
+    for (var tbl of seq_tbl) {
+        var th = tbl.querySelector("th");
+        var html = th.innerHTML;
+        html = html.replace("<br>", "</div>")
+        html = html.replace("<br />", "</div>")
+        html = "<div>" + html;
+        th.innerHTML = html;
+    }
+}
+
+
+/* main {{{1 */
 window.addEventListener('load', function() {
     dldtdd_tables();
+    table_3stamps();
 });
+
+/* end of file {{{1
+ * vi: ft=javascript:fdm=marker
+ */

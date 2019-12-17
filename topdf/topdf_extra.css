@@ -1,0 +1,33 @@
+/* basic styles {{{1 */
+
+
+
+/* dl table 3stamps {{{1 */
+table.table-3stamps {
+    margin: -2.3mm 0 0 -2.3mm;
+    width: 170.2mm;
+
+}
+
+.table-3stamps th:first-child {
+    min-width: 106mm;
+    font-size: 24pt;
+}
+
+.table-3stamps th:first-child div {
+    font-size: 8pt;
+}
+
+.table-3stamps th {
+    background: #FFF;
+    min-height: 20mm;
+    min-width: 20mm;
+    text-align: left;
+    /* text-align-last: center; not valid for web-kit */
+    vertical-align: top;
+    font-size: 8pt;
+}
+
+/* end of file {{{1 */
+/* vi: ft=css:fdm=marker
+ */

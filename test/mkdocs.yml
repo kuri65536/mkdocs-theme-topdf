@@ -4,6 +4,7 @@ theme:
 
 nav:
     - readme.md
+    - report-3stamps.md
 
 markdown_extensions:
     - extra

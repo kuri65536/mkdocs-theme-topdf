@@ -14,6 +14,14 @@ docs/readme.md:
 
 
 
+### report-3stamps.pdf
+report-3stamps.pdf: site/report-3stamps/index.html
+	./node_modules/.bin/pagedjs-cli $^ -o $@
+
+site/report-3stamps/index.html: docs/report-3stamps.md $(venv)mkdocs
+	$(venv)mkdocs build
+
+
 
 ### setup tools
 $(venv)mkdocs: venv
