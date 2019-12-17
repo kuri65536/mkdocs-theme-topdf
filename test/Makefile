@@ -24,6 +24,9 @@ site/report-3stamps/index.html: docs/report-3stamps.md $(venv)mkdocs
 
 
 ### setup tools
+./node_modules/.bin/pagedjs-cli:
+	npm install pagedjs-cli
+
 $(venv)mkdocs: venv
 	$(venv)pip install mkdocs
 	cd ..; test/$(venv)python setup.py install

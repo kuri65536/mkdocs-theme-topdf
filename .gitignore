@@ -5,5 +5,8 @@ dist
 *.egg-info
 site
 venv
+node_modules
+
 test/readme.pdf
+test/report-3stamps.pdf
 
