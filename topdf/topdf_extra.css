@@ -1,4 +1,28 @@
 /* basic styles {{{1 */
+.container {
+    padding-bottom: 3cm;
+}
+
+h2, h3, h4, h5, h6 {
+    padding-left: 1mm;
+    margin-right: 2mm;
+}
+
+/* title border lines {{{1 */
+h2::after, h3::after, h4::after, h5::after, h6::after {
+    content: "";
+    display: block;
+    clear: both;
+    border-top: 1pt solid #000;
+}
+
+h2::after {width: 100%;}
+h3::after {width: 90%;}
+h4::after {width: 80%;}
+h5::after {width: 70%;}
+h6::after {width: 60%;}
+
+
 /* dl table styles {{{1 */
 table.dl-table {
     width: 100%;
