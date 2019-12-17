@@ -47,7 +47,7 @@ Contents
 
 
 
-Feature of this plugin
+Features of this plugin
 --------------------------
 
 ### Script and Styles for stamps
@@ -134,7 +134,8 @@ but dt can't be multi-line
 
 Demo
 --------------------------
-T.B.D
+![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
+
 
 
 History
@@ -144,6 +145,9 @@ History
 
 version
 : desc
+
+0.2.2
+: append screenshot
 
 0.2.1
 : append explanation for dl-dt-dd tables
