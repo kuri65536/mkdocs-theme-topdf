@@ -55,6 +55,18 @@ table.table-3stamps {
     font-size: 8pt;
 }
 
+
+/* code blocks {{{1 */
+pre.bash {
+    border: outset 2px #AAA;
+    padding: 3mm;
+}
+
+pre.markdown {
+    border: inset 2px #AAA;
+    padding: 3mm;
+}
+
 /* end of file {{{1 */
 /* vi: ft=css:fdm=marker
  */

@@ -64,10 +64,24 @@ function table_3stamps() {
 }
 
 
+/* code blocks {{{1 */
+function code_blocks() {
+    var seq_code = document.querySelectorAll("code");
+    for (var code of seq_code) {
+        var pre = code.parentNode;
+        if (pre.nodeName != "PRE") {continue;}
+        for (var cls of code.classList) {
+            pre.classList.add(cls);
+        }
+    }
+}
+
+
 /* main {{{1 */
 window.addEventListener('load', function() {
     dldtdd_tables();
     table_3stamps();
+    code_blocks();
 });
 
 /* end of file {{{1
