@@ -6,10 +6,16 @@ function dldtdd_tables() {
         if (typeof(dl.parentNode) == "undefined") {
             continue;
         }
+        var para = dl.previousElementSibling;
 
         var tbl = document.createElement("table");
         var tbody = document.createElement("thead");
         var tr = document.createElement("tr");
+        for (var cls of para.classList) {
+            if (cls == "before-dl-table") {continue;}
+            tbl.classList.add(cls);
+        }
+        tbl.classList.add("dl-table");
         tbl.appendChild(tbody);
         tbody.appendChild(tr);
 
@@ -21,12 +27,9 @@ function dldtdd_tables() {
                 //
             } else if (elm.nodeName == "DT" && f_head == 0) {
                 f_head += 1;
-            } else if (elm.nodeName == "DT" && f_head == 1) {
+            } else if (elm.nodeName == "DT") {
                 var tbody = document.createElement("tbody")
                 tbl.appendChild(tbody);
-                tr = document.createElement("tr")
-                tbody.appendChild(tr);
-            } else if (elm.nodeName == "DT" && f_head == 1) {
                 tr = document.createElement("tr")
                 tbody.appendChild(tr);
                 f_head += 1;
@@ -34,13 +37,15 @@ function dldtdd_tables() {
                 continue;
             }
 
-            var td = document.createElement("td");
+            var td_or_th = f_head == 1 ? "th": "td";
+            var td = document.createElement(td_or_th);
             td.innerHTML = elm.innerHTML;
             tr.appendChild(td);
         }
         var par = dl.parentNode;
         par.insertBefore(tbl, dl);
         par.removeChild(dl);
+        para.remove();
     }
 }
 

@@ -78,6 +78,60 @@ Japan style<br>Technical Report
 
 
 
+### Script and Styles for tables
+- this function is for improve to enable markdown syntax to  
+    multi-line tables
+
+- CSS-styles predefined in `_extra.pdf`
+
+class        | size
+:-----------:|:-------:
+table2-8     | 20-80%
+table3-7     | 30-70%
+table4-6     | 40-60%
+table5-5     | 50-50%
+table2-2-6   | 20-20-60%
+table2-3-5   | 20-30-50%
+table2-4-4   | 20-40-40%
+table3-3-3   | 33-33-33%
+table2-5-3   | 20-50-30%
+table2-6-2   | 20-60-20%
+table2-2-2-4 | 20-20-20-40%%
+
+<br>
+
+<p class="before-dl-table table2-8"></p>
+
+20%
+: 80%
+
+<p class="before-dl-table table2-4-4"></p>
+
+20%
+: 40%
+: 40%
+
+<p class="before-dl-table table2-2-2-4"></p>
+
+20%
+: 20%
+: 20%
+: 40%
+
+<p class="before-dl-table table3-3-3"></p>
+
+multi line sample
+: tables can be<br>write with<br>regular syntax
+:   1. list ok
+    2. ol ok
+    3. ul too
+
+but dt can't be multi-line
+: ...
+: ...
+
+
+
 Demo
 --------------------------
 T.B.D
@@ -90,6 +144,9 @@ History
 
 version
 : desc
+
+0.2.1
+: append explanation for dl-dt-dd tables
 
 0.2.0
 : start to edit/ 3stamps

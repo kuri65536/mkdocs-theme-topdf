@@ -1,4 +1,31 @@
 /* basic styles {{{1 */
+/* dl table styles {{{1 */
+table.dl-table {
+    width: 100%;
+}
+
+.table2-8 th:nth-child(2n+1) {width: 20%;}
+.table2-8 th:nth-child(2n+2) {width: 80%;}
+.table3-7 th:nth-child(2n+1) {width: 30%;}
+.table3-7 th:nth-child(2n+2) {width: 70%;}
+.table4-6 th:nth-child(2n+1) {width: 40%;}
+.table4-6 th:nth-child(2n+2) {width: 60%;}
+.table5-5 th {width: 50%;}
+.table2-2-6 th {width: 20%;}
+.table2-2-6 th:nth-child(3n+3) {width: 60%;}
+.table2-3-5 th:nth-child(3n+1) {width: 20%;}
+.table2-3-5 th:nth-child(3n+2) {width: 30%;}
+.table2-3-5 th:nth-child(3n+3) {width: 50%;}
+.table2-4-4 th:nth-child(3n+1) {width: 20%;}
+.table2-4-4 th {width: 40%;}
+.table2-5-3 th:nth-child(3n+1) {width: 20%;}
+.table2-5-3 th:nth-child(3n+2) {width: 50%;}
+.table2-5-3 th:nth-child(3n+3) {width: 30%;}
+.table2-6-2 th {width: 20%;}
+.table2-6-2 th:nth-child(3n+2) {width: 60%;}
+.table3-3-3 th {width: 33.3%;}
+.table2-2-2-4 th {width: 20%;}
+.table2-2-2-4 th:nth-child(4n+4) {width: 40%;}
 
 
 
