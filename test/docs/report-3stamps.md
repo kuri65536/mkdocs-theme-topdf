@@ -133,6 +133,66 @@ but dt can't be multi-line
 
 
 
+### Styles for page-header (paged.js)
+use paged.js CSS for page settings
+
+#### page headers
+
+```css
+@page {
+    @top-right {
+        content: string(doc_title) '(' counter(page) '/' counter(pages) ')';
+    }
+}
+@media print {
+    .pagedjs_margin-top-right {
+        margin-top: auto;
+    }
+    .doc-num {
+        display: none;
+        string-set: doc_title content(text);
+    }
+}
+```
+
+```markdown
+<p class="doc-num">document number. ISO-nnnn-nn</p>
+
+or
+
+document number. ISO-nnnn-nn
+{: .doc-num }
+```
+
+#### page border
+I hacked paged.js output and append style for pages border.
+
+```css
+@media print {
+    .pagedjs_area {
+        border: 1pt solid #000;
+        padding: 2mm;
+    }
+}
+```
+
+
+### Styles for TOC (paged.js)
+T.B.D
+
+
+
+### Styles for page-break
+just use `hr`
+
+```markdown
+
+---
+
+```
+
+
+
 Demo
 --------------------------
 ![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
@@ -147,6 +207,9 @@ History
 version
 : desc
 
+0.2.4
+: append explanation for paged.js styles
+
 0.2.3
 : append slash line to the no-stamp cells.
 
@@ -158,6 +221,18 @@ version
 
 0.2.0
 : start to edit/ 3stamps
+
+0.1.2
+: start to use paged.js
+
+0.1.1
+: start to use mkhtmltopdf
+
+0.1.0
+: append dl-dt-dd tables
+
+0.0.6
+: start to edit
 
 
 

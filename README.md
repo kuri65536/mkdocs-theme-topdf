@@ -106,6 +106,9 @@ History
 version
 : desc
 
+0.2.4
+: append explanation for paged.js styles
+
 0.2.3
 : append slash line to the no-stamp cells.
 
