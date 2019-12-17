@@ -2,7 +2,7 @@
 <p class="before-dl-table table-3stamps"></p>
 
 Japan style<br>Technical Report
-: edit<br><svg viewbox="0 0 52 52" width=19mm height=19mm>
+: edit<br><svg viewbox="0 0 52 52" width=16mm height=16mm>
     <defs>
         <g id="stamp" stroke=#000 fill=none stroke-width=1pt>
             <circle r=25 cx=26 cy=26  />
@@ -19,7 +19,8 @@ Japan style<br>Technical Report
     </g>
     </svg>
 : check
-: approve<br><svg viewbox="0 0 52 52" width=19mm height=19mm>
+: approve  
+    <svg viewbox="0 0 52 52" width=16mm height=16mm>
     <use xlink:href="#stamp" x=0 y=0 />
     <g text-anchor=middle font-size=9>
         <text x=25 y=16>FOSS</text>
@@ -145,6 +146,9 @@ History
 
 version
 : desc
+
+0.2.3
+: append slash line to the no-stamp cells.
 
 0.2.2
 : append screenshot

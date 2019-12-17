@@ -69,11 +69,15 @@ table.table-3stamps {
     font-size: 8pt;
 }
 
+.table-3stamps th div {
+    text-align: left;
+}
+
 .table-3stamps th {
     background: #FFF;
     min-height: 20mm;
     min-width: 20mm;
-    text-align: left;
+    text-align: center;
     /* text-align-last: center; not valid for web-kit */
     vertical-align: top;
     font-size: 8pt;

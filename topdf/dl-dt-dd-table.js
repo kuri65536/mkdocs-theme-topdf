@@ -60,6 +60,24 @@ function table_3stamps() {
         html = html.replace("<br />", "</div>")
         html = "<div>" + html;
         th.innerHTML = html;
+
+        var n = 0;
+        for (var th of tbl.querySelectorAll("th")) {
+            n += 1;
+            if (n <= 1) {continue;}
+            if (th.innerHTML.includes("<br")) {
+                var html = th.innerHTML;
+                html = html.replace("<br>", "</div>")
+                html = html.replace("<br />", "</div>")
+                th.innerHTML = "<div>" + html;
+                continue;
+            }
+            th.style.backgroundImage =
+               "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/" +
+               "2000/svg' width='40mm' height='40mm'>" +
+               "<line fill='none' x1='0' y1='0' x2='100%' y2='100%' " +
+               "stroke='black' stroke-width='1pt' /></svg>\")";
+        }
     }
 }
 
