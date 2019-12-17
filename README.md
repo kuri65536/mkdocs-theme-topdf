@@ -1,8 +1,17 @@
 mkdocs-topdf
 =========================================================
-a mkdocs theme for generate pdf or printing
+a mkdocs theme to generate pdf or print.
 
 [TOC]
+
+
+Prerequiresites/ Dependency
+--------------------------
+This plugin aim to use these softwares
+
+- mkdocs (convert markdown to html)
+- paged.js (to generate pdf, page borders and page headers)
+
 
 
 Installation
@@ -51,20 +60,41 @@ $ wkhtmltopdf --print-media-type -T 20 -B 20 -L 20 -R 20 \
 ```
 
 
+### About PDF output
+- paged.js render the PDF with portable chrome and pupetter  
+    please watch out the difference of rendering results among  
+    them engine and your browser.
+- wkhtmltopdf render the PDF with webkit (old)  
+    and stable release (0.12.5) can not generate TOC with its limitation.  
+    wkhtmltopdf is more convinient to install, but  
+    I can't resolve the TOC problem and switched to paged.js
+
+
+
 ---
 
 
 
 Demo
 --------------------------
+![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
 
 <!--
 ![snapshot in browser]()
 -->
 
-<!--
-![snapshot in document viewer]()
--->
+![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
+
+
+
+About scripts and styles
+--------------------------
+please see [the report sample](test/docs/report-3stamps.md)
+
+
+
+### FAQ
+B.B.D
 
 
 
@@ -75,6 +105,27 @@ History
 
 version
 : desc
+
+0.2.3
+: append slash line to the no-stamp cells.
+
+0.2.2
+: append screenshot
+
+0.2.1
+: append explanation for dl-dt-dd tables
+
+0.2.0
+: start to edit/ 3stamps
+
+0.1.2
+: start to use paged.js
+
+0.1.1
+: start to use mkhtmltopdf
+
+0.1.0
+: append dl-dt-dd tables
 
 0.0.6
 : start to edit
