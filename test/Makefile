@@ -1,9 +1,11 @@
 test: readme.pdf
 
+pagedjs:=./node_modules/.bin/pagedjs-cli --outline-tags h1,h2,h3,h4,h5
+
 ### readme.pdf
 readme.pdf: site/readme/index.html
 	# wkhtmltopdf $(opt_pdf) $^ $@
-	./node_modules/.bin/pagedjs-cli $^ -o $@
+	$(pagedjs) $^ -o $@
 
 site/readme/index.html: docs/readme.md $(venv)mkdocs
 	$(venv)mkdocs build
@@ -16,7 +18,7 @@ docs/readme.md:
 
 ### report-3stamps.pdf
 report-3stamps.pdf: site/report-3stamps/index.html
-	./node_modules/.bin/pagedjs-cli $^ -o $@
+	$(pagedjs) $^ -o $@
 
 site/report-3stamps/index.html: docs/report-3stamps.md $(venv)mkdocs
 	$(venv)mkdocs build

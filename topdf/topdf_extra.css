@@ -95,6 +95,11 @@ pre.markdown {
     padding: 3mm;
 }
 
+pre.css {
+    border: inset 2px #AAA;
+    padding: 3mm;
+}
+
 /* end of file {{{1 */
 /* vi: ft=css:fdm=marker
  */

@@ -18,17 +18,10 @@
         margin: 0px;
     }
 
-    div.border {
-        display: none;
-    }
-
     /* border for paged.js {{{1 */
     .pagedjs_area {
         border: 1pt solid #000;
         padding: 2mm;
-    }
-    .pagedjs_margin-top-right {
-        margin-top: auto;
     }
 
     /* toc for paged.js {{{1 */
@@ -90,6 +83,7 @@ img {
     margin: 1mm auto 1mm auto;
 }
 
+/* page breaks {{{1 */
 @media print {
     hr {
         border: none;
@@ -101,6 +95,9 @@ img {
         display: none;
         string-set: doc_title content(text);
     }
+    .pagedjs_margin-top-right {
+        margin-top: auto;
+    }
 }
 
 .doc-num {
@@ -109,5 +106,6 @@ img {
     width: 100%;
 }
 
+/* end of file {{{1 */
 /* vi: ft=css:fdm=marker
  */
