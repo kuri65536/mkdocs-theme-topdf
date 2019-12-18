@@ -31,7 +31,7 @@ Japan style<br>Technical Report
     </svg>
 
 
-Abstract
+Abstract <!-- {{{1 -->
 --------------------------
 this is a sample of japan style technical report.
 
@@ -52,10 +52,10 @@ Contents
 Features of this plugin
 --------------------------
 
-### Script and Styles for stamps
-- made by a dl-dt-dd markup in markdown.
-- made by 1dt, 3dd.
+### Script and Styles for stamps <!-- {{{1 -->
+- made by a dl-dt-dd markup in markdown, made by 1dt, 3dd.
 - place after an elment have `class="table-3stamps"` .
+- if stamp fields have no `<br>`, the slash line will be insereted.
 - samples:
 
 ```markdown
@@ -76,6 +76,14 @@ Japan style<br>Technical Report
 : edit<br>![stamp-editor](stamp-A.svg)
 : check
 : approve<br>![stamp-approve](stamp-C.svg)
+```
+
+- to disable the slash lines, you can specify these style:
+
+```css
+th.no-stamps {
+    background-image: none !importatnt;
+}
 ```
 
 
@@ -212,7 +220,7 @@ Demo
 
 
 
-History
+History <!-- {{{1 -->
 --------------------------
 <!-- this comment is needed for paragraph class -->
 {: .before-dl-table .table2-8 }
@@ -263,5 +271,6 @@ If you are feel to nice for this software, please donation to my
 -   or Ether **| 0xd7Dc5cd13BD7636664D6bf0Ee8424CFaF6b2FA8f |** .
 
 
-
+<!-- vi: fdm=marker
+  -->
 

@@ -77,6 +77,7 @@ function table_3stamps() {
                "2000/svg' width='40mm' height='40mm'>" +
                "<line fill='none' x1='0' y1='0' x2='100%' y2='100%' " +
                "stroke='black' stroke-width='1pt' /></svg>\")";
+            th.classList.add("no-stamp");
         }
     }
 }

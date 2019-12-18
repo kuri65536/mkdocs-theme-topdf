@@ -106,6 +106,15 @@ History
 version
 : desc
 
+0.2.7
+: TOC and styles
+
+0.2.6
+: append explanation for paged.js TOC and styles
+
+0.2.5
+: append explanation for paged.js styles
+
 0.2.4
 : append explanation for paged.js styles
 
@@ -142,4 +151,7 @@ If you are feel to nice for this software, please donation to my
 -   Bitcoin **| 1FTBAUaVdeGG9EPsGMD5j2SW8QHNc5HzjT |**
 -   or Ether **| 0xd7Dc5cd13BD7636664D6bf0Ee8424CFaF6b2FA8f |** .
 
+
+<!-- vi: fdm=marker
+  -->
 
