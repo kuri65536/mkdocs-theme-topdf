@@ -100,6 +100,34 @@ pre.css {
     padding: 3mm;
 }
 
+/* auto-numbered images or tables {{{1 */
+body {
+    counter-reset: num_figure num_table;
+}
+
+img + em, svg + em {
+    display: block;
+    clear: both;
+    text-align: center;
+    width: 100%;
+    counter-increment: num_figure;
+}
+img + em::before, svg + em::before {
+    content: "Fig." counter(num_figure) " ";
+}
+
+table + p > em, em.table-tag {
+    display: block;
+    clear: both;
+    text-align: center;
+    width: 100%;
+    counter-increment: num_table;
+}
+table + p > em::before, .table-tag::before {
+    content: "Table." counter(num_table) " ";
+}
+
+
 /* end of file {{{1 */
 /* vi: ft=css:fdm=marker
  */

@@ -129,6 +129,12 @@ History <!-- {{{1 -->
 version
 : desc
 
+0.4.0
+: append CSS-counters for figures and tables.
+
+0.3.0
+: append `theme` to the package name
+
 0.2.7
 : TOC and styles
 
