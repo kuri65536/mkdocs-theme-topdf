@@ -228,6 +228,9 @@ History <!-- {{{1 -->
 version
 : desc
 
+0.2.7
+: TOC and styles
+
 0.2.6
 : append explanation for paged.js TOC and styles
 

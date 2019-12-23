@@ -39,7 +39,7 @@ venv:
 
 venv:=./venv/bin/
 
-header:=$(shell $(venv)/python -m topdf --header)
+# header:=$(shell $(venv)/python -m topdf --header)
 opt_pdf:=--print-media-type -T 20 -B 20 -L 20 -R 20 \
     --disable-smart-shrinking --javascript-delay 1000 --debug-javascript \
     --header-html $(header) \

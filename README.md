@@ -11,26 +11,53 @@ This plugin aim to use these softwares
 
 - mkdocs (convert markdown to html)
 - paged.js (to generate pdf, page borders and page headers)
+- node.js (to generate pdf, for pagedjs-cli)
 
 
 
-Installation
+Installation - this plugin <!-- {{{1 -->
 --------------------------
 Install this package with pip.
 
 ### from PyPi
 ```bash
-pip install mkdocs-topdf
+pip install mkdocs-theme-topdf
 ```
 
 ### from github
 ```bash
-pip install git+https://github.com/kuri65536/mkdocs-topdf
+pip install git+https://github.com/kuri65536/mkdocs-theme-topdf
+```
+
+
+Installation - paged.js
+--------------------------
+so paged.js uses node.js and portable chrome,
+it is separate from mkdocs theme.
+
+to prepare paged.js, follow these method.
+
+### from this plugin
+```bash
+python -m topdf --check
+> ... check node.js and npm ...
+python -m topdf --setup
+> ... install take long time ...
+python -m topdf --test
+> output report-3stamps.pdf
+```
+
+### from manual
+```bash
+$ npm install pagedjs-cli
+... take long time ...
+$ ./node_modules/.bin/pagedjs-cli
+... paged.js message ...
 ```
 
 
 
-How to use
+How to use <!-- {{{1 -->
 --------------------------
 ### prepare
 to use mkdocs theme see [material theme documentation][mkdocs-theme]
@@ -40,7 +67,7 @@ to use mkdocs theme see [material theme documentation][mkdocs-theme]
 ### setup mkdocs.yml
 change mkdocs.yml to use this plugin.
 
-```
+```yaml
 site_name: the test document
 theme:
     name: topdf
@@ -49,14 +76,11 @@ theme:
 ### write markdown
 write your document
 
-### convert with wkhtmltopdf
+### convert with paged.js
 
 ```bash
-$ header:=$(./venv/bin/python -m topdf --header)
-$ wkhtmltopdf --print-media-type -T 20 -B 20 -L 20 -R 20 \
-    --disable-smart-shrinking --javascript-delay 1000 --debug-javascript \
-    --header-html $header \
-    --title ISO-nnnn-nn
+$ pagedjs-cli --outline-tags h1,h2,h3,h4,h5,h6 site/your/document.html
+     -o document.pdf  # 1-line
 ```
 
 
@@ -75,15 +99,13 @@ $ wkhtmltopdf --print-media-type -T 20 -B 20 -L 20 -R 20 \
 
 
 
-Demo
+Demo <!-- {{{1 -->
 --------------------------
 ![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
 
 <!--
 ![snapshot in browser]()
 -->
-
-![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
 
 
 
@@ -93,12 +115,13 @@ please see [the report sample](test/docs/report-3stamps.md)
 
 
 
-### FAQ
-B.B.D
+FAQ
+--------------------------
+T.B.D
 
 
 
-History
+History <!-- {{{1 -->
 --------------------------
 <!-- this comment is needed for paragraph class -->
 {: .before-dl-table .table2-8 }
