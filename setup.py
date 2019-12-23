@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages  # type: ignore
 
-VERSION = '0.3.0'
+VERSION = '0.4.1'
 
 setup(
     name="mkdocs-theme-topdf",

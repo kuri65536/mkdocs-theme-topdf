@@ -1,4 +1,4 @@
-mkdocs-topdf
+mkdocs-theme-topdf
 =========================================================
 a mkdocs theme to generate pdf or print.
 
@@ -101,11 +101,9 @@ $ pagedjs-cli --outline-tags h1,h2,h3,h4,h5,h6 site/your/document.html
 
 Demo <!-- {{{1 -->
 --------------------------
-![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
+[a sample output of PDF](https://github.com/kuri65536/mkdocs-theme-topdf/files/3993873/report-3stamps.pdf)
 
-<!--
-![snapshot in browser]()
--->
+![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
 
 
 
