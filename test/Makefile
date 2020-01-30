@@ -1,6 +1,6 @@
 test: readme.pdf
 
-pagedjs:=./node_modules/.bin/pagedjs-cli --outline-tags h1,h2,h3,h4,h5
+pagedjs:=./node_modules/.bin/pagedjs-cli --outline-tags h2,h3,h4,h5,h6
 
 ### readme.pdf
 readme.pdf: site/readme/index.html

@@ -96,8 +96,44 @@ function code_blocks() {
 }
 
 
+/** <!-- fix_mkdocs_ids {{{1 -->
+ */
+function fix_mkdocs_ids() {
+    var pfx = "fix_mkdocs_ids";
+    var seq_a = document.querySelectorAll("a");
+    seq_a.forEach(anchor => {
+        var name = anchor.getAttribute("name");
+        // console.log("fix_mkdocs_ids: a-name..." + name);
+        if (name !== null && name.length > 0) {
+            if (name[0].match("[0-9]")) {
+                console.log("fix_mkdocs_ids: name..." + name);
+                anchor.setAttribute("name", pfx + name);
+            }
+        }
+        var href = anchor.getAttribute("href");
+        // console.log("fix_mkdocs_ids: a-href..." + href);
+        if (href !== null && href.length > 1 && href[0] == "#") {
+            if (href[1].match("[0-9]")) {
+                console.log("fix_mkdocs_ids: href..." + href);
+                var id = href.substring(1);
+                anchor.setAttribute("href", "#" + pfx + id);
+            }
+        }
+    });
+    var seq_h = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+    seq_h.forEach(head => {
+        var id = head.getAttribute("id");
+        if (id !== null && id.length > 0 && id[0].match("[0-9]")) {
+            console.log("fix_mkdocs_ids: h?-id..." + id);
+            head.setAttribute("id", pfx + id);
+        }
+    });
+}
+
+
 /* main {{{1 */
 window.addEventListener('load', function() {
+    fix_mkdocs_ids();
     dldtdd_tables();
     table_3stamps();
     code_blocks();
