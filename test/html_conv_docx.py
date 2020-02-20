@@ -18,6 +18,9 @@ class HtmlConvertDocx(object):  # {{{1
         self.output = doc = Document()
         doc
 
+    def write_out(self) -> None:
+        self.output.save('temp.docx')
+
     def on_post_page(self, output_content: Text, config: Dict[Text, Text],
                      **kwardgs: Text) -> Text:  # {{{1
         soup = BeautifulSoup(output_content, 'html.parser')
@@ -46,7 +49,9 @@ class HtmlConvertDocx(object):  # {{{1
         return self.extract_para(elem)
 
     def extract_text(self, elem: Tag) -> Text:
-        return Text(elem.string)
+        ret = Text(elem.string)
+        print(ret.strip())
+        return ret
 
     def extract_table(self, elem: Tag) -> None:
         # TODO(shimoda): complex table...
@@ -61,6 +66,8 @@ class HtmlConvertDocx(object):  # {{{1
                     continue
                 i += 1
                 n_col = max(i, n_col)
+        print("table-%d,%d" % (n_row, n_col))
+        return None
 
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         n_row = -1
@@ -75,7 +82,7 @@ class HtmlConvertDocx(object):  # {{{1
                 tbl.rows[n_row].cells[i].text = cell.string or ""
         return None
 
-    def extract_dldtdd(self, elem: Tag) -> None:
+    def extract_dldtdd(self, elem: Tag) -> Optional[Text]:
         # TODO(shimoda): complex table...
         n_row = n_col = i = 0
         for tag in elem.children:
@@ -86,6 +93,8 @@ class HtmlConvertDocx(object):  # {{{1
                 continue
             i += 1
             n_col = max(i, n_col)
+        print("table-%d,%d" % (n_row, n_col))
+        return None
 
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         n_row, i = -1, 0
@@ -100,34 +109,45 @@ class HtmlConvertDocx(object):  # {{{1
             tbl.rows[n_row].cells[i].text = tag.string or ""
         return None
 
-    def extract_list(self, elem: Tag, f_number: bool) -> None:
+    def extract_list(self, elem: Tag, f_number: bool) -> Optional[Text]:
+        style = "List Number" if f_number else "List Bullet"
+        for tag in elem.children:
+            if tag.name != "li":
+                continue
+            self.output.add_paragraph(tag.string, style)
+        return None
+
+    def extract_details(self, elem: Tag) -> Optional[Text]:
         import pdb; pdb.set_trace()
         return None
 
-    def extract_details(self, elem: Tag) -> None:
-        import pdb; pdb.set_trace()
+    def extract_svg(self, elem: Tag) -> Optional[Text]:
+        # TODO(shimoda): impl
+        # 1. write_out_svg
+        # fp = open("temp.svg", "w")
+        # fp.close()
+        # self.output.add_picture("temp.svg")
         return None
 
-    def extract_svg(self, elem: Tag) -> None:
-        import pdb; pdb.set_trace()
+    def extract_title(self, elem: Tag) -> Optional[Text]:
+        level = int(elem.name.lstrip("h"))
+        self.output.add_heading(elem.string, level=level)
         return None
 
-    def extract_title(self, elem: Tag) -> None:
-        import pdb; pdb.set_trace()
+    def extract_codeblock(self, elem: Tag) -> Optional[Text]:
+        # TODO(shimoda): append styles.
+        self.output.add_paragraph(elem.string)
         return None
 
-    def extract_codeblock(self, elem: Tag) -> None:
-        import pdb; pdb.set_trace()
-        return None
-
-    def extract_para(self, node: Tag) -> None:
+    def extract_para(self, node: Tag) -> Optional[Text]:
         para = self.output.add_paragraph('')
         for elem in node.children:
             ret = self.extract_element(elem)
             if ret is not None:
                 para.text += ret
-            else:
-                para = self.output.add_paragraph('')
+            # else:
+            #     para = self.output.add_paragraph('')
+        return None
 
 
 def main() -> int:  # {{{1
@@ -135,6 +155,7 @@ def main() -> int:  # {{{1
     data = open(opts[0]).read()
     prog = HtmlConvertDocx()
     prog.on_post_page(data, {})
+    prog.write_out()
     return 0
 
 
