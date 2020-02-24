@@ -4,8 +4,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
+import logging
+from logging import (debug as debg, info, )  # warning as warn, )
 import sys
-from typing import (Dict, Optional, Text, )
+from typing import (Dict, Optional, Text, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import Tag  # type: ignore
@@ -16,19 +18,30 @@ from docx import Document  # type: ignore
 class HtmlConvertDocx(object):  # {{{1
     def __init__(self) -> None:  # {{{1
         self.output = doc = Document()
-        doc
+        info("structure root")
+        self.para = doc.add_paragraph('')
 
     def write_out(self) -> None:
-        self.output.save('temp.docx')
+        info("structure save")
+        fname = 'temp.docx'
+        self.output.save(fname)
+
+        doc = Document(fname)
+        for para in doc.paragraphs:
+            ret = Text(para.text)
+            info("after-para: " + (ret[0:10] if len(ret) > 9 else ret))
+        for tbl in doc.tables:
+            ret = "%d,%d" % (len(tbl.rows), len(tbl.rows[0].cells))
+            info("after-tabl: " + (ret))
 
     def on_post_page(self, output_content: Text, config: Dict[Text, Text],
                      **kwardgs: Text) -> Text:  # {{{1
         soup = BeautifulSoup(output_content, 'html.parser')
         dom = soup.find("body")
-        self.extract_para(dom)
+        self.extract_para(dom, 0)
         return output_content
 
-    def extract_element(self, elem: Tag) -> Optional[Text]:  # {{{1
+    def extract_element(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
         if elem.name is None:
             return self.extract_text(elem)
         elif elem.name == "dl":
@@ -46,11 +59,11 @@ class HtmlConvertDocx(object):  # {{{1
         elif elem.name in ("pre", "code"):
             return self.extract_codeblock(elem)
         # p, article or ...
-        return self.extract_para(elem)
+        return elem
 
     def extract_text(self, elem: Tag) -> Text:
         ret = Text(elem.string)
-        print(ret.strip())
+        debg(ret.strip())
         return ret
 
     def extract_table(self, elem: Tag) -> None:
@@ -66,9 +79,9 @@ class HtmlConvertDocx(object):  # {{{1
                     continue
                 i += 1
                 n_col = max(i, n_col)
-        print("table-%d,%d" % (n_row, n_col))
-        return None
+        debg("table-%d,%d" % (n_row, n_col))
 
+        info("structure table: %s" % elem.name)
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         n_row = -1
         for tag in elem.children:
@@ -79,6 +92,7 @@ class HtmlConvertDocx(object):  # {{{1
             for cell in tag.children:
                 if tag.name not in ("th", "td", ):
                     continue
+                debg("table-%d,%d: %s" % (n_row, i, cell.string))
                 tbl.rows[n_row].cells[i].text = cell.string or ""
         return None
 
@@ -93,9 +107,8 @@ class HtmlConvertDocx(object):  # {{{1
                 continue
             i += 1
             n_col = max(i, n_col)
-        print("table-%d,%d" % (n_row, n_col))
-        return None
 
+        info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         n_row, i = -1, 0
         for tag in elem.children:
@@ -103,10 +116,12 @@ class HtmlConvertDocx(object):  # {{{1
                 continue
             if tag.name == "dt":
                 n_row, i = n_row + 1, 0
-                tbl.rows[n_row].cells[i].text = tag.string or ""
+                debg("dt-%d,%d: %s" % (n_row, i, Text(tag.string)))
+                tbl.rows[n_row].cells[i].text = Text(tag.string)
                 continue
             i += 1
-            tbl.rows[n_row].cells[i].text = tag.string or ""
+            debg("dd-%d,%d: %s" % (n_row, i, tag.string))
+            tbl.rows[n_row].cells[i].text = Text(tag.string)
         return None
 
     def extract_list(self, elem: Tag, f_number: bool) -> Optional[Text]:
@@ -114,14 +129,17 @@ class HtmlConvertDocx(object):  # {{{1
         for tag in elem.children:
             if tag.name != "li":
                 continue
-            self.output.add_paragraph(tag.string, style)
+            ret = Text(tag.text)
+            info("structure: li : " + ret.splitlines()[0])
+            self.output.add_paragraph(ret, style=style)
         return None
 
     def extract_details(self, elem: Tag) -> Optional[Text]:
-        import pdb; pdb.set_trace()
+        debg("structure: details: not implemented, skipped...")
         return None
 
     def extract_svg(self, elem: Tag) -> Optional[Text]:
+        info("structure: svg: not implemented, skipped...")
         # TODO(shimoda): impl
         # 1. write_out_svg
         # fp = open("temp.svg", "w")
@@ -131,26 +149,36 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_title(self, elem: Tag) -> Optional[Text]:
         level = int(elem.name.lstrip("h"))
-        self.output.add_heading(elem.string, level=level)
+        ret = Text(elem.text)
+        info("structure: hed: " + ret)
+        self.output.add_heading(ret, level=level)
         return None
 
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:
         # TODO(shimoda): append styles.
-        self.output.add_paragraph(elem.string)
+        ret = Text(elem.string)
+        info("structure: pre: " + ret.splitlines()[0])
+        self.output.add_paragraph(ret, style="Quote")
         return None
 
-    def extract_para(self, node: Tag) -> Optional[Text]:
-        para = self.output.add_paragraph('')
+    def extract_para(self, node: Tag, level: int) -> Optional[Text]:
+        debg("enter para...: %d-%s" % (level, node.name))
+        para = self.para
         for elem in node.children:
             ret = self.extract_element(elem)
-            if ret is not None:
-                para.text += ret
+            if isinstance(ret, Text):
+                pass
+                # para.text += ret
+            elif ret is not None:
+                self.extract_para(elem, level + 1)
             # else:
             #     para = self.output.add_paragraph('')
         return None
 
 
 def main() -> int:  # {{{1
+    logging.basicConfig(level=logging.INFO)
+
     opts = sys.argv[1:]
     data = open(opts[0]).read()
     prog = HtmlConvertDocx()
