@@ -5,9 +5,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import logging
-from logging import (debug as debg, info, )  # warning as warn, )
+from logging import (debug as debg, info, warning as warn, )
 import sys
-from typing import (Dict, Optional, Text, Union, )
+from typing import (Dict, Optional, Text, Tuple, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import Tag  # type: ignore
@@ -50,6 +50,8 @@ class HtmlConvertDocx(object):  # {{{1
             return self.extract_list(elem, False)
         elif elem.name == "ol":
             return self.extract_list(elem, True)
+        elif elem.name == "table":
+            return self.extract_table(elem)
         elif elem.name == "details":
             return self.extract_details(elem)
         elif elem.name == "svg":
@@ -66,38 +68,65 @@ class HtmlConvertDocx(object):  # {{{1
         debg(ret.strip())
         return ret
 
-    def extract_table(self, elem: Tag) -> None:
-        # TODO(shimoda): complex table...
-        n_row = n_col = 0
-        for tag in elem.children:
-            if tag.name != "tr":
-                continue
-            n_row += 1
-            i = 0
-            for cell in tag.children:
-                if tag.name not in ("th", "td", ):
-                    continue
-                i += 1
-                n_col = max(i, n_col)
-        debg("table-%d,%d" % (n_row, n_col))
+    def extract_table_tree(self, elem: Tag, row: int  # {{{1
+                           ) -> Dict[Tuple[int, int], Tag]:
+        def num_row(dct: Dict[Tuple[int, int], Tag]) -> int:
+            ret = -1
+            for (row, col) in dct.keys():
+                ret = max(ret, row)
+            return ret + 1
 
-        info("structure table: %s" % elem.name)
-        tbl = self.output.add_table(rows=n_row, cols=n_col)
-        n_row = -1
+        ret: Dict[Tuple[int, int], Tag] = {}
+        f_row = False
         for tag in elem.children:
-            if tag.name != "tr":
+            if tag.name is None:
                 continue
-            n_row += 1
-            i = -1
+            if tag.name == "thead":
+                warn("structure: tbl: enter thead")
+                ret = self.extract_table_tree(tag, 0)
+                continue
+            if tag.name == "tbody":
+                warn("structure: tbl: enter tbody")
+                ret2 = self.extract_table_tree(tag, num_row(ret))
+                ret.update(ret2)
+                continue
+            if tag.name == "tfoot":
+                warn("structure: tbl: enter tfoot")
+                ret2 = self.extract_table_tree(tag, num_row(ret))
+                ret.update(ret2)
+                continue
+            if tag.name != "tr":
+                warn("table tree: %s in table" % tag.name)
+                continue
+            f_row, col, row = True, 0, (row + 1 if f_row else row)
             for cell in tag.children:
-                if tag.name not in ("th", "td", ):
+                if cell.name is None:
                     continue
-                debg("table-%d,%d: %s" % (n_row, i, cell.string))
-                tbl.rows[n_row].cells[i].text = cell.string or ""
+                if cell.name not in ("th", "td", ):
+                    warn("table tree: %s in tr" % cell.name)
+                    continue
+                ret[row, col] = cell
+                col += 1
+        return ret
+
+    def extract_table(self, elem: Tag) -> Optional[Text]:
+        # TODO(shimoda): rowspan, colspan, table in table or styled-cell etc...
+        dct = self.extract_table_tree(elem, 0)
+        if len(dct) < 1:
+            warn("table: did not have any data" + Text(elem.string))
+            return None
+        n_row = max([tup[0] for tup in dct.keys()]) + 1
+        n_col = max([tup[1] for tup in dct.keys()]) + 1
+
+        info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
+        tbl = self.output.add_table(rows=n_row, cols=n_col)
+        for (row, col), cell in sorted(dct.items(), key=lambda x: x[0]):
+            src = self.extract_table_cell(cell)
+            info("table-%d,%d: %s" % (row, col, src))
+            tbl.rows[row].cells[col].text = src
         return None
 
     def extract_dldtdd(self, elem: Tag) -> Optional[Text]:
-        # TODO(shimoda): complex table...
         n_row = n_col = i = 0
         for tag in elem.children:
             if tag.name not in ("dt", "dd"):
@@ -114,14 +143,15 @@ class HtmlConvertDocx(object):  # {{{1
         for tag in elem.children:
             if tag.name not in ("dt", "dd"):
                 continue
+            src = self.extract_table_cell(tag)
             if tag.name == "dt":
                 n_row, i = n_row + 1, 0
-                debg("dt-%d,%d: %s" % (n_row, i, Text(tag.string)))
-                tbl.rows[n_row].cells[i].text = Text(tag.string)
+                debg("dt-%d,%d: %s" % (n_row, i, src))
+                tbl.rows[n_row].cells[i].text = src
                 continue
             i += 1
-            debg("dd-%d,%d: %s" % (n_row, i, tag.string))
-            tbl.rows[n_row].cells[i].text = Text(tag.string)
+            debg("dd-%d,%d: %s" % (n_row, i, src))
+            tbl.rows[n_row].cells[i].text = src
         return None
 
     def extract_list(self, elem: Tag, f_number: bool) -> Optional[Text]:
@@ -163,7 +193,7 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:
         debg("enter para...: %d-%s" % (level, node.name))
-        para = self.para
+        # para = self.para
         for elem in node.children:
             ret = self.extract_element(elem)
             if isinstance(ret, Text):
@@ -174,6 +204,17 @@ class HtmlConvertDocx(object):  # {{{1
             # else:
             #     para = self.output.add_paragraph('')
         return None
+
+    def extract_table_cell(self, node: Tag) -> Text:
+        ret = ""
+        for elem in node:
+            if elem.name is None:
+                ret += elem.string
+            elif elem.name == "br":
+                ret += "\n"
+            else:
+                debg("can't extract %s in a table-cell" % elem.name)
+        return ret
 
 
 def main() -> int:  # {{{1
