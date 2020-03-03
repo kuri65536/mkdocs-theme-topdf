@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
+from docx.shared import Mm  # type: ignore
 
 
 class HtmlConvertDocx(object):  # {{{1
@@ -20,6 +21,19 @@ class HtmlConvertDocx(object):  # {{{1
         self.output = doc = Document()
         info("structure root")
         self.para = doc.add_paragraph('')
+        self.header_init()
+
+    def header_init(self) -> None:  # {{{1
+        # TODO(shimoda): set page border
+        sec = self.output.sections[0]
+        sec.left_margin = sec.right_margin = Mm(20)
+        sec.top_margin = sec.bottom_margin = Mm(20)
+
+    def header_set(self, src: Text) -> None:  # {{{1
+        # TODO(shimoda): set to align right.
+        para = self.output.sections[0].header.paragraphs[0]
+        # TODO(shimoda): append ( page / num_pages )
+        para.text = src + "( nn / nn )"
 
     def write_out(self) -> None:
         info("structure save")
@@ -44,7 +58,12 @@ class HtmlConvertDocx(object):  # {{{1
     def extract_element(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
         if elem.name is None:
             return self.extract_text(elem)
-        elif elem.name == "dl":
+
+        if "doc-num" in elem.attrs.get("class", []):
+            self.header_set(elem.string)
+            return None
+
+        if elem.name == "dl":
             return self.extract_dldtdd(elem)
         elif elem.name == "ul":
             return self.extract_list(elem, False)
