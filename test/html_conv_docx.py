@@ -16,9 +16,22 @@ from docx import Document  # type: ignore
 from docx.shared import Mm  # type: ignore
 
 
+style_aliases = {
+    "Heading 2": "Heading2",
+    "Heading 3": "Heading3",
+    "Heading 4": "Heading4",
+    "Heading 5": "Heading5",
+    "Heading 6": "Heading6",
+
+    "List Bullet": "List",
+    "List Number": "List",
+    "Quote": "Quote",
+}
+
+
 class HtmlConvertDocx(object):  # {{{1
-    def __init__(self) -> None:  # {{{1
-        self.output = doc = Document()
+    def __init__(self) -> None:  # {{{1d
+        self.output = doc = Document("template.docx")
         info("structure root")
         self.para = doc.add_paragraph('')
         self.header_init()
@@ -26,8 +39,10 @@ class HtmlConvertDocx(object):  # {{{1
     def header_init(self) -> None:  # {{{1
         # TODO(shimoda): set page border
         sec = self.output.sections[0]
-        sec.left_margin = sec.right_margin = Mm(20)
-        sec.top_margin = sec.bottom_margin = Mm(20)
+        # moved to template.docx
+        if False:
+            sec.left_margin = sec.right_margin = Mm(20)
+            sec.top_margin = sec.bottom_margin = Mm(20)
 
     def header_set(self, src: Text) -> None:  # {{{1
         # TODO(shimoda): set to align right.
@@ -59,8 +74,12 @@ class HtmlConvertDocx(object):  # {{{1
         if elem.name is None:
             return self.extract_text(elem)
 
-        if "doc-num" in elem.attrs.get("class", []):
+        classes = elem.attrs.get("class", [])
+        if "doc-num" in classes:
             self.header_set(elem.string)
+            return None
+        if "toc" in classes:
+            # TODO(shimoda): insert TOC macro.
             return None
 
         if elem.name == "dl":
@@ -175,6 +194,7 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_list(self, elem: Tag, f_number: bool) -> Optional[Text]:
         style = "List Number" if f_number else "List Bullet"
+        style = style_aliases[style]
         for tag in elem.children:
             if tag.name != "li":
                 continue
@@ -200,14 +220,16 @@ class HtmlConvertDocx(object):  # {{{1
         level = int(elem.name.lstrip("h"))
         ret = Text(elem.text)
         info("structure: hed: " + ret)
-        self.output.add_heading(ret, level=level)
+        style = style_aliases.get("Heading" + Text(level))
+        self.output.add_paragraph(ret, style=style)
         return None
 
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:
         # TODO(shimoda): append styles.
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
-        self.output.add_paragraph(ret, style="Quote")
+        style = style_aliases["Quote"]
+        self.output.add_paragraph(ret, style=style)
         return None
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:
