@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
+from docx.table import Table  # type: ignore
 from docx.shared import Mm  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 
@@ -234,9 +235,9 @@ class HtmlConvertDocx(object):  # {{{1
             debg("dd-%d,%d: %s" % (n_row, i, src))
             tbl.rows[n_row].cells[i].text = src
 
-        widths = self.extract_table_width_from(classes)
-        for col, wid in zip(tbl.columns, widths):
-            col.width = wid
+        if self.style_table_stamps(tbl, classes):
+            return None
+        self.style_table_width_from(tbl, classes)
         return None
 
     def extract_list(self, elem: Tag, f_number: bool) -> Optional[Text]:
@@ -304,10 +305,23 @@ class HtmlConvertDocx(object):  # {{{1
                 debg("can't extract %s in a table-cell" % elem.name)
         return ret
 
-    def extract_table_width_from(self, classes: Iterable[Text]  # {{{1
-                                 ) -> List[Mm]:
-        ret = {"table-3stamps": [Mm(106), Mm(20), Mm(20), Mm(20)],
-               "table2-8": [Mm(32), Mm(138)],
+    def style_table_stamps(self, tbl: Table,  # {{{1
+                           classes: Iterable[Text]
+                           ) -> bool:
+        if "table-3stamps" not in classes:
+            return False
+        for col, wid in zip(tbl.columns,
+                            [Mm(106), Mm(20), Mm(20), Mm(20)]):
+            col.width = wid
+        tbl.rows[0].height = Mm(20)
+        # TODO(shimoda): col1 -> smaller at 1st line and large after
+        # TODO(shimoda): col2-4 -> smaller font,
+        return True
+
+    def style_table_width_from(self, tbl: Table,  # {{{1
+                               classes: Iterable[Text]
+                               ) -> bool:
+        ret = {"table2-8": [Mm(32), Mm(138)],
                "table3-7": [Mm(48), Mm(112)],
                "table4-6": [Mm(64), Mm(96)],
                "table5-5": [Mm(80), Mm(80)],
@@ -319,11 +333,18 @@ class HtmlConvertDocx(object):  # {{{1
                "table3-3-3": [Mm(53), Mm(53), Mm(53)],
                "table2-2-2-4": [Mm(32), Mm(32), Mm(32), Mm(64)],
                }
+
+        widths: List[Mm] = []
         for class_ in classes:
             if class_ in ret:
-                return ret[class_]
-        warn("width did not specified by class")
-        return []
+                widths = ret[class_]
+                break
+        else:
+            warn("width did not specified by class")
+            return False
+        for col, wid in zip(tbl.columns, widths):
+            col.width = wid
+        return True
 
 
 def main() -> int:  # {{{1
