@@ -7,13 +7,18 @@
 import logging
 from logging import (debug as debg, info, warning as warn, )
 import sys
-from typing import (Dict, Optional, Text, Tuple, Union, )
+from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
 from docx.shared import Mm  # type: ignore
+from docx.enum.style import WD_STYLE_TYPE  # type: ignore
+
+
+class cfg:
+    mode_no_template = True
 
 
 style_aliases = {
@@ -26,15 +31,34 @@ style_aliases = {
     "List Bullet": "List",
     "List Number": "List",
     "Quote": "Quote",
+
+    "Table Grid": "DefaultTable",
 }
+
+
+def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
+    for elem in target.previous_siblings:
+        if elem.name is None:
+            continue
+        ret: List[Text] = elem.attrs.get("class", [])
+        return ret + []
+    return []
 
 
 class HtmlConvertDocx(object):  # {{{1
     def __init__(self) -> None:  # {{{1d
-        self.output = doc = Document("template.docx")
+        if cfg.mode_no_template:
+            doc = Document()
+        else:
+            doc = Document("template.docx")
+        self.output = doc
         info("structure root")
         self.para = doc.add_paragraph('')
         self.header_init()
+
+        if not cfg.mode_no_template:
+            # LibreOffice 6.4 can not save Table Styles properly.
+            doc.styles.add_style("DefaultTable", WD_STYLE_TYPE.TABLE)
 
     def header_init(self) -> None:  # {{{1
         # TODO(shimoda): set page border
@@ -69,6 +93,18 @@ class HtmlConvertDocx(object):  # {{{1
         dom = soup.find("body")
         self.extract_para(dom, 0)
         return output_content
+
+    def style(self, name: Text) -> Text:  # {{{1
+        if cfg.mode_no_template:
+            return name
+        if name in style_aliases:
+            name = style_aliases[name]
+            if name in self.output.styles:
+                return name
+        warn("can not found style: %s" % name)
+        for style in self.output.styles:
+            return style.name  # type: ignore
+        assert False, "can not found style: %s" % name
 
     def extract_element(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
         if elem.name is None:
@@ -165,6 +201,11 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_dldtdd(self, elem: Tag) -> Optional[Text]:
+        classes = classes_from_prev_sibling(elem)
+        if "before-dl-table" not in classes:
+            import pdb
+            pdb.set_trace()
+
         n_row = n_col = i = 0
         for tag in elem.children:
             if tag.name not in ("dt", "dd"):
@@ -177,6 +218,8 @@ class HtmlConvertDocx(object):  # {{{1
 
         info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
         tbl = self.output.add_table(rows=n_row, cols=n_col)
+        tbl.autofit = False
+        tbl.style = self.style("Table Grid")
         n_row, i = -1, 0
         for tag in elem.children:
             if tag.name not in ("dt", "dd"):
@@ -190,11 +233,15 @@ class HtmlConvertDocx(object):  # {{{1
             i += 1
             debg("dd-%d,%d: %s" % (n_row, i, src))
             tbl.rows[n_row].cells[i].text = src
+
+        widths = self.extract_table_width_from(classes)
+        for col, wid in zip(tbl.columns, widths):
+            col.width = wid
         return None
 
     def extract_list(self, elem: Tag, f_number: bool) -> Optional[Text]:
         style = "List Number" if f_number else "List Bullet"
-        style = style_aliases[style]
+        style = self.style(style)
         for tag in elem.children:
             if tag.name != "li":
                 continue
@@ -220,7 +267,7 @@ class HtmlConvertDocx(object):  # {{{1
         level = int(elem.name.lstrip("h"))
         ret = Text(elem.text)
         info("structure: hed: " + ret)
-        style = style_aliases.get("Heading" + Text(level))
+        style = self.style("Heading " + Text(level))
         self.output.add_paragraph(ret, style=style)
         return None
 
@@ -256,6 +303,27 @@ class HtmlConvertDocx(object):  # {{{1
             else:
                 debg("can't extract %s in a table-cell" % elem.name)
         return ret
+
+    def extract_table_width_from(self, classes: Iterable[Text]  # {{{1
+                                 ) -> List[Mm]:
+        ret = {"table-3stamps": [Mm(106), Mm(20), Mm(20), Mm(20)],
+               "table2-8": [Mm(32), Mm(138)],
+               "table3-7": [Mm(48), Mm(112)],
+               "table4-6": [Mm(64), Mm(96)],
+               "table5-5": [Mm(80), Mm(80)],
+               "table2-2-6": [Mm(32), Mm(32), Mm(96)],
+               "table2-3-5": [Mm(32), Mm(48), Mm(80)],
+               "table2-4-4": [Mm(32), Mm(64), Mm(64)],
+               "table2-5-3": [Mm(32), Mm(80), Mm(48)],
+               "table2-6-2": [Mm(32), Mm(96), Mm(32)],
+               "table3-3-3": [Mm(53), Mm(53), Mm(53)],
+               "table2-2-2-4": [Mm(32), Mm(32), Mm(32), Mm(64)],
+               }
+        for class_ in classes:
+            if class_ in ret:
+                return ret[class_]
+        warn("width did not specified by class")
+        return []
 
 
 def main() -> int:  # {{{1
