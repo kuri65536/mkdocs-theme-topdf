@@ -13,9 +13,15 @@ from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
-from docx.table import Table  # type: ignore
-from docx.shared import Mm  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
+from docx.oxml import OxmlElement  # type: ignore
+from docx.oxml.ns import qn  # type: ignore
+from docx.shared import Mm  # type: ignore
+from docx.table import Table  # type: ignore
+
+
+if False:
+    List
 
 
 class cfg:
@@ -273,11 +279,20 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:
-        # TODO(shimoda): append styles.
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
         style = style_aliases["Quote"]
-        self.output.add_paragraph(ret, style=style)
+        para = self.output.add_paragraph(ret, style=style)
+        pPr = para._p.get_or_add_pPr()
+        pBdr = OxmlElement('w:pBdr')
+        pPr.append(pBdr)
+        for val in ["left", "right", "top", "bottom"]:
+            b = OxmlElement('w:' + val)
+            b.set(qn('w:val'), 'thinThickLargeGap')
+            b.set(qn('w:sz'), '2')
+            b.set(qn('w:space'), '4')
+            b.set(qn('w:color'), '000000')
+            pBdr.append(b)
         return None
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:
