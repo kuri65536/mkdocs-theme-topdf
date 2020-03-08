@@ -193,7 +193,8 @@ class HtmlConvertDocx(object):  # {{{1
             self.header_set(elem.string)
             return None
         if "toc" in classes:
-            # TODO(shimoda): insert TOC macro.
+            para = self.output.add_paragraph()
+            self.add_field(para, r'TOC \o "1-9" \h')
             return None
 
         if elem.name == "dl":
