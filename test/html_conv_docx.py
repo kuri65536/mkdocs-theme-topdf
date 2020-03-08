@@ -14,6 +14,7 @@ from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
+from docx.enum.text import WD_ALIGN_PARAGRAPH  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
 from docx.shared import Mm  # type: ignore
@@ -71,9 +72,29 @@ class HtmlConvertDocx(object):  # {{{1
         # TODO(shimoda): set page border
         sec = self.output.sections[0]
         # moved to template.docx
-        if False:
-            sec.left_margin = sec.right_margin = Mm(20)
-            sec.top_margin = sec.bottom_margin = Mm(20)
+        if not cfg.mode_no_template:
+            return
+
+        # page setting
+        sec.page_width = Mm(210)
+        sec.page_height = Mm(297)
+        sec.left_margin = sec.right_margin = sec.bottom_margin = Mm(20)
+        sec.top_margin = Mm(20)  # 20 - 1
+
+        # make header to right
+        sec.header_distance = Mm(13)  # 20 - 1
+        para = self.output.sections[0].header.paragraphs[0]
+        para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+        # page border as rectangle (old word style)
+        """<w:pict><v:rect id="shape_0" ID="Shape1" stroked="t"
+                style="position:absolute;margin-left:-5.8pt;margin-top:13.05pt;width:493.2pt;height:751.15pt">
+                <w10:wrap type="none"/>
+                <v:fill o:detectmouseclick="t" on="false"/>
+                <v:stroke color="black" weight="12600" joinstyle="round"
+                          endcap="flat"/>
+           </v:rect></w:pict>
+        """
 
     def header_set(self, src: Text) -> None:  # {{{1
         # TODO(shimoda): set to align right.
