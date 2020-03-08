@@ -6,6 +6,7 @@
 #
 import logging
 from logging import (debug as debg, info, warning as warn, )
+from lxml import etree  # type: ignore
 import sys
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
@@ -101,7 +102,6 @@ class HtmlConvertDocx(object):  # {{{1
         r.add_t("testing...")
         pict = OxmlElement('w:pict')
         r.append(pict)
-        from lxml import etree  # type: ignore
         rect = etree.Element("{%s}rect" % v)
         pict.append(rect)
         rect.set('id', 'shape_0')  # page_border')
@@ -127,7 +127,28 @@ class HtmlConvertDocx(object):  # {{{1
         # TODO(shimoda): set to align right.
         para = self.output.sections[0].header.paragraphs[0]
         # TODO(shimoda): append ( page / num_pages )
-        para.add_run(src + "( nn / nn )")
+        para.add_run(src + "( ")
+        r = para.add_run("")._r
+        fld = OxmlElement('w:fldChar')
+        fld.set(qn('w:fldCharType'), "begin")
+        r.append(fld)
+
+        r = para.add_run("")._r
+        cmd = OxmlElement('w:instrText')
+        cmd.text = " PAGE "
+        r.append(cmd)
+
+        r = para.add_run("")._r
+        fld = OxmlElement('w:fldChar')
+        fld.set(qn('w:fldCharType'), "separate")
+        r.append(fld)
+
+        r = para.add_run("")._r
+        fld = OxmlElement('w:fldChar')
+        fld.set(qn('w:fldCharType'), "end")
+        r.append(fld)
+
+        para.add_run(" / nnn )")
 
     def write_out(self) -> None:
         info("structure save")
