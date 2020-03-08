@@ -95,12 +95,39 @@ class HtmlConvertDocx(object):  # {{{1
                           endcap="flat"/>
            </v:rect></w:pict>
         """
+        v = "urn:schemas-microsoft-com:vml"
+        w10 = "urn:schemas-microsoft-com:office:word"
+        r = para._p.add_r()
+        r.add_t("testing...")
+        pict = OxmlElement('w:pict')
+        r.append(pict)
+        from lxml import etree  # type: ignore
+        rect = etree.Element("{%s}rect" % v)
+        pict.append(rect)
+        rect.set('id', 'shape_0')  # page_border')
+        rect.set('ID', 'Shape1')   # _page_border')
+        rect.set('stroked', 't')
+        rect.set('style', 'position:absolute;'
+                 'margin-left:-5.8pt;margin-top:13.05pt;'
+                 'width:493.2pt;height:751.15pt')
+        wrap = etree.Element('{%s}wrap' % w10)
+        wrap.set('type', "none")
+        rect.append(wrap)
+        fill = etree.Element('{%s}fill' % v)
+        fill.set('on', "false")
+        rect.append(fill)
+        stroke = etree.Element('{%s}stroke' % v)
+        stroke.set('color', "black")
+        stroke.set('weight', "12600")
+        stroke.set('joinstyle', "round")
+        stroke.set('endcap', "flat")
+        rect.append(stroke)
 
     def header_set(self, src: Text) -> None:  # {{{1
         # TODO(shimoda): set to align right.
         para = self.output.sections[0].header.paragraphs[0]
         # TODO(shimoda): append ( page / num_pages )
-        para.text = src + "( nn / nn )"
+        para.add_run(src + "( nn / nn )")
 
     def write_out(self) -> None:
         info("structure save")
