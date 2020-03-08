@@ -18,6 +18,7 @@ from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import WD_ALIGN_PARAGRAPH  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
+from docx.text.paragraph import Paragraph  # type: ignore
 from docx.shared import Mm  # type: ignore
 from docx.table import Table  # type: ignore
 
@@ -55,7 +56,7 @@ def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
 
 
 class HtmlConvertDocx(object):  # {{{1
-    def __init__(self) -> None:  # {{{1d
+    def __init__(self) -> None:  # {{{1
         if cfg.mode_no_template:
             doc = Document()
         else:
@@ -99,7 +100,6 @@ class HtmlConvertDocx(object):  # {{{1
         v = "urn:schemas-microsoft-com:vml"
         w10 = "urn:schemas-microsoft-com:office:word"
         r = para._p.add_r()
-        r.add_t("testing...")
         pict = OxmlElement('w:pict')
         r.append(pict)
         rect = etree.Element("{%s}rect" % v)
@@ -124,10 +124,14 @@ class HtmlConvertDocx(object):  # {{{1
         rect.append(stroke)
 
     def header_set(self, src: Text) -> None:  # {{{1
-        # TODO(shimoda): set to align right.
         para = self.output.sections[0].header.paragraphs[0]
-        # TODO(shimoda): append ( page / num_pages )
         para.add_run(src + "( ")
+        self.add_field(para, "PAGE")
+        para.add_run(" / ")
+        self.add_field(para, "NUMPAGES")
+        para.add_run(" )")
+
+    def add_field(self, para: Paragraph, instr: Text) -> None:  # {{{1
         r = para.add_run("")._r
         fld = OxmlElement('w:fldChar')
         fld.set(qn('w:fldCharType'), "begin")
@@ -135,7 +139,7 @@ class HtmlConvertDocx(object):  # {{{1
 
         r = para.add_run("")._r
         cmd = OxmlElement('w:instrText')
-        cmd.text = " PAGE "
+        cmd.text = instr
         r.append(cmd)
 
         r = para.add_run("")._r
@@ -147,8 +151,6 @@ class HtmlConvertDocx(object):  # {{{1
         fld = OxmlElement('w:fldChar')
         fld.set(qn('w:fldCharType'), "end")
         r.append(fld)
-
-        para.add_run(" / nnn )")
 
     def write_out(self) -> None:
         info("structure save")
