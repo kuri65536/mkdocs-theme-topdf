@@ -19,7 +19,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
-from docx.shared import Mm  # type: ignore
+from docx.shared import Mm, RGBColor  # type: ignore
 from docx.table import Table  # type: ignore
 
 
@@ -32,6 +32,7 @@ class cfg:
 
 
 style_aliases = {
+    "Heading 1": "Heading1",
     "Heading 2": "Heading2",
     "Heading 3": "Heading3",
     "Heading 4": "Heading4",
@@ -69,6 +70,18 @@ class HtmlConvertDocx(object):  # {{{1
         if not cfg.mode_no_template:
             # LibreOffice 6.4 can not save Table Styles properly.
             doc.styles.add_style("DefaultTable", WD_STYLE_TYPE.TABLE)
+        else:
+            for i in range(1, 10):
+                doc.styles['Heading %d' % i].font.color.rgb = RGBColor(0, 0, 0)
+            # TODO(shimoda): WWNum1 -> Align, tabstop
+            # TODO(shimoda): Quote -> smaller font, tight line spacing
+            # TODO(shimoda): TOC:Content -> tight line spacing
+            fmt = doc.styles['Quote'].paragraph_format
+            fmt.left_indent = fmt.right_indent = Mm(10)
+            # failure code.
+            # st = doc.styles.add_style('Heading2', WD_STYLE_TYPE.PARAGRAPH)
+            # st.base_style = doc.styles["Heading 1"]
+            # st.font.color.rgb = RGBColor(0, 0, 0)
 
     def header_init(self) -> None:  # {{{1
         # TODO(shimoda): set page border
