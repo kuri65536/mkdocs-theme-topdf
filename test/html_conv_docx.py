@@ -5,9 +5,11 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import logging
-from logging import (debug as debg, info, warning as warn, )
+from logging import (debug as debg, error as eror, info, warning as warn, )
 from lxml import etree  # type: ignore
+import os
 import sys
+from tempfile import NamedTemporaryFile as Temporary
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
@@ -15,7 +17,7 @@ from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
-from docx.enum.text import WD_ALIGN_PARAGRAPH  # type: ignore
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING  # type: ignore
 from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
@@ -58,7 +60,14 @@ def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
 
 
 class HtmlConvertDocx(object):  # {{{1
-    def __init__(self) -> None:  # {{{1
+    def __init__(self, src: Text) -> None:  # {{{1
+        self.url_target = src
+        if self.is_target_in_http():
+            self.url_target = src
+        else:
+            src = os.path.realpath(src)
+            self.url_target = src
+
         if cfg.mode_no_template:
             doc = Document()
         else:
@@ -75,7 +84,6 @@ class HtmlConvertDocx(object):  # {{{1
             for i in range(1, 10):
                 doc.styles['Heading %d' % i].font.color.rgb = RGBColor(0, 0, 0)
             # TODO(shimoda): Quote -> smaller font, tight line spacing
-            # TODO(shimoda): TOC:Content -> tight line spacing
             fmt = doc.styles['Quote'].paragraph_format
             fmt.left_indent = fmt.right_indent = Mm(10)
             # failure code.
@@ -83,11 +91,21 @@ class HtmlConvertDocx(object):  # {{{1
             # st.base_style = doc.styles["Heading 1"]
             # st.font.color.rgb = RGBColor(0, 0, 0)
 
+            # list items indent
             style = doc.styles['List Bullet'].element.get_or_add_pPr()
             ind = OxmlElement("w:ind")
             style.append(ind)
             ind.set(qn("w:left"), "576")      # - <---hanging---|
             ind.set(qn("w:hanging"), "200")   # ------left----->|
+
+            # line spacing of TOC
+            for i in range(1, 10):
+                style = doc.styles.add_style(
+                        'Contents %d' % i, WD_STYLE_TYPE.PARAGRAPH
+                        ).paragraph_format
+                style.space_after = Mm(1)
+                style.line_spacing = 1.0
+                style.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
 
     def header_init(self) -> None:  # {{{1
         # TODO(shimoda): set page border
@@ -149,6 +167,13 @@ class HtmlConvertDocx(object):  # {{{1
         para.add_run(" / ")
         self.add_field(para, "NUMPAGES")
         para.add_run(" )")
+
+    def is_target_in_http(self) -> bool:  # {{{1
+        if self.url_target.startswith("http://"):
+            return True
+        if self.url_target.startswith("https://"):
+            return True
+        return False
 
     def add_field(self, para: Paragraph, instr: Text) -> None:  # {{{1
         r = para.add_run("")._r
@@ -226,6 +251,8 @@ class HtmlConvertDocx(object):  # {{{1
             return self.extract_table(elem)
         elif elem.name == "details":
             return self.extract_details(elem)
+        elif elem.name == "img":
+            return self.extract_img(elem)
         elif elem.name == "svg":
             return self.extract_svg(elem)
         elif elem.name in ("h1", "h2", "h3", "h4", "h5", "h6", ):
@@ -353,9 +380,57 @@ class HtmlConvertDocx(object):  # {{{1
         debg("structure: details: not implemented, skipped...")
         return None
 
+    def extract_img(self, elem: Tag) -> Optional[Text]:  # {{{1
+        src = elem.attrs.get("src", "")
+        if len(src) < 1:
+            warn("img-tag: was not specified 'src' attribute, ignored...")
+            return None
+        fname = self.extract_img_download(src)
+        if len(fname) < 1:
+            warn("img-tag: can not download, ignored...: " + src)
+            return None
+        self.output.add_picture(fname)
+        return None
+
+    def extract_img_download(self, src: Text) -> Text:  # {{{1
+        # TODO(shimoda): sizing from attributes or CSS.
+        # absolute
+        if src.startswith("http://"):
+            return self. extract_img_download_http(src)
+        if src.startswith("https://"):
+            return self. extract_img_download_http(src)
+        if src.startswith("file://"):
+            return src[7:]  # just remove prefix
+        if "://" in src:
+            eror("img-tag: url was not recognized, ignored...: " + src)
+            return ""
+        # relative
+        if self.is_target_in_http():
+            src = self.extract_img_download_unified_http(src)
+            return self. extract_img_download_http(src)
+        src = self.extract_img_download_unified_file(src)
+        return src
+
+    def extract_img_download_http(self, src: Text) -> Text:  # {{{1
+        # TODO(shimoda): download image and return its file name.
+        warn("img-tag: downloading image is not supported yet: " + src)
+        return ""
+
+    def extract_img_download_unified_http(self, src: Text) -> Text:  # {{{1
+        # TODO(shimoda): check target url and manipulate url of images.
+        warn("img-tag: " + src)
+        return ""
+
+    def extract_img_download_unified_file(self, src: Text) -> Text:  # {{{1
+        dname = os.path.dirname(self.url_target)
+        fname = os.path.join(dname, src)
+        fname = os.path.realpath(fname)
+        if os.path.exists(fname):
+            return fname
+        warn("img-tag: file is not found: " + fname)
+        return ""
+
     def extract_svg(self, elem: Tag) -> Optional[Text]:
-        import os
-        from tempfile import NamedTemporaryFile as Temporary
         dname, fname = "tmp", ""
         if not os.path.exists(dname):
             os.mkdir(dname)
@@ -465,7 +540,7 @@ def main() -> int:  # {{{1
 
     opts = sys.argv[1:]
     data = open(opts[0]).read()
-    prog = HtmlConvertDocx()
+    prog = HtmlConvertDocx(opts[0])
     prog.on_post_page(data, {})
     prog.write_out()
     return 0
