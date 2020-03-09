@@ -347,12 +347,18 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_svg(self, elem: Tag) -> Optional[Text]:
-        info("structure: svg: not implemented, skipped...")
-        # TODO(shimoda): impl
-        # 1. write_out_svg
-        # fp = open("temp.svg", "w")
-        # fp.close()
-        # self.output.add_picture("temp.svg")
+        import os
+        from tempfile import NamedTemporaryFile as Temporary
+        dname, fname = "tmp", ""
+        if not os.path.exists(dname):
+            os.mkdir(dname)
+        with Temporary(mode="wt", dir=dname, suffix=".svg", delete=False
+                       ) as fp:
+            fname = fp.name
+            fp.write(Text(elem))
+        info("structure: svg: is not supported by python-docx, %s" % fname)
+        # TODO(shimoda): import as xml.
+        # self.output.add_picture(fname)
         return None
 
     def extract_title(self, elem: Tag) -> Optional[Text]:
