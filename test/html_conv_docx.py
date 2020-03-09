@@ -16,6 +16,7 @@ from bs4.element import Tag  # type: ignore
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import WD_ALIGN_PARAGRAPH  # type: ignore
+from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
@@ -73,7 +74,6 @@ class HtmlConvertDocx(object):  # {{{1
         else:
             for i in range(1, 10):
                 doc.styles['Heading %d' % i].font.color.rgb = RGBColor(0, 0, 0)
-            # TODO(shimoda): WWNum1 -> Align, tabstop
             # TODO(shimoda): Quote -> smaller font, tight line spacing
             # TODO(shimoda): TOC:Content -> tight line spacing
             fmt = doc.styles['Quote'].paragraph_format
@@ -82,6 +82,12 @@ class HtmlConvertDocx(object):  # {{{1
             # st = doc.styles.add_style('Heading2', WD_STYLE_TYPE.PARAGRAPH)
             # st.base_style = doc.styles["Heading 1"]
             # st.font.color.rgb = RGBColor(0, 0, 0)
+
+            style = doc.styles['List Bullet'].element.get_or_add_pPr()
+            ind = OxmlElement("w:ind")
+            style.append(ind)
+            ind.set(qn("w:left"), "576")      # - <---hanging---|
+            ind.set(qn("w:hanging"), "200")   # ------left----->|
 
     def header_init(self) -> None:  # {{{1
         # TODO(shimoda): set page border
@@ -312,6 +318,7 @@ class HtmlConvertDocx(object):  # {{{1
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         tbl.autofit = False
         tbl.style = self.style("Table Grid")
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         n_row, i = -1, 0
         for tag in elem.children:
             if tag.name not in ("dt", "dd"):
