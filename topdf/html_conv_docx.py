@@ -5,7 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import logging
-from logging import (debug as debg, error as eror, info, warning as warn, )
+from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
 import os
 import sys
@@ -24,6 +24,8 @@ from docx.oxml.ns import qn  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
 from docx.shared import Mm, RGBColor  # type: ignore
 from docx.table import Table  # type: ignore
+
+import common
 
 
 if False:
@@ -61,8 +63,7 @@ def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
 
 class HtmlConvertDocx(object):  # {{{1
     def __init__(self, src: Text) -> None:  # {{{1
-        self.url_target = src
-        if self.is_target_in_http():
+        if common.is_target_in_http(src):
             self.url_target = src
         else:
             src = os.path.realpath(src)
@@ -167,13 +168,6 @@ class HtmlConvertDocx(object):  # {{{1
         para.add_run(" / ")
         self.add_field(para, "NUMPAGES")
         para.add_run(" )")
-
-    def is_target_in_http(self) -> bool:  # {{{1
-        if self.url_target.startswith("http://"):
-            return True
-        if self.url_target.startswith("https://"):
-            return True
-        return False
 
     def add_field(self, para: Paragraph, instr: Text) -> None:  # {{{1
         r = para.add_run("")._r
@@ -308,7 +302,7 @@ class HtmlConvertDocx(object):  # {{{1
                 col += 1
         return ret
 
-    def extract_table(self, elem: Tag) -> Optional[Text]:
+    def extract_table(self, elem: Tag) -> Optional[Text]:  # {{{1
         # TODO(shimoda): rowspan, colspan, table in table or styled-cell etc...
         dct = self.extract_table_tree(elem, 0)
         if len(dct) < 1:
@@ -325,7 +319,7 @@ class HtmlConvertDocx(object):  # {{{1
             tbl.rows[row].cells[col].text = src
         return None
 
-    def extract_dldtdd(self, elem: Tag) -> Optional[Text]:
+    def extract_dldtdd(self, elem: Tag) -> Optional[Text]:  # {{{1
         classes = classes_from_prev_sibling(elem)
         if "before-dl-table" not in classes:
             import pdb
@@ -365,7 +359,8 @@ class HtmlConvertDocx(object):  # {{{1
         self.style_table_width_from(tbl, classes)
         return None
 
-    def extract_list(self, elem: Tag, f_number: bool) -> Optional[Text]:
+    def extract_list(self, elem: Tag, f_number: bool  # {{{1
+                     ) -> Optional[Text]:
         style = "List Number" if f_number else "List Bullet"
         style = self.style(style)
         for tag in elem.children:
@@ -381,56 +376,19 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_img(self, elem: Tag) -> Optional[Text]:  # {{{1
+        # TODO(shimoda): sizing from attributes or CSS.
         src = elem.attrs.get("src", "")
         if len(src) < 1:
             warn("img-tag: was not specified 'src' attribute, ignored...")
             return None
-        fname = self.extract_img_download(src)
+        fname = common.download_image(self.url_target, src)
         if len(fname) < 1:
             warn("img-tag: can not download, ignored...: " + src)
             return None
         self.output.add_picture(fname)
         return None
 
-    def extract_img_download(self, src: Text) -> Text:  # {{{1
-        # TODO(shimoda): sizing from attributes or CSS.
-        # absolute
-        if src.startswith("http://"):
-            return self. extract_img_download_http(src)
-        if src.startswith("https://"):
-            return self. extract_img_download_http(src)
-        if src.startswith("file://"):
-            return src[7:]  # just remove prefix
-        if "://" in src:
-            eror("img-tag: url was not recognized, ignored...: " + src)
-            return ""
-        # relative
-        if self.is_target_in_http():
-            src = self.extract_img_download_unified_http(src)
-            return self. extract_img_download_http(src)
-        src = self.extract_img_download_unified_file(src)
-        return src
-
-    def extract_img_download_http(self, src: Text) -> Text:  # {{{1
-        # TODO(shimoda): download image and return its file name.
-        warn("img-tag: downloading image is not supported yet: " + src)
-        return ""
-
-    def extract_img_download_unified_http(self, src: Text) -> Text:  # {{{1
-        # TODO(shimoda): check target url and manipulate url of images.
-        warn("img-tag: " + src)
-        return ""
-
-    def extract_img_download_unified_file(self, src: Text) -> Text:  # {{{1
-        dname = os.path.dirname(self.url_target)
-        fname = os.path.join(dname, src)
-        fname = os.path.realpath(fname)
-        if os.path.exists(fname):
-            return fname
-        warn("img-tag: file is not found: " + fname)
-        return ""
-
-    def extract_svg(self, elem: Tag) -> Optional[Text]:
+    def extract_svg(self, elem: Tag) -> Optional[Text]:  # {{{1
         dname, fname = "tmp", ""
         if not os.path.exists(dname):
             os.mkdir(dname)
@@ -443,7 +401,7 @@ class HtmlConvertDocx(object):  # {{{1
         # self.output.add_picture(fname)
         return None
 
-    def extract_title(self, elem: Tag) -> Optional[Text]:
+    def extract_title(self, elem: Tag) -> Optional[Text]:  # {{{1
         level = int(elem.name.lstrip("h"))
         ret = Text(elem.text)
         info("structure: hed: " + ret)
@@ -451,7 +409,7 @@ class HtmlConvertDocx(object):  # {{{1
         self.output.add_paragraph(ret, style=style)
         return None
 
-    def extract_codeblock(self, elem: Tag) -> Optional[Text]:
+    def extract_codeblock(self, elem: Tag) -> Optional[Text]:  # {{{1
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
         style = style_aliases["Quote"]
@@ -468,7 +426,7 @@ class HtmlConvertDocx(object):  # {{{1
             pBdr.append(b)
         return None
 
-    def extract_para(self, node: Tag, level: int) -> Optional[Text]:
+    def extract_para(self, node: Tag, level: int) -> Optional[Text]:  # {{{1
         debg("enter para...: %d-%s" % (level, node.name))
         # para = self.para
         for elem in node.children:
@@ -482,7 +440,7 @@ class HtmlConvertDocx(object):  # {{{1
             #     para = self.output.add_paragraph('')
         return None
 
-    def extract_table_cell(self, node: Tag) -> Text:
+    def extract_table_cell(self, node: Tag) -> Text:  # {{{1
         ret = ""
         for elem in node:
             if elem.name is None:
@@ -538,6 +496,7 @@ class HtmlConvertDocx(object):  # {{{1
 def main() -> int:  # {{{1
     logging.basicConfig(level=logging.INFO)
 
+    common.init()
     opts = sys.argv[1:]
     data = open(opts[0]).read()
     prog = HtmlConvertDocx(opts[0])
@@ -549,4 +508,4 @@ def main() -> int:  # {{{1
 if __name__ == "__main__":  # {{{1
     main()
 
-# vi: ft=python
+# vi: ft=python:fdm=marker
