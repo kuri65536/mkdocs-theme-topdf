@@ -427,13 +427,13 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:  # {{{1
-        debg("enter para...: %d-%s" % (level, node.name))
-        # para = self.para
+        info("enter para...: %d-%s" % (level, node.name))
         for elem in node.children:
             ret = self.extract_element(elem)
             if isinstance(ret, Text):
-                pass
-                # para.text += ret
+                empty = ret.strip("\n")
+                if len(empty) > 0:
+                    self.para = self.output.add_paragraph(ret)
             elif ret is not None:
                 self.extract_para(elem, level + 1)
             # else:
