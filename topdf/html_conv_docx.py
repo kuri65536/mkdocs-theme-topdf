@@ -242,7 +242,12 @@ class HtmlConvertDocx(object):  # {{{1
             self.add_field(para, r'TOC \o "1-9" \h')
             return None
 
-        if elem.name == "dl":
+        # inline elements
+        if elem.name == "em":
+            return self.extract_em(elem)
+
+        # block elements
+        elif elem.name == "dl":
             return self.extract_dldtdd(elem)
         elif elem.name == "ul":
             return self.extract_list(elem, False)
@@ -267,6 +272,16 @@ class HtmlConvertDocx(object):  # {{{1
         ret = Text(elem.string)
         debg(ret.strip())
         return ret
+
+    def extract_em(self, elem: Tag) -> Optional[Text]:  # {{{1
+        classes = elem.attrs.get("class", [])
+        if "table-tag" in classes:
+            # TODO(shimoda): caption to `caption-table` style
+            self.para = self.output.add_paragraph(elem.text, style="Caption")
+            return None
+        para = self.para
+        para.add_run(elem.text, style="Emphasis")
+        return None
 
     def extract_table_tree(self, elem: Tag, row: int  # {{{1
                            ) -> Dict[Tuple[int, int], Tag]:
@@ -417,6 +432,7 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:  # {{{1
+        # TODO(shimoda): inline code block...
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
         style = style_aliases["Quote"]
