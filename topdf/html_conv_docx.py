@@ -25,7 +25,10 @@ from docx.text.paragraph import Paragraph  # type: ignore
 from docx.shared import Mm, RGBColor  # type: ignore
 from docx.table import Table  # type: ignore
 
-import common
+try:
+    from . import common
+except ImportError:
+    import common  # type: ignore
 
 
 if False:
@@ -223,7 +226,11 @@ class HtmlConvertDocx(object):  # {{{1
         assert False, "can not found style: %s" % name
 
     def extract_element(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
-        if elem.name is None:
+        if elem.name is not None:
+            pass
+        elif "element.Comment" in Text(type(elem)):
+            return None  # ignore html comments
+        else:
             return self.extract_text(elem)
 
         classes = elem.attrs.get("class", [])
