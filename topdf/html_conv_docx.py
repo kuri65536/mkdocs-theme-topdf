@@ -240,13 +240,21 @@ class HtmlConvertDocx(object):  # {{{1
         if "toc" in classes:
             para = self.output.add_paragraph()
             self.add_field(para, r'TOC \o "1-9" \h')
+            para = self.para = self.output.add_paragraph()
             return None
 
         # inline elements
         if elem.name == "em":
             return self.extract_em(elem)
+        elif elem.name == "br":
+            return self.para.add_run("\n")
+        elif elem.name == "a":
+            # TODO(shimoda): make hyper link
+            return Text(elem.text)
 
         # block elements
+        elif elem.name in ("script", "style"):
+            return None  # just ignore these elements.
         elif elem.name == "dl":
             return self.extract_dldtdd(elem)
         elif elem.name == "ul":
@@ -265,10 +273,17 @@ class HtmlConvertDocx(object):  # {{{1
             return self.extract_title(elem)
         elif elem.name in ("pre", "code"):
             return self.extract_codeblock(elem)
+        elif elem.name in ("p", "div"):
+            pass
+        else:
+            pass  # for debug: import pdb; pdb.set_trace()
         # p, article or ...
         return elem
 
-    def extract_text(self, elem: Tag) -> Text:
+    def extract_text(self, elem: Tag) -> Optional[Text]:  # {{{1
+        if elem.string == "\n":
+            if elem.parent.name in ("body", "div", ):
+                return None
         ret = Text(elem.string)
         debg(ret.strip())
         return ret
