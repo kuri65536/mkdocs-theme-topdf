@@ -7,7 +7,9 @@
 from logging import (error as eror, warning as warn, )
 import os
 from tempfile import NamedTemporaryFile as Temporary
-from typing import (Text, )
+from typing import (Iterable, List, Text, )
+
+from bs4.element import Tag  # type: ignore
 
 
 try:
@@ -17,8 +19,28 @@ except ImportError:
     f_not_online = True
 
 
+if False:
+    List
+
+
 class ParseError(Exception):  # {{{1
     pass
+
+
+def has_class(tag: Tag, name: Text) -> bool:  # {{{1
+    if tag.name is None:
+        return False
+    ret: List[Text] = tag.attrs.get("class", [])
+    return name in ret
+
+
+def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
+    for elem in target.previous_siblings:
+        if elem.name is None:
+            continue
+        ret: List[Text] = elem.attrs.get("class", [])
+        return ret + []
+    return []
 
 
 def is_online_mode() -> bool:  # {{{1

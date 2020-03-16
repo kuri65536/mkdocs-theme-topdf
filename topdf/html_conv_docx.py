@@ -63,15 +63,6 @@ style_aliases = {  # {{{1
 }
 
 
-def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
-    for elem in target.previous_siblings:
-        if elem.name is None:
-            continue
-        ret: List[Text] = elem.attrs.get("class", [])
-        return ret + []
-    return []
-
-
 class HtmlConvertDocx(object):  # {{{1
     def __init__(self, src: Text) -> None:  # {{{1
         if common.is_target_in_http(src):
@@ -249,6 +240,8 @@ class HtmlConvertDocx(object):  # {{{1
         # inline elements
         if elem.name == "em":
             return self.extract_em(elem, para)
+        elif elem.name == "strong":
+            return self.extract_strong(elem, para)
         elif elem.name == "code":
             return self.extract_code(elem, para, pre=False)
         elif elem.name == "br":
@@ -356,6 +349,16 @@ class HtmlConvertDocx(object):  # {{{1
             para.add_run(s, style=style)
         return None
 
+    def extract_strong(self, elem: Tag, para: Paragraph  # {{{1
+                       ) -> Optional[Text]:
+        s = Text(elem.text)
+        if para is None:  # top level
+            self.output.add_paragraph(s)  # TODO(shimoda): strong block
+        else:
+            style = self.style("Strong")
+            para.add_run(s, style=style)
+        return None
+
     def extract_table_tree(self, elem: Tag, row: int  # {{{1
                            ) -> Dict[Tuple[int, int], Tag]:
         def num_row(dct: Dict[Tuple[int, int], Tag]) -> int:
@@ -415,7 +418,7 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_dldtdd(self, elem: Tag) -> Optional[Text]:  # {{{1
-        classes = classes_from_prev_sibling(elem)
+        classes = common.classes_from_prev_sibling(elem)
         if "before-dl-table" not in classes:
             import pdb
             pdb.set_trace()
@@ -529,6 +532,8 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:  # {{{1
         info("enter para...: %d-%s" % (level, node.name))
+        if node.name == "p" and common.has_class(node, "before-dl-table"):
+            return None
         para = None
         for elem in node.children:
             ret = self.extract_element(elem, self.para)
