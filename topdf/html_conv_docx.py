@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
+# include {{{1
 import logging
 from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
@@ -17,7 +18,9 @@ from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING  # type: ignore
+from docx.enum.text import (                  # type: ignore
+        WD_ALIGN_PARAGRAPH, WD_LINE_SPACING,  # type: ignore
+        WD_PARAGRAPH_ALIGNMENT, )             # type: ignore
 from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
@@ -35,11 +38,18 @@ if False:
     List
 
 
-class cfg:
+class cfg:  # {{{1
     mode_no_template = True
 
 
-style_aliases = {
+class _info_list:
+    def __init__(self, f: bool, s: Text, l: int) -> None:
+        self.f_number = f
+        self.style = s
+        self.level = f
+
+
+style_aliases = {  # {{{1
     "Heading 1": "Heading1",
     "Heading 2": "Heading2",
     "Heading 3": "Heading3",
@@ -50,8 +60,6 @@ style_aliases = {
     "List Bullet": "List",
     "List Number": "List",
     "Quote": "Quote",
-
-    "Table Grid": "DefaultTable",
 }
 
 
@@ -78,7 +86,7 @@ class HtmlConvertDocx(object):  # {{{1
             doc = Document("template.docx")
         self.output = doc
         info("structure root")
-        self.para = doc.add_paragraph('')
+        self.para: Optional[Paragraph] = None  # doc.add_paragraph('')
         self.header_init()
 
         if not cfg.mode_no_template:
@@ -90,10 +98,14 @@ class HtmlConvertDocx(object):  # {{{1
             # TODO(shimoda): Quote -> smaller font, tight line spacing
             fmt = doc.styles['Quote'].paragraph_format
             fmt.left_indent = fmt.right_indent = Mm(10)
+            fmt = doc.styles.add_style('CodeChars', WD_STYLE_TYPE.CHARACTER)
+            # TODO(shimoda): CodeChars
             # failure code.
             # st = doc.styles.add_style('Heading2', WD_STYLE_TYPE.PARAGRAPH)
             # st.base_style = doc.styles["Heading 1"]
             # st.font.color.rgb = RGBColor(0, 0, 0)
+            fmt = doc.styles['Caption'].paragraph_format
+            fmt.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
             # list items indent
             style = doc.styles['List Bullet'].element.get_or_add_pPr()
@@ -225,13 +237,31 @@ class HtmlConvertDocx(object):  # {{{1
             return style.name  # type: ignore
         assert False, "can not found style: %s" % name
 
-    def extract_element(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
+    def extract_is_text(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
         if elem.name is not None:
-            pass
+            return elem
         elif "element.Comment" in Text(type(elem)):
             return None  # ignore html comments
-        else:
-            return self.extract_text(elem)
+        return self.extract_text(elem)
+
+    def extract_inlines(self, elem: Tag, para: Paragraph  # {{{1
+                        ) -> Optional[Text]:
+        # inline elements
+        if elem.name == "em":
+            return self.extract_em(elem)
+        elif elem.name == "code":
+            return self.extract_code(elem, para, pre=False)
+        elif elem.name == "br":
+            return self.extract_br(elem, para)
+        elif elem.name == "a":
+            # TODO(shimoda): make hyper link
+            return Text(elem.text)
+        raise ValueError("")
+
+    def extract_element(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
+        is_text = self.extract_is_text(elem)
+        if (is_text is None) or isinstance(is_text, Text):
+            return is_text
 
         classes = elem.attrs.get("class", [])
         if "doc-num" in classes:
@@ -243,24 +273,20 @@ class HtmlConvertDocx(object):  # {{{1
             para = self.para = self.output.add_paragraph()
             return None
 
-        # inline elements
-        if elem.name == "em":
-            return self.extract_em(elem)
-        elif elem.name == "br":
-            return self.para.add_run("\n")
-        elif elem.name == "a":
-            # TODO(shimoda): make hyper link
-            return Text(elem.text)
+        try:
+            return self.extract_inlines(elem, self.para)
+        except ValueError:
+            pass
 
         # block elements
-        elif elem.name in ("script", "style"):
+        if elem.name in ("script", "style"):
             return None  # just ignore these elements.
         elif elem.name == "dl":
             return self.extract_dldtdd(elem)
         elif elem.name == "ul":
-            return self.extract_list(elem, False)
+            return self.extract_list(elem, False, 1)
         elif elem.name == "ol":
-            return self.extract_list(elem, True)
+            return self.extract_list(elem, True, 1)
         elif elem.name == "table":
             return self.extract_table(elem)
         elif elem.name == "details":
@@ -288,6 +314,22 @@ class HtmlConvertDocx(object):  # {{{1
         debg(ret.strip())
         return ret
 
+    def extract_br(self, elem: Tag, para: Paragraph) -> Text:  # {{{1
+        # sometime bs4 fails to parse `br` tag and surround text.
+        ret = ""
+        for tag in elem.children:
+            content = self.extract_is_text(tag)
+            if content is None:
+                continue
+            if isinstance(content, Text):
+                para.add_run(content)
+            else:
+                content = self.extract_inlines(tag, para)
+                if not isinstance(content, Text):
+                    continue
+            ret += content
+        return ret
+
     def extract_em(self, elem: Tag) -> Optional[Text]:  # {{{1
         classes = elem.attrs.get("class", [])
         if "table-tag" in classes:
@@ -295,7 +337,22 @@ class HtmlConvertDocx(object):  # {{{1
             self.para = self.output.add_paragraph(elem.text, style="Caption")
             return None
         para = self.para
-        para.add_run(elem.text, style="Emphasis")
+        if para is None:
+            self.output.add_paragraph(elem.text, style="Emphasis")
+        else:
+            para.add_run(elem.text, style="Emphasis")
+        return None
+
+    def extract_code(self, elem: Tag, para: Paragraph, pre: bool  # {{{1
+                     ) -> Optional[Text]:
+        s = Text(elem.text)
+        if para is None:  # top level
+            self.output.add_paragraph(s)  # TODO(shimoda): Code block
+        elif pre:
+            para.add_run(s)
+        else:
+            style = self.style("CodeChars")
+            para.add_run(s, style=style)
         return None
 
     def extract_table_tree(self, elem: Tag, row: int  # {{{1
@@ -396,16 +453,20 @@ class HtmlConvertDocx(object):  # {{{1
         self.style_table_width_from(tbl, classes)
         return None
 
-    def extract_list(self, elem: Tag, f_number: bool  # {{{1
-                     ) -> Optional[Text]:
+    def extract_list(self, elem: Tag, f_number: bool,  # {{{1
+                     level: int) -> Optional[Text]:
         style = "List Number" if f_number else "List Bullet"
+        if level > 1:
+            style += "%d" % level
         style = self.style(style)
         for tag in elem.children:
             if tag.name != "li":
                 continue
-            ret = Text(tag.text)
-            info("structure: li : " + ret.splitlines()[0])
-            self.output.add_paragraph(ret, style=style)
+            para = self.output.add_paragraph("", style=style)
+            info = _info_list(f_number, style, level)
+            ret = self.extract_list_subs(para, tag, info)
+            warn("structure: li : " + ret.splitlines()[0])
+        self.para = None
         return None
 
     def extract_details(self, elem: Tag) -> Optional[Text]:
@@ -444,14 +505,15 @@ class HtmlConvertDocx(object):  # {{{1
         info("structure: hed: " + ret)
         style = self.style("Heading " + Text(level))
         self.output.add_paragraph(ret, style=style)
+        self.para = None
         return None
 
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:  # {{{1
-        # TODO(shimoda): inline code block...
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
         style = style_aliases["Quote"]
         para = self.output.add_paragraph(ret, style=style)
+        self.para = None
         pPr = para._p.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
         pPr.append(pBdr)
@@ -470,8 +532,12 @@ class HtmlConvertDocx(object):  # {{{1
             ret = self.extract_element(elem)
             if isinstance(ret, Text):
                 empty = ret.strip("\n")
-                if len(empty) > 0:
+                if len(empty) < 1:
+                    pass
+                elif self.para is None:
                     self.para = self.output.add_paragraph(ret)
+                else:
+                    self.para.add_run(ret)
             elif ret is not None:
                 self.extract_para(elem, level + 1)
             # else:
@@ -487,6 +553,46 @@ class HtmlConvertDocx(object):  # {{{1
                 ret += "\n"
             else:
                 debg("can't extract %s in a table-cell" % elem.name)
+        return ret
+
+    def extract_list_subs(self, para: Paragraph, elem: Tag,  # {{{1
+                          info: _info_list) -> Text:
+        ret = ""
+        tags_sub = []
+        for tag in elem.children:
+            if tag.name in ("p", "div", "ul", "ol"):
+                tags_sub.append(tag)
+        if len(tags_sub) < 1:
+            return self.extract_as_run(para, elem)
+        for tag in tags_sub:
+            if tag.name in ("ul", "ol"):
+                self.extract_list(tag, tag.name == "ol", info.level + 1)
+                para = self.para = self.output.add_paragraph("", info.style)
+            elif tag.name in ("p", "div"):
+                ret += self.extract_list_subs(para, tag, info)
+        return ret
+
+    def extract_as_run(self, para: Paragraph, elem: Tag) -> Text:  # {{{1
+        ret = ""
+        if elem.name is None:  # NavigableString
+            ret = Text(elem.string)
+            para.add_run(ret)
+            return ret
+        for tag in elem.children:
+            content = self.extract_is_text(tag)
+            if isinstance(content, Text):
+                ret += content
+                para.add_run(content)
+                continue
+            if content is None:
+                continue
+            try:
+                s = self.extract_inlines(
+                        tag, para)
+                if isinstance(s, Text):
+                    ret += s
+            except ValueError:
+                pass
         return ret
 
     def style_table_stamps(self, tbl: Table,  # {{{1
