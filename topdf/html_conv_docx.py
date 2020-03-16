@@ -478,7 +478,6 @@ class HtmlConvertDocx(object):  # {{{1
         return None
 
     def extract_img(self, elem: Tag) -> Optional[Text]:  # {{{1
-        # TODO(shimoda): sizing from attributes or CSS.
         src = elem.attrs.get("src", "")
         if len(src) < 1:
             warn("img-tag: was not specified 'src' attribute, ignored...")
@@ -487,7 +486,20 @@ class HtmlConvertDocx(object):  # {{{1
         if len(fname) < 1:
             warn("img-tag: can not download, ignored...: " + src)
             return None
-        self.output.add_picture(fname)
+
+        # FIXME(shimoda): sizing is to more flexible.
+        w, h = common.image_width_and_height(fname)
+        if common.dot_to_mm(w) > Mm(210 - 40):
+            if common.dot_to_mm(h) > Mm(279 - 40):
+                if w > h:
+                    args = {"width": Mm(210 - 40)}
+                else:
+                    args = {"height": Mm(279 - 40)}
+        elif common.dot_to_mm(h) > Mm(279 - 40):
+            args = {"height": Mm(279 - 40)}
+        else:
+            args = {}
+        self.output.add_picture(fname, **args)
         return None
 
     def extract_svg(self, elem: Tag) -> Optional[Text]:  # {{{1

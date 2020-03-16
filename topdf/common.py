@@ -7,9 +7,11 @@
 from logging import (error as eror, warning as warn, )
 import os
 from tempfile import NamedTemporaryFile as Temporary
-from typing import (Iterable, List, Text, )
+from typing import (Iterable, List, Text, Tuple, )
 
+from docx.shared import Mm  # type: ignore
 from bs4.element import Tag  # type: ignore
+import get_image_size  # type: ignore
 
 
 try:
@@ -113,6 +115,7 @@ def download_image_run(url: Text) -> Text:  # {{{1
     if sfx.lower() not in ("jpg", "png", "svg", "tiff", "tif", "gif"):
         eror("img-tag: unsupported format: " + sfx)
         return ""
+    sfx = "." + sfx
 
     resp = requests.get(url)
     if (resp.status_code / 100) != 2:
@@ -136,6 +139,20 @@ def download_image_unified_http(url: Text, src: Text) -> Text:  # {{{1
     seq = seq[:-1]
     seq.append(src)
     return "/".join(seq)
+
+
+def image_width_and_height(src: Text) -> Tuple[int, int]:  # {{{1
+    try:
+        return get_image_size.get_image_size(src)  # type: ignore
+    except get_image_size.UnknownImageFormat:
+        pass
+    return (-1, -1)
+
+
+def dot_to_mm(n: int) -> int:  # {{{1
+    inch = n / 72         # dpi -> inch
+    mm = Mm(inch * 25.4)  # inch -> Mm
+    return mm  # type: ignore
 
 
 # {{{1 end of file
