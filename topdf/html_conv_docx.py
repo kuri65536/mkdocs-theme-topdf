@@ -248,7 +248,7 @@ class HtmlConvertDocx(object):  # {{{1
                         ) -> Optional[Text]:
         # inline elements
         if elem.name == "em":
-            return self.extract_em(elem)
+            return self.extract_em(elem, para)
         elif elem.name == "code":
             return self.extract_code(elem, para, pre=False)
         elif elem.name == "br":
@@ -256,9 +256,10 @@ class HtmlConvertDocx(object):  # {{{1
         elif elem.name == "a":
             # TODO(shimoda): make hyper link
             return Text(elem.text)
-        raise ValueError("")
+        raise common.ParseError("%s is not implemented, yet" % elem.name)
 
-    def extract_element(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
+    def extract_element(self, elem: Tag, para: Paragraph  # {{{1
+                        ) -> Union[None, Text, Tag]:
         is_text = self.extract_is_text(elem)
         if (is_text is None) or isinstance(is_text, Text):
             return is_text
@@ -274,8 +275,8 @@ class HtmlConvertDocx(object):  # {{{1
             return None
 
         try:
-            return self.extract_inlines(elem, self.para)
-        except ValueError:
+            return self.extract_inlines(elem, para)
+        except common.ParseError:
             pass
 
         # block elements
@@ -330,15 +331,15 @@ class HtmlConvertDocx(object):  # {{{1
             ret += content
         return ret
 
-    def extract_em(self, elem: Tag) -> Optional[Text]:  # {{{1
+    def extract_em(self, elem: Tag, para: Paragraph) -> Optional[Text]:  # {{{1
         classes = elem.attrs.get("class", [])
         if "table-tag" in classes:
             # TODO(shimoda): caption to `caption-table` style
             self.para = self.output.add_paragraph(elem.text, style="Caption")
             return None
-        para = self.para
         if para is None:
-            self.output.add_paragraph(elem.text, style="Emphasis")
+            # TODO(shimoda): style for the top-level emphasis
+            self.output.add_paragraph(elem.text)
         else:
             para.add_run(elem.text, style="Emphasis")
         return None
@@ -528,16 +529,17 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:  # {{{1
         info("enter para...: %d-%s" % (level, node.name))
+        para = None
         for elem in node.children:
-            ret = self.extract_element(elem)
+            ret = self.extract_element(elem, self.para)
             if isinstance(ret, Text):
                 empty = ret.strip("\n")
                 if len(empty) < 1:
                     pass
-                elif self.para is None:
-                    self.para = self.output.add_paragraph(ret)
+                elif para is None:
+                    self.para = para = self.output.add_paragraph(ret)
                 else:
-                    self.para.add_run(ret)
+                    para.add_run(ret)
             elif ret is not None:
                 self.extract_para(elem, level + 1)
             # else:
@@ -591,7 +593,7 @@ class HtmlConvertDocx(object):  # {{{1
                         tag, para)
                 if isinstance(s, Text):
                     ret += s
-            except ValueError:
+            except common.ParseError:
                 pass
         return ret
 

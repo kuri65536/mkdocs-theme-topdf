@@ -17,6 +17,10 @@ except ImportError:
     f_not_online = True
 
 
+class ParseError(Exception):  # {{{1
+    pass
+
+
 def is_online_mode() -> bool:  # {{{1
     import socket
     socket.setdefaulttimeout(1.0)
@@ -112,4 +116,5 @@ def download_image_unified_http(url: Text, src: Text) -> Text:  # {{{1
     return "/".join(seq)
 
 
+# {{{1 end of file
 # vi: ft=python:fdm=marker
