@@ -65,6 +65,7 @@ style_aliases = {  # {{{1
 
 class HtmlConvertDocx(object):  # {{{1
     def __init__(self, src: Text) -> None:  # {{{1
+        self.bookmark_id = 0
         if common.is_target_in_http(src):
             self.url_target = src
         else:
@@ -131,7 +132,6 @@ class HtmlConvertDocx(object):  # {{{1
                 ppr.remove(seq[0])
 
     def header_init(self) -> None:  # {{{1
-        # TODO(shimoda): set page border
         sec = self.output.sections[0]
         # moved to template.docx
         if not cfg.mode_no_template:
@@ -263,8 +263,7 @@ class HtmlConvertDocx(object):  # {{{1
         elif elem.name == "br":
             return self.extract_br(elem, para)
         elif elem.name == "a":
-            # TODO(shimoda): make hyper link
-            return Text(elem.text)
+            return self.extract_anchor(elem, para)
         raise common.ParseError("%s is not implemented, yet" % elem.name)
 
     def extract_element(self, elem: Tag, para: Paragraph  # {{{1
@@ -373,6 +372,26 @@ class HtmlConvertDocx(object):  # {{{1
         else:
             style = self.style("Strong")
             para.add_run(s, style=style)
+        return None
+
+    def extract_anchor(self, elem: Tag, para: Paragraph  # {{{1
+                       ) -> Optional[Text]:
+        url = elem.attrs.get("href", "")
+        if len(url) < 1:
+            return Text(elem.text)
+        if not url.startswith("#"):
+            # TODO(shimoda): enable external link
+            return Text(elem.text)
+
+        link = OxmlElement("w:hyperlink")
+        para._p.append(link)
+        run = OxmlElement("w:r")
+        link.append(run)
+        text = OxmlElement("w:t")
+        run.append(text)
+
+        link.set(qn("w:anchor"), "ahref_" + url[1:])
+        text.text = Text(elem.text)
         return None
 
     def extract_table_tree(self, elem: Tag, row: int  # {{{1
@@ -538,7 +557,20 @@ class HtmlConvertDocx(object):  # {{{1
         ret = Text(elem.text)
         info("structure: hed: " + ret)
         style = self.style("Heading " + Text(level))
-        self.output.add_paragraph(ret, style=style)
+        para = self.output.add_paragraph("", style=style)
+
+        html_id = elem.attrs.get("id", "")
+        if len(html_id) > 0:
+            bs = OxmlElement("w:bookmarkStart")
+            be = OxmlElement("w:bookmarkEnd")
+            para._p.append(bs)
+            para._p.append(be)
+            bs.set(qn("w:id"), "%d" % self.bookmark_id)
+            be.set(qn("w:id"), "%d" % self.bookmark_id)
+            bs.set(qn("w:name"), "ahref_" + html_id)
+            self.bookmark_id += 1
+
+        para.add_run(ret)
         self.para = None
         return None
 
