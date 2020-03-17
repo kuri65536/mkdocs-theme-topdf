@@ -25,7 +25,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
-from docx.shared import Mm, RGBColor  # type: ignore
+from docx.shared import Mm, Pt, RGBColor  # type: ignore
 from docx.table import Table  # type: ignore
 
 try:
@@ -113,6 +113,22 @@ class HtmlConvertDocx(object):  # {{{1
                 style.space_after = Mm(1)
                 style.line_spacing = 1.0
                 style.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
+
+            # styles for stamps
+            style = doc.styles.add_style('Stamps', WD_STYLE_TYPE.PARAGRAPH)
+            style.font.size = Pt(8)
+            style = doc.styles['Subtitle']
+            style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            style.font.size = Pt(10.5)
+            style.font.color.rgb = RGBColor(0, 0, 0)
+            style = doc.styles['Title']
+            style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            style.font.size = Pt(20)
+            style.font.color.rgb = RGBColor(0, 0, 0)
+            ppr = style.element.get_or_add_pPr()   # remove border
+            seq = ppr.xpath("w:pBdr")
+            if len(seq) > 0:
+                ppr.remove(seq[0])
 
     def header_init(self) -> None:  # {{{1
         # TODO(shimoda): set page border
@@ -445,12 +461,14 @@ class HtmlConvertDocx(object):  # {{{1
             src = self.extract_table_cell(tag)
             if tag.name == "dt":
                 n_row, i = n_row + 1, 0
-                debg("dt-%d,%d: %s" % (n_row, i, src))
-                tbl.rows[n_row].cells[i].text = src
-                continue
-            i += 1
+            else:
+                i += 1
             debg("dd-%d,%d: %s" % (n_row, i, src))
-            tbl.rows[n_row].cells[i].text = src
+            for n, line in enumerate(src.splitlines()):
+                if n == 0:
+                    tbl.rows[n_row].cells[i].paragraphs[0].text = line
+                else:
+                    tbl.rows[n_row].cells[i].add_paragraph(line)
 
         if self.style_table_stamps(tbl, classes):
             return None
@@ -622,9 +640,16 @@ class HtmlConvertDocx(object):  # {{{1
         for col, wid in zip(tbl.columns,
                             [Mm(106), Mm(20), Mm(20), Mm(20)]):
             col.width = wid
-        tbl.rows[0].height = Mm(20)
-        # TODO(shimoda): col1 -> smaller at 1st line and large after
-        # TODO(shimoda): col2-4 -> smaller font,
+        row = tbl.rows[0]
+        row.height = Mm(20)
+
+        for n, para in enumerate(row.cells[0].paragraphs):
+            if n == 0:
+                para.style = self.output.styles["Subtitle"]
+            else:
+                para.style = self.output.styles["Title"]
+        for i in range(1, 4):
+            row.cells[i].paragraphs[0].style = self.output.styles["Stamps"]
         return True
 
     def style_table_width_from(self, tbl: Table,  # {{{1
