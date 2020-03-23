@@ -46,7 +46,7 @@ class _info_list:
     def __init__(self, f: bool, s: Text, l: int) -> None:
         self.f_number = f
         self.style = s
-        self.level = f
+        self.level = l
 
 
 style_aliases = {  # {{{1
@@ -496,17 +496,19 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_list(self, elem: Tag, f_number: bool,  # {{{1
                      level: int) -> Optional[Text]:
-        style = "List Number" if f_number else "List Bullet"
+        style_base = "List Number" if f_number else "List Bullet"
         if level > 1:
-            style += "%d" % level
+            style = style_base + " %d" % level
+        else:
+            style = style_base
         style = self.style(style)
+        self.style_exists_or_add_list(self.output, level, style, style_base)
         for tag in elem.children:
             if tag.name != "li":
                 continue
-            para = self.output.add_paragraph("", style=style)
             info = _info_list(f_number, style, level)
-            ret = self.extract_list_subs(para, tag, info)
-            warn("structure: li : " + ret.splitlines()[0])
+            ret = self.extract_list_subs(None, tag, info)
+            warn("structure: li : " + ret if len(ret) < 50 else ret[:50])
         self.para = None
         return None
 
@@ -624,21 +626,32 @@ class HtmlConvertDocx(object):  # {{{1
                 debg("can't extract %s in a table-cell" % elem.name)
         return ret
 
-    def extract_list_subs(self, para: Paragraph, elem: Tag,  # {{{1
+    def extract_list_subs(self, para: Optional[Paragraph], elem: Tag,  # {{{1
                           info: _info_list) -> Text:
         ret = ""
-        tags_sub = []
         for tag in elem.children:
             if tag.name in ("p", "div", "ul", "ol"):
-                tags_sub.append(tag)
-        if len(tags_sub) < 1:
+                break
+        else:
+            if para is None:
+                para = self.output.add_paragraph("", info.style)
             return self.extract_as_run(para, elem)
-        for tag in tags_sub:
+        for tag in elem.children:
             if tag.name in ("ul", "ol"):
                 self.extract_list(tag, tag.name == "ol", info.level + 1)
-                para = self.para = self.output.add_paragraph("", info.style)
+                para = None
             elif tag.name in ("p", "div"):
                 ret += self.extract_list_subs(para, tag, info)
+            elif tag.name is None:
+                src = tag.string
+                src = src.replace("\n", " ")
+                if len(src.strip()) > 0:
+                    if para is None:
+                        para = self.output.add_paragraph("", info.style)
+                    para.add_run(src)
+                    ret += src
+            else:
+                warn("can't parse complex html...%s" % tag.name)
         return ret
 
     def extract_as_run(self, para: Paragraph, elem: Tag) -> Text:  # {{{1
@@ -711,6 +724,14 @@ class HtmlConvertDocx(object):  # {{{1
         for col, wid in zip(tbl.columns, widths):
             col.width = wid
         return True
+
+    def style_exists_or_add_list(self, doc: Document, lvl: int,  # {{{1
+                                 tgt: Text, src: Text) -> None:
+        if tgt in doc.styles:
+            return
+        sty = doc.styles.add_style(tgt, WD_STYLE_TYPE.PARAGRAPH)
+        sty.base_style = doc.styles[src]
+        sty.paragraph_format.left_indent = Mm(15 + 10 * (lvl - 1))
 
 
 def main() -> int:  # {{{1
