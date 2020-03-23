@@ -173,8 +173,8 @@ document number. ISO-nnnn-nn
 - TODO(shimoda): or Launch and update fields in LibreOffice or MS Word.
 
 
-### 4.6. **Under construction** Styles for page-break <!-- {{{1 -->
-just use `hr`
+### 4.6. Styles for page-break <!-- {{{1 -->
+just use `hr`, markup:
 
 ```markdown
 
@@ -182,7 +182,7 @@ just use `hr`
 
 ```
 
-TODO(shimoda): implement
+sample page break is here:
 
 
 ---
@@ -253,7 +253,7 @@ sample
     but python-docx does not support SVG now.
 
 
-### 4.11. **Under construction** nested paragraphs <!-- {{{1 -->
+### 4.11. nested paragraphs <!-- {{{1 -->
 - not support nested p or div. this app just flat them.
 - nested `ul` or `ol` `li` tags inside `ul` or `ol`, a sample markup::
 

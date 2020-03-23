@@ -19,7 +19,7 @@ from bs4.element import Tag  # type: ignore
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import (                  # type: ignore
-        WD_ALIGN_PARAGRAPH, WD_LINE_SPACING,  # type: ignore
+        WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING,  # type: ignore
         WD_PARAGRAPH_ALIGNMENT, )             # type: ignore
 from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
@@ -290,6 +290,8 @@ class HtmlConvertDocx(object):  # {{{1
         # block elements
         if elem.name in ("script", "style"):
             return None  # just ignore these elements.
+        elif elem.name == "hr":
+            return self.extract_pagebreak(elem)
         elif elem.name == "dl":
             return self.extract_dldtdd(elem)
         elif elem.name == "ul":
@@ -450,6 +452,12 @@ class HtmlConvertDocx(object):  # {{{1
             src = self.extract_table_cell(cell)
             info("table-%d,%d: %s" % (row, col, src))
             tbl.rows[row].cells[col].text = src
+        return None
+
+    def extract_pagebreak(self, elem: Tag) -> Optional[Text]:  # {{{1
+        if self.para is None:
+            self.para = self.output.add_paragraph()
+        self.para.add_run().add_break(WD_BREAK.PAGE)
         return None
 
     def extract_dldtdd(self, elem: Tag) -> Optional[Text]:  # {{{1
