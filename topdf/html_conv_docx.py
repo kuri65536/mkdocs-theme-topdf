@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
+from docx.blkcntnr import BlockItemContainer  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import (                  # type: ignore
         WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING,  # type: ignore
@@ -26,7 +27,7 @@ from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
 from docx.shared import Mm, Pt, RGBColor  # type: ignore
-from docx.table import Table  # type: ignore
+from docx.table import _Cell, Table  # type: ignore
 
 try:
     from . import common
@@ -295,9 +296,9 @@ class HtmlConvertDocx(object):  # {{{1
         elif elem.name == "dl":
             return self.extract_dldtdd(elem)
         elif elem.name == "ul":
-            return self.extract_list(elem, False, 1)
+            return self.extract_list(elem, False, 1, self.output)
         elif elem.name == "ol":
-            return self.extract_list(elem, True, 1)
+            return self.extract_list(elem, True, 1, self.output)
         elif elem.name == "table":
             return self.extract_table(elem)
         elif elem.name == "details":
@@ -448,10 +449,12 @@ class HtmlConvertDocx(object):  # {{{1
 
         info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
         tbl = self.output.add_table(rows=n_row, cols=n_col)
-        for (row, col), cell in sorted(dct.items(), key=lambda x: x[0]):
-            src = self.extract_table_cell(cell)
-            info("table-%d,%d: %s" % (row, col, src))
-            tbl.rows[row].cells[col].text = src
+        tbl.autofit = False
+        tbl.style = self.style("Table Grid")
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        for (row, col), elem in sorted(dct.items(), key=lambda x: x[0]):
+            cell = tbl.rows[row].cells[col]
+            self.extract_table_cell(elem, cell)
         return None
 
     def extract_pagebreak(self, elem: Tag) -> Optional[Text]:  # {{{1
@@ -463,8 +466,9 @@ class HtmlConvertDocx(object):  # {{{1
     def extract_dldtdd(self, elem: Tag) -> Optional[Text]:  # {{{1
         classes = common.classes_from_prev_sibling(elem)
         if "before-dl-table" not in classes:
-            import pdb
-            pdb.set_trace()
+            warn("can not convert dl tags, "
+                 "docx does not have difinition lists")
+            return None
 
         n_row = n_col = i = 0
         for tag in elem.children:
@@ -485,37 +489,23 @@ class HtmlConvertDocx(object):  # {{{1
         for tag in elem.children:
             if tag.name not in ("dt", "dd"):
                 continue
-            src = self.extract_table_cell(tag)
-            if tag.name == "dt":
+            elif tag.name == "dt":
                 n_row, i = n_row + 1, 0
             else:
                 i += 1
-            debg("dd-%d,%d: %s" % (n_row, i, src))
-            for n, line in enumerate(src.splitlines()):
-                if n == 0:
-                    tbl.rows[n_row].cells[i].paragraphs[0].text = line
-                else:
-                    tbl.rows[n_row].cells[i].add_paragraph(line)
-
+            self.extract_table_cell(tag, tbl.rows[n_row].cells[i])
         if self.style_table_stamps(tbl, classes):
             return None
         self.style_table_width_from(tbl, classes)
         return None
 
     def extract_list(self, elem: Tag, f_number: bool,  # {{{1
-                     level: int) -> Optional[Text]:
-        style_base = "List Number" if f_number else "List Bullet"
-        if level > 1:
-            style = style_base + " %d" % level
-        else:
-            style = style_base
-        style = self.style(style)
-        self.style_exists_or_add_list(self.output, level, style, style_base)
+                     level: int, blk: BlockItemContainer) -> Optional[Text]:
+        info = self.style_list(f_number, level)
         for tag in elem.children:
             if tag.name != "li":
                 continue
-            info = _info_list(f_number, style, level)
-            ret = self.extract_list_subs(None, tag, info)
+            ret = self.extract_list_subs(None, tag, info, blk)
             warn("structure: li : " + ret if len(ret) < 50 else ret[:50])
         self.para = None
         return None
@@ -623,39 +613,54 @@ class HtmlConvertDocx(object):  # {{{1
             #     para = self.output.add_paragraph('')
         return None
 
-    def extract_table_cell(self, node: Tag) -> Text:  # {{{1
-        ret = ""
-        for elem in node:
-            if elem.name is None:
-                ret += elem.string
-            elif elem.name == "br":
-                ret += "\n"
+    def extract_table_cell(self, elem: Tag, cell: _Cell) -> None:  # {{{1
+        # FIXME(shimoda): simplify complex code...
+        para: Optional[Paragraph] = cell.paragraphs[-1]
+        for tag in elem.children:
+            src = ""
+            if tag.name is None:
+                src = tag.string
+                src = src.replace("\n", " ")
+            elif tag.name == "br":
+                src = "\n"
+            elif tag.name in ("p", "div"):
+                if para is None:
+                    para = cell.add_paragraph()
+                self.extract_as_run(para, tag)
+            elif tag.name in ("ul", "ol"):
+                self.extract_list(tag, tag.name == "ol", 1, cell)
+                para = None
+                continue
             else:
-                debg("can't extract %s in a table-cell" % elem.name)
-        return ret
+                debg("can't extract %s in a table-cell" % tag.name)
+                continue
+            if para is None:
+                para = cell.add_paragraph()
+            info("table: %s" % src)  # (row, col, src))
+            para.add_run(src)
 
     def extract_list_subs(self, para: Optional[Paragraph], elem: Tag,  # {{{1
-                          info: _info_list) -> Text:
+                          info: _info_list, blk: BlockItemContainer) -> Text:
         ret = ""
         for tag in elem.children:
             if tag.name in ("p", "div", "ul", "ol"):
                 break
         else:
             if para is None:
-                para = self.output.add_paragraph("", info.style)
+                para = blk.add_paragraph("", info.style)
             return self.extract_as_run(para, elem)
         for tag in elem.children:
             if tag.name in ("ul", "ol"):
-                self.extract_list(tag, tag.name == "ol", info.level + 1)
+                self.extract_list(tag, tag.name == "ol", info.level + 1, blk)
                 para = None
             elif tag.name in ("p", "div"):
-                ret += self.extract_list_subs(para, tag, info)
+                ret += self.extract_list_subs(para, tag, info, blk)
             elif tag.name is None:
                 src = tag.string
                 src = src.replace("\n", " ")
                 if len(src.strip()) > 0:
                     if para is None:
-                        para = self.output.add_paragraph("", info.style)
+                        para = blk.add_paragraph("", info.style)
                     para.add_run(src)
                     ret += src
             else:
@@ -740,6 +745,16 @@ class HtmlConvertDocx(object):  # {{{1
         sty = doc.styles.add_style(tgt, WD_STYLE_TYPE.PARAGRAPH)
         sty.base_style = doc.styles[src]
         sty.paragraph_format.left_indent = Mm(15 + 10 * (lvl - 1))
+
+    def style_list(self, f_number: bool, level: int) -> _info_list:  # {{{1
+        style_base = "List Number" if f_number else "List Bullet"
+        if level > 1:
+            style = style_base + " %d" % level
+        else:
+            style = style_base
+        style = self.style(style)
+        self.style_exists_or_add_list(self.output, level, style, style_base)
+        return _info_list(f_number, style, level)
 
 
 def main() -> int:  # {{{1

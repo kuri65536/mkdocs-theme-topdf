@@ -295,7 +295,7 @@ sample
 
 
 
-### 4.12. **Under construction** list in tables <!-- {{{1 -->
+### 4.12. list in tables <!-- {{{1 -->
 - sample markup::
 
 ```
@@ -327,6 +327,24 @@ row 2
 : col3
 
 
+
+
+### 4.13. tables <!-- {{{1 -->
+- sample markup::
+
+```
+aaa | bbb | ccc
+----|-----|-----
+ddd | eee | fff
+ggg | hh<br>hh | iii
+jjj | kkk | lll
+```
+
+aaa | bbb | ccc
+----|-----|-----
+ddd | eee | fff
+ggg | hh<br>hh | iii
+jjj | kkk | lll
 
 
 ### 4.99. not supported expressions <!-- {{{1 -->
