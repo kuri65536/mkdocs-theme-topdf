@@ -36,14 +36,14 @@ Japan style<br>Technical Report
 this is a sample of japan style technical report.
 
 
-2. Conclusion
+2. (Conclusion)
 --------------------------
 - this is a sample of japan style technical report.
 - include edit/ check/ approve stamps.
 - include TOC styles with page outputs.
 
 
-3. Contents
+3. Con\\tents
 --------------------------
 [TOC]
 
@@ -51,6 +51,11 @@ this is a sample of japan style technical report.
 
 4. Features of this plugin
 --------------------------
+
+### 4.1. Script for dl-dt-dd tables <!-- {{{1 -->
+- convert dl-dt-dd markup to tables
+- dl will be specified by previous siblings with class `before-dl-tables`
+
 
 ### 4.2. Script and Styles for stamps <!-- {{{1 -->
 - made by a dl-dt-dd markup in markdown, made by 1dt, 3dd.
@@ -268,11 +273,66 @@ sample
     at `element.querySelector()` functions.
 
 
+<!-- ### 4.9. (under-construction) Styles for multi-page tables {{{1
+
+number | content
+-------|--------
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+1 | a
+-->
+
+
+
 5. Demo <!-- {{{1 -->
 --------------------------
 ![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
 *screenshot in pdf viewer*
 
+T.B.D - screenshot in libreoffice
 
 
 6. History <!-- {{{1 -->
@@ -285,6 +345,36 @@ dummy text for attr-lists
 
 version
 : desc
+
+1.0.0
+: update to github/ nested lists/ hr as page-breaks
+
+0.9.6
+: enable inline elements: comments, em, br, strong or etc...
+
+0.9.5
+: support embedded images.
+
+0.9.4
+: enable ooxml fields: TOC, page numbers, bookmarks
+
+0.9.3
+: borders on code blocks/ control tables width/ floating rectangles on header
+
+0.9.2
+: borders on code blocks/ control tables width.
+
+0.9.1
+: enable document numbers on header
+
+0.9.0
+: append docx backend by python-docx
+
+0.5.1
+: fixed multiple `<tbody>` element in dl-tables.
+
+0.5.0
+: add a script: fix the mkdocs invalid html-id to prevent paged-js exceptions.
 
 0.4.0
 : append CSS-counters for figures and tables.

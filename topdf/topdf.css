@@ -69,6 +69,11 @@ td, th {
     border: 1pt solid #000;
     padding: 1.0mm;
 }
+th > ol, th > ul, th > dl, td > ol, td > ul, td > dl {
+    /* remove sane list margins, just hold td, th paddings */
+    margin-top: 0mm;
+    margin-bottom: 0mm;
+}
 ul {
     padding-left: 1.1em;
     margin: 0 0 0 0;
@@ -88,6 +93,9 @@ img {
     hr {
         border: none;
         page-break-after: always;
+    }
+    tr {  /* table headers after page breaks */
+        --pagedjs-repeat-header: all;
     }
 
     /* document number for paged.js {{{1 */
