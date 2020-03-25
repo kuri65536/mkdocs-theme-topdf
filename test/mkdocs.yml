@@ -1,6 +1,6 @@
 site_name: the test document
-theme:
-    name: topdf
+theme: topdf
+use_directory_urls: False
 
 nav:
     - readme.md

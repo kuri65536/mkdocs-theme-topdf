@@ -7,7 +7,7 @@ def readme():
         return f.read()
 
 
-VERSION = '0.5.0'
+VERSION = '1.0.0'
 
 long_description = (
     "This is a mkdocs theme, "
@@ -31,6 +31,9 @@ setup(
             'topdf = topdf',
         ]
     },
+    require=["mkdocs",
+             "python-docx",
+             ],
     long_description_content_type='text/markdown',
     long_description=long_description + "\n\n" + readme(),
     zip_safe=False

@@ -10,6 +10,7 @@ Prerequiresites/ Dependency
 This plugin aim to use these softwares
 
 - mkdocs (convert markdown to html)
+- python-docx (to generate docx)
 - paged.js (to generate pdf, page borders and page headers)
 - node.js (to generate pdf, for pagedjs-cli)
 
@@ -76,6 +77,13 @@ theme:
 ### write markdown
 write your document
 
+
+### convert to docx <!-- {{{1 -->
+```bash
+$ /path/to/python -m topdf site/your/document.html -o document.docx
+```
+
+
 ### convert with paged.js
 
 ```bash
@@ -115,7 +123,10 @@ please see [the report sample](test/docs/report-3stamps.md)
 
 FAQ
 --------------------------
-T.B.D
+can not open docx in AbiWord
+
+: In my experience, AbiWord can not open python-docx tables,  
+    please use LibreOffice. this is an AbiWord limitation.
 
 
 
@@ -126,6 +137,39 @@ History <!-- {{{1 -->
 
 version
 : desc
+
+1.0.0
+: update to github/ nested lists/ hr as page-breaks
+
+0.9.6
+: enable inline elements: comments, em, br, strong or etc...
+
+0.9.5
+: support embedded images.
+
+0.9.4
+: enable ooxml fields: TOC, page numbers, bookmarks
+
+0.9.3
+: borders on code blocks/ control tables width/ floating rectangles on header
+
+0.9.2
+: borders on code blocks/ control tables width.
+
+0.9.1
+: enable document numbers on header
+
+0.9.0
+: append docx backend by python-docx
+
+0.5.1
+: fixed multiple `<tbody>` element in dl-tables.
+
+0.5.1
+: fixed multiple `<tbody>` element in dl-tables.
+
+0.5.0
+: add a script: fix the mkdocs invalid html-id to prevent paged-js exceptions.
 
 0.4.0
 : append CSS-counters for figures and tables.

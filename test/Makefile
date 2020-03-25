@@ -3,11 +3,11 @@ test: readme.pdf
 pagedjs:=./node_modules/.bin/pagedjs-cli --outline-tags h2,h3,h4,h5,h6
 
 ### readme.pdf
-readme.pdf: site/readme/index.html
+readme.pdf: site/readme.html
 	# wkhtmltopdf $(opt_pdf) $^ $@
 	$(pagedjs) $^ -o $@
 
-site/readme/index.html: docs/readme.md $(venv)mkdocs
+site/readme.html: docs/readme.md $(venv)mkdocs
 	$(venv)mkdocs build
 
 docs/readme.md:
@@ -17,10 +17,19 @@ docs/readme.md:
 
 
 ### report-3stamps.pdf
-report-3stamps.pdf: site/report-3stamps/index.html
+report-3stamps.pdf: site/report-3stamps.html
 	$(pagedjs) $^ -o $@
 
-site/report-3stamps/index.html: docs/report-3stamps.md $(venv)mkdocs
+site/report-3stamps.html: docs/report-3stamps.md $(venv)mkdocs
+	$(venv)mkdocs build
+
+
+
+### report-docx.docx
+report-docx.docx: site/report-docx.html
+	./venv/bin/python ../topdf/html_conv_docx.py $^ -o $@
+
+site/report-docx.html: docs/report-docx.md $(venv)mkdocs
 	$(venv)mkdocs build
 
 
