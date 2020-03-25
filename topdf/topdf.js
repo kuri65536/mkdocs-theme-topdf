@@ -28,8 +28,10 @@ function dldtdd_tables() {
             } else if (elm.nodeName == "DT" && f_head == 0) {
                 f_head += 1;
             } else if (elm.nodeName == "DT") {
-                var tbody = document.createElement("tbody")
-                tbl.appendChild(tbody);
+                if (f_head == 1) {
+                    var tbody = document.createElement("tbody")
+                    tbl.appendChild(tbody);
+                }
                 tr = document.createElement("tr")
                 tbody.appendChild(tr);
                 f_head += 1;
