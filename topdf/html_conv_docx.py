@@ -187,31 +187,10 @@ class HtmlConvertDocx(object):  # {{{1
     def header_set(self, src: Text) -> None:  # {{{1
         para = self.output.sections[0].header.paragraphs[0]
         para.add_run(src + "( ")
-        self.add_field(para, "PAGE")
+        common.docx_add_field(para, "PAGE", None)
         para.add_run(" / ")
-        self.add_field(para, "NUMPAGES")
+        common.docx_add_field(para, "NUMPAGES", None)
         para.add_run(" )")
-
-    def add_field(self, para: Paragraph, instr: Text) -> None:  # {{{1
-        r = para.add_run("")._r
-        fld = OxmlElement('w:fldChar')
-        fld.set(qn('w:fldCharType'), "begin")
-        r.append(fld)
-
-        r = para.add_run("")._r
-        cmd = OxmlElement('w:instrText')
-        cmd.text = instr
-        r.append(cmd)
-
-        r = para.add_run("")._r
-        fld = OxmlElement('w:fldChar')
-        fld.set(qn('w:fldCharType'), "separate")
-        r.append(fld)
-
-        r = para.add_run("")._r
-        fld = OxmlElement('w:fldChar')
-        fld.set(qn('w:fldCharType'), "end")
-        r.append(fld)
 
     def write_out(self) -> None:
         info("structure save")
@@ -279,7 +258,7 @@ class HtmlConvertDocx(object):  # {{{1
             return None
         if "toc" in classes:
             para = self.output.add_paragraph()
-            self.add_field(para, r'TOC \o "1-9" \h')
+            common.docx_add_field(para, r'TOC \o "1-9" \h', None)
             para = self.para = self.output.add_paragraph()
             return None
 
@@ -304,9 +283,9 @@ class HtmlConvertDocx(object):  # {{{1
         elif elem.name == "details":
             return self.extract_details(elem)
         elif elem.name == "img":
-            return self.extract_img(elem)
+            return self.extract_img(elem, para)
         elif elem.name == "svg":
-            return self.extract_svg(elem)
+            return self.extract_svg(elem, para)
         elif elem.name in ("h1", "h2", "h3", "h4", "h5", "h6", ):
             return self.extract_title(elem)
         elif elem.name in ("pre", "code"):
@@ -343,16 +322,25 @@ class HtmlConvertDocx(object):  # {{{1
         return ret
 
     def extract_em(self, elem: Tag, para: Paragraph) -> Optional[Text]:  # {{{1
+        def add_para() -> Paragraph:
+            style = self.style("Caption")
+            self.para = self.output.add_paragraph("", style)
+            return self.para
         classes = elem.attrs.get("class", [])
         if "table-tag" in classes:
-            # TODO(shimoda): caption to `caption-table` style
-            self.para = self.output.add_paragraph(elem.text, style="Caption")
+            common.docx_add_caption(add_para(), elem.text, "Table")
             return None
+        if common.has_prev_sibling(elem, "img", "svg"):
+            common.docx_add_caption(add_para(), elem.text, "Figure")
+            return None
+        if common.has_next_table(elem):
+            common.docx_add_caption(add_para(), elem.text, "Table")
+            return None
+
+        # TODO(shimoda): style for the top-level emphasis
         if para is None:
-            # TODO(shimoda): style for the top-level emphasis
-            self.output.add_paragraph(elem.text)
-        else:
-            para.add_run(elem.text, style="Emphasis")
+            self.para = self.output.add_paragraph()
+        para.add_run(elem.text, style="Emphasis")
         return None
 
     def extract_code(self, elem: Tag, para: Paragraph, pre: bool  # {{{1
@@ -381,6 +369,7 @@ class HtmlConvertDocx(object):  # {{{1
                        ) -> Optional[Text]:
         url = elem.attrs.get("href", "")
         if len(url) < 1:
+            # TODO(shimoda): check `name` attribute for link target.
             return Text(elem.text)
         if not url.startswith("#"):
             # TODO(shimoda): enable external link
@@ -514,7 +503,10 @@ class HtmlConvertDocx(object):  # {{{1
         debg("structure: details: not implemented, skipped...")
         return None
 
-    def extract_img(self, elem: Tag) -> Optional[Text]:  # {{{1
+    def extract_img(self, elem: Tag, para: Paragraph  # {{{1
+                    ) -> Optional[Text]:
+        if para is None:
+            para = self.para = self.output.add_paragraph()
         src = elem.attrs.get("src", "")
         if len(src) < 1:
             warn("img-tag: was not specified 'src' attribute, ignored...")
@@ -536,10 +528,13 @@ class HtmlConvertDocx(object):  # {{{1
             args = {"height": Mm(279 - 40)}
         else:
             args = {}
-        self.output.add_picture(fname, **args)
+        para.add_run().add_picture(fname, **args)
         return None
 
-    def extract_svg(self, elem: Tag) -> Optional[Text]:  # {{{1
+    def extract_svg(self, elem: Tag, para: Paragraph  # {{{1
+                    ) -> Optional[Text]:
+        if para is None:
+            para = self.para = self.output.add_paragraph()
         dname, fname = "tmp", ""
         if not os.path.exists(dname):
             os.mkdir(dname)
@@ -549,7 +544,7 @@ class HtmlConvertDocx(object):  # {{{1
             fp.write(Text(elem))
         info("structure: svg: is not supported by python-docx, %s" % fname)
         # TODO(shimoda): import as xml.
-        # self.output.add_picture(fname)
+        # para.add_run().add_picture(fname, **args)
         return None
 
     def extract_title(self, elem: Tag) -> Optional[Text]:  # {{{1
@@ -598,7 +593,7 @@ class HtmlConvertDocx(object):  # {{{1
             return None
         para = None
         for elem in node.children:
-            ret = self.extract_element(elem, self.para)
+            ret = self.extract_element(elem, para)
             if isinstance(ret, Text):
                 empty = ret.strip("\n")
                 if len(empty) < 1:
@@ -609,8 +604,9 @@ class HtmlConvertDocx(object):  # {{{1
                     para.add_run(ret)
             elif ret is not None:
                 self.extract_para(elem, level + 1)
-            # else:
-            #     para = self.output.add_paragraph('')
+            else:
+                if para != self.para:
+                    para = self.para
         return None
 
     def extract_table_cell(self, elem: Tag, cell: _Cell) -> None:  # {{{1

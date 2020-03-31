@@ -7,9 +7,12 @@
 from logging import (error as eror, warning as warn, )
 import os
 from tempfile import NamedTemporaryFile as Temporary
-from typing import (Iterable, List, Text, Tuple, )
+from typing import (Dict, Iterable, List, Optional, Text, Tuple, )
 
+from docx.oxml import OxmlElement  # type: ignore
+from docx.oxml.ns import qn  # type: ignore
 from docx.shared import Mm  # type: ignore
+from docx.text.paragraph import Paragraph  # type: ignore
 from bs4.element import Tag  # type: ignore
 import get_image_size  # type: ignore
 
@@ -25,6 +28,10 @@ if False:
     List
 
 
+class glb:  # {{{1
+    numbers_of_captions: Dict[Text, int] = {}
+
+
 class ParseError(Exception):  # {{{1
     pass
 
@@ -34,6 +41,37 @@ def has_class(tag: Tag, name: Text) -> bool:  # {{{1
         return False
     ret: List[Text] = tag.attrs.get("class", [])
     return name in ret
+
+
+def has_prev_sibling(target: Tag, *tags: Text) -> bool:  # {{{1
+    for elem in target.previous_siblings:
+        if elem.name is None:
+            continue
+        if elem.name in tags:
+            return True
+        break
+    return False
+
+
+def has_next_table(target: Tag) -> bool:  # {{{1
+    for elem in target.next_siblings:
+        if elem.name is None:
+            continue
+        if elem.name == "table":
+            return True
+        break
+    parent = target.parent
+    if parent is None:
+        return False
+    for elem in parent.next_siblings:
+        if elem.name is None:
+            continue
+        if elem.name == "p":
+            cls = elem.attrs.get("class", [])
+            if "before-dl-table" in cls:
+                return True
+        break
+    return False
 
 
 def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
@@ -153,6 +191,151 @@ def dot_to_mm(n: int) -> int:  # {{{1
     inch = n / 72         # dpi -> inch
     mm = Mm(inch * 25.4)  # inch -> Mm
     return mm  # type: ignore
+
+
+def docx_add_field(para: Paragraph, instr: Text, now: Optional[Text]  # {{{1
+                   ) -> None:
+    r = para.add_run("")._r
+    fld = OxmlElement('w:fldChar')
+    fld.set(qn('w:fldCharType'), "begin")
+    r.append(fld)
+
+    r = para.add_run("")._r
+    cmd = OxmlElement('w:instrText')
+    cmd.text = instr
+    r.append(cmd)
+
+    r = para.add_run("")._r
+    fld = OxmlElement('w:fldChar')
+    fld.set(qn('w:fldCharType'), "separate")
+    r.append(fld)
+
+    if now is not None:
+        para.add_run(now)
+
+    r = para.add_run("")._r
+    fld = OxmlElement('w:fldChar')
+    fld.set(qn('w:fldCharType'), "end")
+    r.append(fld)
+
+
+def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
+                     ) -> None:
+    """
+        <w:p><w:pPr>
+            <w:pStyle w:val="Normal"/><w:bidi w:val="0"/><w:jc w:val="left"/>
+            <w:rPr></w:rPr></w:pPr>
+          <w:r><mc:AlternateContent><mc:Choice Requires="wps">
+            <w:drawing>
+            <wp:anchor behindDoc="0" distT="0" distB="0" distL="0"
+                       distR="0" simplePos="0" locked="0" layoutInCell="1"
+                       allowOverlap="1" relativeHeight="2">
+              <wp:simplePos x="0" y="0"/>
+              <wp:positionH relativeFrom="column">
+                <wp:align>center</wp:align></wp:positionH>
+              <wp:positionV relativeFrom="paragraph">
+                <wp:posOffset>635</wp:posOffset></wp:positionV>
+              <wp:extent cx="5409565" cy="1374140"/>
+              <wp:effectExtent l="0" t="0" r="0" b="0"/>
+              <wp:wrapSquare wrapText="largest"/>
+              <wp:docPr id="1" name="Frame1"/>
+              <a:graphic
+               xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                <a:graphicData
+       uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                  <wps:wsp><wps:cNvSpPr txBox="1"/>
+                    <wps:spPr>
+                      <a:xfrm><a:off x="0" y="0"/>
+                        <a:ext cx="5409565" cy="1374140"/>
+                      </a:xfrm>
+                      <a:prstGeom prst="rect"/>
+                    </wps:spPr>
+                    <wps:txbx><w:txbxContent>
+                      <w:p>
+                        <w:pPr><w:pStyle w:val="Figure"/>
+                               <w:bidi w:val="0"/>
+                               <w:spacing w:before="120" w:after="120"/>
+                               <w:jc w:val="left"/>
+                               <w:rPr></w:rPr>
+                        </w:pPr>
+                        <w:r><w:drawing>
+                          <wp:inline distT="0" distB="0" distL="0" distR="0">
+                          <wp:extent cx="5409565" cy="1089660"/>
+                          <wp:effectExtent l="0" t="0" r="0" b="0"/>
+                          <wp:docPr id="2" name="Image1" descr=""></wp:docPr>
+                          <wp:cNvGraphicFramePr>
+                            <a:graphicFrameLocks
+                xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+                                                           noChangeAspect="1"/>
+                        </wp:cNvGraphicFramePr>
+                        <a:graphic
+               xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                                <a:graphicData
+                uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                                    <pic:pic
+          xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                          <pic:nvPicPr>
+                            <pic:cNvPr id="2" name="Image1" descr="">
+                            </pic:cNvPr>
+                            <pic:cNvPicPr>
+                              <a:picLocks noChangeAspect="1"
+                                          noChangeArrowheads="1"/>
+                            </pic:cNvPicPr>
+                          </pic:nvPicPr>
+                          <pic:blipFill>
+                            <a:blip r:embed="rId2"></a:blip>
+                            <a:stretch><a:fillRect/></a:stretch>
+                          </pic:blipFill>
+                          <pic:spPr bwMode="auto">
+                            <a:xfrm><a:off x="0" y="0"/>
+                                    <a:ext cx="5409565" cy="1089660"/>
+                            </a:xfrm>
+                            <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                          </pic:spPr>
+                        </pic:pic></a:graphicData> </a:graphic>
+                        </wp:inline></w:drawing>
+                        </w:r>
+            <w:r><w:rPr><w:vanish/></w:rPr><w:br/></w:r>
+
+            <!-- core part -->
+            <w:r><w:t xml:space="preserve">Figure </w:t></w:r>
+            <w:r><w:fldChar w:fldCharType="begin"></w:fldChar></w:r>
+            <w:r><w:instrText> SEQ Figure \* ARABIC</w:instrText></w:r>
+            <w:r><w:fldChar w:fldCharType="separate"/></w:r>
+            <w:r><w:t>1</w:t></w:r>
+            <w:r><w:fldChar w:fldCharType="end"/></w:r>
+            <w:r><w:t>.  aaa</w:t></w:r>
+
+            </w:p>
+          </w:txbxContent></wps:txbx>
+          <wps:bodyPr anchor="t" lIns="0" tIns="0" rIns="0" bIns="0">
+            <a:noAutofit/></wps:bodyPr>
+        </wps:wsp>
+        </a:graphicData></a:graphic></wp:anchor>
+        </w:drawing></mc:Choice><mc:Fallback>
+        <w:pict><v:rect style="position:absolute;rotation:0;width:425.95pt;
+                               height:108.2pt;mso-wrap-distance-left:0pt;
+                               mso-wrap-distance-right:0pt;
+                               mso-wrap-distance-top:0pt;
+                               mso-wrap-distance-bottom:0pt;
+                               margin-top:0pt;
+                               mso-position-vertical:top;
+                               mso-position-vertical-relative:text;
+                               margin-left:28pt;
+                               mso-position-horizontal:center;
+                               mso-position-horizontal-relative:text">
+          <v:textbox...
+    """
+    if caption not in glb.numbers_of_captions:
+        glb.numbers_of_captions[caption] = 1
+    else:
+        glb.numbers_of_captions[caption] += 1
+    n = glb.numbers_of_captions[caption]
+
+    # TODO(shimoda): surround figure by frame
+    para.add_run(caption + " ")  # r:vanish??
+    docx_add_field(para, r"SEQ %s \* ARABIC" % caption, "%d" % n)
+    para.add_run(". " + title)
 
 
 # {{{1 end of file

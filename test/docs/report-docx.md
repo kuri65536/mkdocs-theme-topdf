@@ -188,7 +188,7 @@ sample page break is here:
 ---
 
 
-### 4.7. **Under construction** Styles for auto-numbered images and tables <!-- {{{1 -->
+### 4.7. Styles for auto-numbered images and tables <!-- {{{1 -->
 figure or table captions can be described with `em` tags.  
 
 ```css
@@ -213,6 +213,9 @@ and [Demo](#demo).
 </svg>
 *sample svg part2*
 
+
+*sample table*
+
 <p class="before-dl-table table3-3-3"></p>
 
 sample
@@ -222,8 +225,6 @@ sample
 sample
 : 1
 : 2
-
-*sample table*
 
 
 ### 4.8. Convert anchors to docx bookmarks <!-- {{{1 -->
@@ -345,6 +346,11 @@ aaa | bbb | ccc
 ddd | eee | fff
 ggg | hh<br>hh | iii
 jjj | kkk | lll
+
+
+### 4.14. **Under construction** Process images or figures <!-- {{{1 -->
+- TODO(shimoda): extract text-encoded images.
+- TODO(shimoda): resize images to fit the document.
 
 
 ### 4.99. not supported expressions <!-- {{{1 -->
