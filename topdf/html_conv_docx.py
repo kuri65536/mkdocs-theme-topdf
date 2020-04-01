@@ -9,7 +9,6 @@ import logging
 from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
 import os
-import sys
 from tempfile import NamedTemporaryFile as Temporary
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
@@ -31,8 +30,10 @@ from docx.table import _Cell, Table  # type: ignore
 
 try:
     from . import common
+    from . import options
 except ImportError:
     import common  # type: ignore
+    import options  # type: ignore
 
 
 if False:
@@ -192,9 +193,8 @@ class HtmlConvertDocx(object):  # {{{1
         common.docx_add_field(para, "NUMPAGES", None)
         para.add_run(" )")
 
-    def write_out(self) -> None:
+    def write_out(self, fname: Text) -> None:
         info("structure save")
-        fname = 'temp.docx'
         self.output.save(fname)
 
         doc = Document(fname)
@@ -754,14 +754,14 @@ class HtmlConvertDocx(object):  # {{{1
 
 
 def main() -> int:  # {{{1
+    opts = options.parse()
     logging.basicConfig(level=logging.INFO)
 
     common.init()
-    opts = sys.argv[1:]
-    data = open(opts[0]).read()
-    prog = HtmlConvertDocx(opts[0])
+    data = open(opts.fname_in).read()
+    prog = HtmlConvertDocx(opts.fname_in)
     prog.on_post_page(data, {})
-    prog.write_out()
+    prog.write_out(opts.fname_out)
     return 0
 
 
