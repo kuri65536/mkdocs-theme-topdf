@@ -6,6 +6,7 @@
 #
 from logging import (error as eror, warning as warn, )
 import os
+import sys
 from tempfile import NamedTemporaryFile as Temporary
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, )
 
@@ -193,6 +194,19 @@ def dot_to_mm(n: int) -> int:  # {{{1
     return mm  # type: ignore
 
 
+def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
+    if dot_to_mm(w) > Mm(210 - 40):
+        args = {"width": Mm(210 - 40)}
+        if dot_to_mm(h) > Mm(279 - 40):
+            if h > w:
+                args = {"height": Mm(279 - 40)}
+    elif dot_to_mm(h) > Mm(279 - 40):
+        args = {"height": Mm(279 - 40)}
+    else:
+        args = {}
+    return args
+
+
 def docx_add_field(para: Paragraph, instr: Text, now: Optional[Text]  # {{{1
                    ) -> None:
     r = para.add_run("")._r
@@ -337,6 +351,20 @@ def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
     docx_add_field(para, r"SEQ %s \* ARABIC" % caption, "%d" % n)
     para.add_run(". " + title)
 
+
+def main(args: List[Text]) -> int:  # {{{1
+    fname = args[1]
+    size = image_width_and_height(fname)
+    print("%s->%s" % (fname, size))
+    size2 = tuple(dot_to_mm(i) for i in size)
+    print("%s->%s" % (fname, size2))
+    argx = dot_to_page(size2[0], size2[1])
+    print("%s->%s" % (fname, argx))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
 
 # {{{1 end of file
 # vi: ft=python:fdm=marker

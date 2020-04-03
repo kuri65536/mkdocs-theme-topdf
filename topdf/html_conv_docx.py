@@ -518,16 +518,7 @@ class HtmlConvertDocx(object):  # {{{1
 
         # FIXME(shimoda): sizing is to more flexible.
         w, h = common.image_width_and_height(fname)
-        if common.dot_to_mm(w) > Mm(210 - 40):
-            if common.dot_to_mm(h) > Mm(279 - 40):
-                if w > h:
-                    args = {"width": Mm(210 - 40)}
-                else:
-                    args = {"height": Mm(279 - 40)}
-        elif common.dot_to_mm(h) > Mm(279 - 40):
-            args = {"height": Mm(279 - 40)}
-        else:
-            args = {}
+        args = common.dot_to_page(w, h)
         para.add_run().add_picture(fname, **args)
         return None
 
@@ -696,6 +687,19 @@ class HtmlConvertDocx(object):  # {{{1
             col.width = wid
         row = tbl.rows[0]
         row.height = Mm(20)
+
+        n = 0
+        for para in row.cells[0].paragraphs:
+            n += 1
+        if n == 1:
+            # style up <dt>subtitle<br>title</dt>
+            para = row.cells[0].paragraphs[-1]
+            lines = para.text.split("\n")
+            if len(lines) < 2:
+                para.style = self.output.styles["Title"]
+                return True
+            para.text = lines[0]
+            para = row.cells[0].add_paragraph("\n".join(lines[1:]))
 
         for n, para in enumerate(row.cells[0].paragraphs):
             if n == 0:
