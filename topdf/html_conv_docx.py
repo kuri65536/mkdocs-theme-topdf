@@ -605,11 +605,14 @@ class HtmlConvertDocx(object):  # {{{1
         para: Optional[Paragraph] = cell.paragraphs[-1]
         for tag in elem.children:
             src = ""
+            try:
+                self.extract_inlines(tag, para)
+                continue
+            except common.ParseError:
+                pass
             if tag.name is None:
                 src = tag.string
                 src = src.replace("\n", " ")
-            elif tag.name == "br":
-                src = "\n"
             elif tag.name in ("p", "div"):
                 if para is None:
                     para = cell.add_paragraph()

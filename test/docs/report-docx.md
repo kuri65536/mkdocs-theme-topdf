@@ -368,18 +368,17 @@ jjj | kkk | lll
 --------------------------
 <em class="table-tag">Revision History</em>
 
-
-dummy text for attr-lists
+<!-- dummy paragraph -->
 {: .before-dl-table .table2-8 }
 
 version
-: desc
+: descriptions
 
 0.5.1
-: fixed multiple `<tbody>` element in 
+: fixed multiple `<tbody>` elements in dl-tables.
 
 0.5.0
-: add a script: fix the mkdocs invalid html-id to prevent paged-js exceptions.
+: add a script: fix the mkdocs invalid html-id to prevent paged.js exceptions.
 
 0.4.0
 : append CSS-counters for figures and tables.
