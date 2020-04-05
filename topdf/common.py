@@ -13,7 +13,7 @@ from typing import (Callable, Dict, Iterable, List, Optional, Text, Tuple, )
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import (                  # type: ignore
-        WD_LINE_SPACING,  # type: ignore
+        WD_COLOR_INDEX, WD_LINE_SPACING,  # type: ignore
         WD_PARAGRAPH_ALIGNMENT, )             # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
@@ -420,10 +420,11 @@ class Styles(object):  # {{{1
             pBdr.append(b)
 
     @style("CodeChars")  # {{{1
-    def init4(self, doc: Document, name: Text) -> Text:
+    def init_codechars(self, doc: Document, name: Text) -> Text:
         fmt = doc.styles.add_style(name, WD_STYLE_TYPE.CHARACTER)
-        # TODO(shimoda): CodeChars
-        fmt
+        fmt.font.name = "SourceCodePro"
+        fmt.font.size = Pt(8)
+        fmt.font.highlight_color = WD_COLOR_INDEX.YELLOW
         return name
 
     @style("Caption")  # {{{1
