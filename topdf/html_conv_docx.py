@@ -19,13 +19,13 @@ from docx import Document  # type: ignore
 from docx.blkcntnr import BlockItemContainer  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import (                  # type: ignore
-        WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING,  # type: ignore
-        WD_PARAGRAPH_ALIGNMENT, )             # type: ignore
+        WD_ALIGN_PARAGRAPH, WD_BREAK,  # type: ignore
+        )             # type: ignore
 from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
-from docx.shared import Mm, Pt, RGBColor  # type: ignore
+from docx.shared import Mm  # type: ignore
 from docx.table import _Cell, Table  # type: ignore
 
 try:
@@ -40,29 +40,11 @@ if False:
     List
 
 
-class cfg:  # {{{1
-    mode_no_template = True
-
-
 class _info_list:
     def __init__(self, f: bool, s: Text, l: int) -> None:
         self.f_number = f
         self.style = s
         self.level = l
-
-
-style_aliases = {  # {{{1
-    "Heading 1": "Heading1",
-    "Heading 2": "Heading2",
-    "Heading 3": "Heading3",
-    "Heading 4": "Heading4",
-    "Heading 5": "Heading5",
-    "Heading 6": "Heading6",
-
-    "List Bullet": "List",
-    "List Number": "List",
-    "Quote": "Quote",
-}
 
 
 class HtmlConvertDocx(object):  # {{{1
@@ -74,70 +56,14 @@ class HtmlConvertDocx(object):  # {{{1
             src = os.path.realpath(src)
             self.url_target = src
 
-        if cfg.mode_no_template:
-            doc = Document()
-        else:
-            doc = Document("template.docx")
+        doc = Document()
         self.output = doc
         info("structure root")
         self.para: Optional[Paragraph] = None  # doc.add_paragraph('')
         self.header_init()
 
-        if not cfg.mode_no_template:
-            # LibreOffice 6.4 can not save Table Styles properly.
-            doc.styles.add_style("DefaultTable", WD_STYLE_TYPE.TABLE)
-        else:
-            for i in range(1, 10):
-                doc.styles['Heading %d' % i].font.color.rgb = RGBColor(0, 0, 0)
-            # TODO(shimoda): Quote -> smaller font, tight line spacing
-            fmt = doc.styles['Quote'].paragraph_format
-            fmt.left_indent = fmt.right_indent = Mm(10)
-            fmt = doc.styles.add_style('CodeChars', WD_STYLE_TYPE.CHARACTER)
-            # TODO(shimoda): CodeChars
-            # failure code.
-            # st = doc.styles.add_style('Heading2', WD_STYLE_TYPE.PARAGRAPH)
-            # st.base_style = doc.styles["Heading 1"]
-            # st.font.color.rgb = RGBColor(0, 0, 0)
-            fmt = doc.styles['Caption'].paragraph_format
-            fmt.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-
-            # list items indent
-            style = doc.styles['List Bullet'].element.get_or_add_pPr()
-            ind = OxmlElement("w:ind")
-            style.append(ind)
-            ind.set(qn("w:left"), "576")      # - <---hanging---|
-            ind.set(qn("w:hanging"), "200")   # ------left----->|
-
-            # line spacing of TOC
-            for i in range(1, 10):
-                style = doc.styles.add_style(
-                        'Contents %d' % i, WD_STYLE_TYPE.PARAGRAPH
-                        ).paragraph_format
-                style.space_after = Mm(1)
-                style.line_spacing = 1.0
-                style.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
-
-            # styles for stamps
-            style = doc.styles.add_style('Stamps', WD_STYLE_TYPE.PARAGRAPH)
-            style.font.size = Pt(8)
-            style = doc.styles['Subtitle']
-            style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-            style.font.size = Pt(10.5)
-            style.font.color.rgb = RGBColor(0, 0, 0)
-            style = doc.styles['Title']
-            style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            style.font.size = Pt(20)
-            style.font.color.rgb = RGBColor(0, 0, 0)
-            ppr = style.element.get_or_add_pPr()   # remove border
-            seq = ppr.xpath("w:pBdr")
-            if len(seq) > 0:
-                ppr.remove(seq[0])
-
     def header_init(self) -> None:  # {{{1
         sec = self.output.sections[0]
-        # moved to template.docx
-        if not cfg.mode_no_template:
-            return
 
         # page setting
         sec.page_width = Mm(210)
@@ -211,18 +137,6 @@ class HtmlConvertDocx(object):  # {{{1
         dom = soup.find("body")
         self.extract_para(dom, 0)
         return output_content
-
-    def style(self, name: Text) -> Text:  # {{{1
-        if cfg.mode_no_template:
-            return name
-        if name in style_aliases:
-            name = style_aliases[name]
-            if name in self.output.styles:
-                return name
-        warn("can not found style: %s" % name)
-        for style in self.output.styles:
-            return style.name  # type: ignore
-        assert False, "can not found style: %s" % name
 
     def extract_is_text(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
         if elem.name is not None:
@@ -323,7 +237,7 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_em(self, elem: Tag, para: Paragraph) -> Optional[Text]:  # {{{1
         def add_para() -> Paragraph:
-            style = self.style("Caption")
+            style = common.docx_style(self.output, "Caption")
             self.para = self.output.add_paragraph("", style)
             return self.para
         classes = elem.attrs.get("class", [])
@@ -351,7 +265,7 @@ class HtmlConvertDocx(object):  # {{{1
         elif pre:
             para.add_run(s)
         else:
-            style = self.style("CodeChars")
+            style = common.docx_style(self.output, "CodeChars")
             para.add_run(s, style=style)
         return None
 
@@ -361,7 +275,7 @@ class HtmlConvertDocx(object):  # {{{1
         if para is None:  # top level
             self.output.add_paragraph(s)  # TODO(shimoda): strong block
         else:
-            style = self.style("Strong")
+            style = common.docx_style(self.output, "Strong")
             para.add_run(s, style=style)
         return None
 
@@ -439,7 +353,7 @@ class HtmlConvertDocx(object):  # {{{1
         info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         tbl.autofit = False
-        tbl.style = self.style("Table Grid")
+        tbl.style = common.docx_style(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         for (row, col), elem in sorted(dct.items(), key=lambda x: x[0]):
             cell = tbl.rows[row].cells[col]
@@ -472,7 +386,7 @@ class HtmlConvertDocx(object):  # {{{1
         info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         tbl.autofit = False
-        tbl.style = self.style("Table Grid")
+        tbl.style = common.docx_style(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         n_row, i = -1, 0
         for tag in elem.children:
@@ -542,7 +456,7 @@ class HtmlConvertDocx(object):  # {{{1
         level = int(elem.name.lstrip("h"))
         ret = Text(elem.text)
         info("structure: hed: " + ret)
-        style = self.style("Heading " + Text(level))
+        style = common.docx_style(self.output, "Heading " + Text(level))
         para = self.output.add_paragraph("", style=style)
 
         html_id = elem.attrs.get("id", "")
@@ -563,7 +477,7 @@ class HtmlConvertDocx(object):  # {{{1
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:  # {{{1
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
-        style = style_aliases["Quote"]
+        style = common.docx_style(self.output, "Quote")
         para = self.output.add_paragraph(ret, style=style)
         self.para = None
         pPr = para._p.get_or_add_pPr()
@@ -755,7 +669,7 @@ class HtmlConvertDocx(object):  # {{{1
             style = style_base + " %d" % level
         else:
             style = style_base
-        style = self.style(style)
+        style = common.docx_style(self.output, style)
         self.style_exists_or_add_list(self.output, level, style, style_base)
         return _info_list(f_number, style, level)
 

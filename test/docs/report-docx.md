@@ -293,7 +293,8 @@ sample
             - ddd2-2-2
         - ddd2-3
 - eeee
-
+    1. eee-1
+    2. eee-2
 
 
 ### 4.12. list in tables <!-- {{{1 -->
@@ -368,7 +369,8 @@ jjj | kkk | lll
 --------------------------
 <em class="table-tag">Revision History</em>
 
-<!-- dummy paragraph -->
+
+dummy text for attr-lists
 {: .before-dl-table .table2-8 }
 
 version

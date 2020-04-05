@@ -8,11 +8,16 @@ from logging import (error as eror, warning as warn, )
 import os
 import sys
 from tempfile import NamedTemporaryFile as Temporary
-from typing import (Dict, Iterable, List, Optional, Text, Tuple, )
+from typing import (Callable, Dict, Iterable, List, Optional, Text, Tuple, )
 
+from docx import Document  # type: ignore
+from docx.enum.style import WD_STYLE_TYPE  # type: ignore
+from docx.enum.text import (                  # type: ignore
+        WD_LINE_SPACING,  # type: ignore
+        WD_PARAGRAPH_ALIGNMENT, )             # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
-from docx.shared import Mm  # type: ignore
+from docx.shared import Mm, Pt, RGBColor  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
 from bs4.element import Tag  # type: ignore
 import get_image_size  # type: ignore
@@ -31,6 +36,8 @@ if False:
 
 class glb:  # {{{1
     numbers_of_captions: Dict[Text, int] = {}
+    styles: List[Text] = []
+    seq: Dict[Text, Callable[['Styles', Document], Text]] = {}
 
 
 class ParseError(Exception):  # {{{1
@@ -350,6 +357,154 @@ def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
     para.add_run(caption + " ")  # r:vanish??
     docx_add_field(para, r"SEQ %s \* ARABIC" % caption, "%d" % n)
     para.add_run(". " + title)
+
+
+def style(name: Text  # {{{1
+          ) -> Callable[[Callable[['Styles', Document, Text], Text]],
+                        Callable[['Styles', Document], Text]]:
+
+    def ret(fn: Callable[['Styles', Document, Text], Text]
+            ) -> Callable[['Styles', Document], Text]:
+
+        def new_fn(self: 'Styles', doc: Document) -> Text:
+            return fn(self, doc, name)
+
+        glb.seq[name] = new_fn
+        return new_fn
+
+    return ret
+
+
+class Styles(object):  # {{{1
+    @classmethod
+    def get(cls, doc: Document, name: Text) -> Text:
+        if name not in glb.seq:
+            raise ParseError("")
+        fn = glb.seq[name]
+        self = Styles()
+        return fn(self, doc)
+
+    def init_heading(self, doc: Document, name: Text) -> Text:  # {{{1
+        # failure code.
+        # st = doc.styles.add_style('Heading2', WD_STYLE_TYPE.PARAGRAPH)
+        # st.base_style = doc.styles["Heading 1"]
+        # st.font.color.rgb = RGBColor(0, 0, 0)
+        doc.styles[name].font.color.rgb = RGBColor(0, 0, 0)
+        return name
+
+    for i in range(1, 10):
+        (style("Heading %d" % i))(init_heading)
+
+    @style("Quote")  # {{{1
+    def init3(self, doc: Document, name: Text) -> Text:
+        # TODO(shimoda): Quote -> smaller font, tight line spacing
+        fmt = doc.styles['Quote'].paragraph_format
+        fmt.left_indent = fmt.right_indent = Mm(10)
+        return name
+
+    @style("CodeChars")  # {{{1
+    def init4(self, doc: Document, name: Text) -> Text:
+        fmt = doc.styles.add_style(name, WD_STYLE_TYPE.CHARACTER)
+        # TODO(shimoda): CodeChars
+        fmt
+        return name
+
+    @style("Caption")  # {{{1
+    def init_caption(self, doc: Document, name: Text) -> Text:
+        fmt = doc.styles['Caption'].paragraph_format
+        fmt.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        return name
+
+    def init_list(self, doc: Document, name: Text) -> Text:  # {{{1
+        # list items indent
+        if name[-1] in "0123456789":
+            n = int(name.split(" ")[-1])
+        else:
+            n = 1
+        if name in doc.styles:
+            style = doc.styles[name]
+        else:
+            org = " ".join(name.split(" ")[:-1])
+            style_org = doc.styles[org]
+            style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+            style.base_style = style_org
+        fmt = style.paragraph_format
+        fmt.left_indent = Mm(15 + 15 * (n - 1))
+        fmt.first_line_indent = Mm(-5)
+
+        """ failed to set
+        ppr= i.element.get_or_add_pPr()
+        ind = OxmlElement("w:ind")
+        ppr.append(ind)
+        ind.set(qn("w:left"), "%d" % Mm(25 + 20 * n))      # - <---hanging---|
+        ind.set(qn("w:hanging"), "%d" % Mm(10 + 20 * n))   # ------left----->|
+        """
+        return name
+
+    (style("List Number"))(init_list)
+    (style("List Bullet"))(init_list)
+    for i in range(2, 10):
+        (style("List Number %d" % i))(init_list)
+        (style("List Bullet %d" % i))(init_list)
+
+    def init_toc(self, doc: Document, name: Text) -> Text:  # {{{1
+        # line spacing of TOC
+        style = doc.styles.add_style(
+                name, WD_STYLE_TYPE.PARAGRAPH
+                ).paragraph_format
+        style.space_after = Mm(1)
+        style.line_spacing = 1.0
+        style.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
+        return name
+
+    for i in range(1, 10):
+        (style("Contents %d" % i))(init_toc)
+
+    @style("Stamps")  # {{{1
+    def init_stamps(self, doc: Document, name: Text) -> Text:
+        # styles for stamps
+        style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        style.font.size = Pt(8)
+        return name
+
+    @style("Subtitle")  # {{{1
+    def init_subtitle(self, doc: Document, name: Text) -> Text:
+        style = doc.styles[name]
+        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        style.font.size = Pt(10.5)
+        style.font.color.rgb = RGBColor(0, 0, 0)
+        return name
+
+    @style("Title")  # {{{1
+    def init_title(self, doc: Document, name: Text) -> Text:
+        style = doc.styles[name]
+        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        style.font.size = Pt(20)
+        style.font.color.rgb = RGBColor(0, 0, 0)
+        ppr = style.element.get_or_add_pPr()   # remove border
+        seq = ppr.xpath("w:pBdr")
+        if len(seq) > 0:
+            ppr.remove(seq[0])
+        return name
+
+
+def docx_style(doc: Document, name: Text) -> Text:  # {{{1
+    if name in glb.styles:
+        return name
+
+    try:
+        name = Styles.get(doc, name)
+        glb.styles.append(name)
+        return name
+    except ParseError:
+        pass
+
+    for style in doc.styles:
+        if name != style.name:
+            continue
+        glb.styles.append(name)
+        return name
+    assert False, "can not found style: %s" % name
 
 
 def main(args: List[Text]) -> int:  # {{{1
