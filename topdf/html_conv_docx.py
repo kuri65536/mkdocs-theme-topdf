@@ -480,16 +480,7 @@ class HtmlConvertDocx(object):  # {{{1
         style = common.docx_style(self.output, "Quote")
         para = self.output.add_paragraph(ret, style=style)
         self.para = None
-        pPr = para._p.get_or_add_pPr()
-        pBdr = OxmlElement('w:pBdr')
-        pPr.append(pBdr)
-        for val in ["left", "right", "top", "bottom"]:
-            b = OxmlElement('w:' + val)
-            b.set(qn('w:val'), 'thinThickLargeGap')
-            b.set(qn('w:sz'), '2')
-            b.set(qn('w:space'), '4')
-            b.set(qn('w:color'), '000000')
-            pBdr.append(b)
+        common.Styles.quote(para)
         return None
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:  # {{{1

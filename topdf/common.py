@@ -397,10 +397,27 @@ class Styles(object):  # {{{1
 
     @style("Quote")  # {{{1
     def init3(self, doc: Document, name: Text) -> Text:
-        # TODO(shimoda): Quote -> smaller font, tight line spacing
+        style = doc.styles['Quote']
+        style.font.name = "SourceCodePro"
+        style.font.size = Pt(8)
+        style.font.italic = False
         fmt = doc.styles['Quote'].paragraph_format
+        fmt.line_spacing = Pt(9)
         fmt.left_indent = fmt.right_indent = Mm(10)
         return name
+
+    @classmethod  # {{{1
+    def quote(self, para: Paragraph) -> None:
+        pPr = para._p.get_or_add_pPr()
+        pBdr = OxmlElement('w:pBdr')
+        pPr.append(pBdr)
+        for val in ["left", "right", "top", "bottom"]:
+            b = OxmlElement('w:' + val)
+            b.set(qn('w:val'), 'thinThickLargeGap')
+            b.set(qn('w:sz'), '2')
+            b.set(qn('w:space'), '4')
+            b.set(qn('w:color'), '000000')
+            pBdr.append(b)
 
     @style("CodeChars")  # {{{1
     def init4(self, doc: Document, name: Text) -> Text:
