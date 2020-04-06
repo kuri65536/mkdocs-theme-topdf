@@ -14,9 +14,15 @@ class Options:
         self.fname_in = ""
         self.fname_out = ""
 
+        self.remove_temporaries = True
+        self.force_offline = False
+
     @classmethod  # copy_from {{{1
     def copy_from(cls, nm: ap.Namespace) -> 'Options':
         ret = Options()
+
+        ret.remove_temporaries = not nm.keep_temporaries
+        ret.force_offline = nm.offline
 
         ret.fname_in = nm.input[0]
         ret.fname_out = nm.output
@@ -39,6 +45,8 @@ class Options:
 def make_parser() -> ap.ArgumentParser:
     ret = ap.ArgumentParser()
     ret.add_argument("-o", "--output", default="", type=Text)
+    ret.add_argument("--keep-temporaries", default=False, action="store_true")
+    ret.add_argument("--offline", default=None, action="store_true")
     ret.add_argument("input", nargs=1, type=Text)
     return ret
 

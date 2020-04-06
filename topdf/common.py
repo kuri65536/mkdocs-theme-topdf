@@ -37,7 +37,8 @@ if False:
 class glb:  # {{{1
     numbers_of_captions: Dict[Text, int] = {}
     styles: List[Text] = []
-    seq: Dict[Text, Callable[['Styles', Document], Text]] = {}
+    seq_styles: Dict[Text, Callable[['Styles', Document], Text]] = {}
+    seq_files: List[Text] = []
 
 
 class ParseError(Exception):  # {{{1
@@ -102,14 +103,14 @@ def is_online_mode() -> bool:  # {{{1
     return False
 
 
-def init() -> None:  # {{{1
+def init(force_offline: bool) -> None:  # {{{1
     global f_not_online
     if f_not_online:
         warn("img-tag: package 'requests' required, "
              "online images will be ignored...")
         return
 
-    if is_online_mode():
+    if force_offline is not True and is_online_mode():
         f_not_online = False
     else:
         warn("img-tag: now in off-line mode, "
@@ -123,6 +124,18 @@ def is_target_in_http(url: Text) -> bool:  # {{{1
     elif url.startswith("https://"):
         return True
     return False
+
+
+def remove_temporaries() -> None:  # {{{1
+    for fname in glb.seq_files:
+        try:
+            os.remove(fname)
+        except:
+            pass
+    try:
+        os.rmdir("tmp")
+    except:
+        pass
 
 
 def download_image(url_doc: Text, src: Text) -> Text:  # {{{1
@@ -174,6 +187,7 @@ def download_image_run(url: Text) -> Text:  # {{{1
                    ) as fp:
         fname = fp.name
         fp.write(resp.content)
+    glb.seq_files.append(fname)
     return fname
 
 
@@ -369,7 +383,7 @@ def style(name: Text  # {{{1
         def new_fn(self: 'Styles', doc: Document) -> Text:
             return fn(self, doc, name)
 
-        glb.seq[name] = new_fn
+        glb.seq_styles[name] = new_fn
         return new_fn
 
     return ret
@@ -378,9 +392,9 @@ def style(name: Text  # {{{1
 class Styles(object):  # {{{1
     @classmethod
     def get(cls, doc: Document, name: Text) -> Text:
-        if name not in glb.seq:
+        if name not in glb.seq_styles:
             raise ParseError("")
-        fn = glb.seq[name]
+        fn = glb.seq_styles[name]
         self = Styles()
         return fn(self, doc)
 

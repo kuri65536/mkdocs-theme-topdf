@@ -447,6 +447,7 @@ class HtmlConvertDocx(object):  # {{{1
                        ) as fp:
             fname = fp.name
             fp.write(Text(elem))
+        common.glb.seq_files.append(fname)
         info("structure: svg: is not supported by python-docx, %s" % fname)
         # TODO(shimoda): import as xml.
         # para.add_run().add_picture(fname, **args)
@@ -669,11 +670,13 @@ def main() -> int:  # {{{1
     opts = options.parse()
     logging.basicConfig(level=logging.INFO)
 
-    common.init()
+    common.init(opts.force_offline)
     data = open(opts.fname_in).read()
     prog = HtmlConvertDocx(opts.fname_in)
     prog.on_post_page(data, {})
     prog.write_out(opts.fname_out)
+    if opts.remove_temporaries:
+        common.remove_temporaries()
     return 0
 
 
