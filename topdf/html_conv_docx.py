@@ -221,8 +221,9 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_br(self, elem: Tag, para: Paragraph) -> Text:  # {{{1
         # sometime bs4 fails to parse `br` tag and surround text.
-        ret = ""
+        n, ret = 0, ""
         for tag in elem.children:
+            n += 1
             content = self.extract_is_text(tag)
             if content is None:
                 continue
@@ -233,6 +234,10 @@ class HtmlConvertDocx(object):  # {{{1
                 if not isinstance(content, Text):
                     continue
             ret += content
+        if n < 1:
+            if para is None:
+                para = self.output.add_paragraph()
+            para.add_run("\n")
         return ret
 
     def extract_em(self, elem: Tag, para: Paragraph) -> Optional[Text]:  # {{{1
@@ -605,18 +610,19 @@ class HtmlConvertDocx(object):  # {{{1
             para = row.cells[0].paragraphs[-1]
             lines = para.text.split("\n")
             if len(lines) < 2:
-                para.style = self.output.styles["Title"]
+                para.style = common.docx_style(self.output, "Title")
                 return True
             para.text = lines[0]
             para = row.cells[0].add_paragraph("\n".join(lines[1:]))
 
         for n, para in enumerate(row.cells[0].paragraphs):
             if n == 0:
-                para.style = self.output.styles["Subtitle"]
+                para.style = common.docx_style(self.output, "Subtitle")
             else:
-                para.style = self.output.styles["Title"]
+                para.style = common.docx_style(self.output, "Title")
         for i in range(1, 4):
-            row.cells[i].paragraphs[0].style = self.output.styles["Stamps"]
+            row.cells[i].paragraphs[0].style = common.docx_style(
+                    self.output, "Stamps")
         return True
 
     def style_table_width_from(self, tbl: Table,  # {{{1
