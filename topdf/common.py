@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
+import base64
 from logging import (error as eror, warning as warn, )
 import os
 import sys
@@ -146,6 +147,8 @@ def download_image(url_doc: Text, src: Text) -> Text:  # {{{1
         fname = download_image_run(src)
     elif src.startswith("file://"):
         fname = src[7:]  # just remove prefix
+    elif src.startswith("data:image/"):
+        fname = download_image_extract(src)
     elif "://" in src:
         eror("img-tag: url was not recognized, ignored...: " + src)
         return ""
@@ -201,6 +204,33 @@ def download_image_unified_http(url: Text, src: Text) -> Text:  # {{{1
     return "/".join(seq)
 
 
+def download_image_extract(url: Text) -> Text:  # {{{1
+    url = url[11:]  # remove "data:image/"
+    if ";" not in url:
+        return ""
+    i = url.index(";")
+    sfx = "." + url[:i]
+    url = url[i:]
+    if "," not in url:
+        return ""
+    i = url.index(",")
+    if not url.startswith(";base64,"):
+        warn("img-tag: now support extract from base64: " + url[:i])
+        return ""
+    url = url[i:]
+    data = base64.b64decode(url)
+
+    dname, fname = "tmp", ""
+    if not os.path.exists(dname):
+        os.mkdir(dname)
+    with Temporary(mode="w+b", dir=dname, suffix=sfx, delete=False
+                   ) as fp:
+        fname = fp.name
+        fp.write(data)
+    glb.seq_files.append(fname)
+    return fname
+
+
 def image_width_and_height(src: Text) -> Tuple[int, int]:  # {{{1
     try:
         return get_image_size.get_image_size(src)  # type: ignore
@@ -210,7 +240,7 @@ def image_width_and_height(src: Text) -> Tuple[int, int]:  # {{{1
 
 
 def dot_to_mm(n: int) -> int:  # {{{1
-    inch = n / 72         # dpi -> inch
+    inch = n / 96         # dpi -> inch
     mm = Mm(inch * 25.4)  # inch -> Mm
     return mm  # type: ignore
 
@@ -224,7 +254,8 @@ def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
     elif dot_to_mm(h) > Mm(279 - 40):
         args = {"height": Mm(279 - 40)}
     else:
-        args = {}
+        args = {"width": dot_to_mm(w),
+                "height": dot_to_mm(h)}
     return args
 
 

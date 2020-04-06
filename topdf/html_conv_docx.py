@@ -96,7 +96,7 @@ class HtmlConvertDocx(object):  # {{{1
         rect.set('ID', 'Shape1')   # _page_border')
         rect.set('stroked', 't')
         rect.set('style', 'position:absolute;'
-                 'margin-left:-5.8pt;margin-top:13.05pt;'
+                 'margin-left:-5.8pt;margin-top:20.0pt;'
                  'width:493.2pt;height:751.15pt')
         wrap = etree.Element('{%s}wrap' % w10)
         wrap.set('type', "none")
@@ -597,10 +597,39 @@ class HtmlConvertDocx(object):  # {{{1
         if "table-3stamps" not in classes:
             return False
         for col, wid in zip(tbl.columns,
-                            [Mm(106), Mm(20), Mm(20), Mm(20)]):
+                            [Mm(114), Mm(20), Mm(20), Mm(20)]):
             col.width = wid
         row = tbl.rows[0]
         row.height = Mm(20)
+        mar = OxmlElement('w:tblCellMar')
+        tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+        tbl._tblPr.append(mar)
+        for ename, val in (('top', '0'), ('bottom', '0'),
+                           ('left', '108'), ('right', '108'), ):
+            i = OxmlElement('w:' + ename)
+            i.set(qn('w:w'), val)
+            i.set(qn('w:type'), 'dxa')
+            mar.append(i)
+        i = OxmlElement('w:tblInd')
+        i.set(qn('w:w'), "-6")
+        i.set(qn('w:type'), 'dxa')
+        mar.append(i)
+        """
+            <w:tbl><w:tblPr>
+              <w:tblStyle w:val="TableGrid"/>
+              <w:tblW w:w="9870" w:type="dxa"/>
+              <w:jc w:val="left"/>
+              <w:tblInd w:w="-6" w:type="dxa"/>
+              <w:tblCellMar>
+                <w:top w:w="0" w:type="dxa"/>
+                <w:left w:w="108" w:type="dxa"/>
+                <w:bottom w:w="0" w:type="dxa"/>
+                <w:right w:w="108" w:type="dxa"/>
+              </w:tblCellMar>
+              <w:tblLook w:lastRow="0"
+                  w:firstRow="1" w:lastColumn="0" w:firstColumn="1"
+                  ...
+        """
 
         n = 0
         for para in row.cells[0].paragraphs:
