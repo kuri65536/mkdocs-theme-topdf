@@ -58,6 +58,9 @@ class HtmlConvertDocx(object):  # {{{1
 
         doc = Document()
         self.output = doc
+        update_fields = OxmlElement("w:updateFields")
+        update_fields.set(qn("w:val"), "true")
+        doc.settings.element.append(update_fields)
         info("structure root")
         self.para: Optional[Paragraph] = None  # doc.add_paragraph('')
         self.header_init()
@@ -172,7 +175,7 @@ class HtmlConvertDocx(object):  # {{{1
             return None
         if "toc" in classes:
             para = self.output.add_paragraph()
-            common.docx_add_field(para, r'TOC \o "1-9" \h', None)
+            common.docx_add_field(para, r'TOC \o "1-9" \h', None, True)
             para = self.para = self.output.add_paragraph()
             return None
 
@@ -295,6 +298,8 @@ class HtmlConvertDocx(object):  # {{{1
             return Text(elem.text)
 
         link = OxmlElement("w:hyperlink")
+        if para is None:
+            para = self.para = self.output.add_paragraph()
         para._p.append(link)
         run = OxmlElement("w:r")
         link.append(run)

@@ -259,11 +259,13 @@ def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
     return args
 
 
-def docx_add_field(para: Paragraph, instr: Text, now: Optional[Text]  # {{{1
-                   ) -> None:
+def docx_add_field(para: Paragraph, instr: Text, now: Optional[Text],  # {{{1
+                   dirty=None) -> None:
     r = para.add_run("")._r
     fld = OxmlElement('w:fldChar')
     fld.set(qn('w:fldCharType'), "begin")
+    if dirty is not None:
+        fld.set(qn('w:dirty'), "true" if dirty else "false")
     r.append(fld)
 
     r = para.add_run("")._r

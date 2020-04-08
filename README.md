@@ -136,7 +136,10 @@ History <!-- {{{1 -->
 {: .before-dl-table .table2-8 }
 
 version
-: desc
+: descriptions
+
+1.0.1
+: enable styles for `code` / reduce file size by styles/ auto numbers
 
 1.0.0
 : update to github/ nested lists/ hr as page-breaks
@@ -161,9 +164,6 @@ version
 
 0.9.0
 : append docx backend by python-docx
-
-0.5.1
-: fixed multiple `<tbody>` element in dl-tables.
 
 0.5.1
 : fixed multiple `<tbody>` element in dl-tables.

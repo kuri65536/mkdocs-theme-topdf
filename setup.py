@@ -7,7 +7,7 @@ def readme():
         return f.read()
 
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 long_description = (
     "This is a mkdocs theme, "
@@ -33,6 +33,9 @@ setup(
     },
     require=["mkdocs",
              "python-docx",
+             "bs4",
+             "requests",
+             "opsdriod-get-image-size",
              ],
     long_description_content_type='text/markdown',
     long_description=long_description + "\n\n" + readme(),
