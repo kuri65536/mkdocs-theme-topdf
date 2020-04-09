@@ -367,6 +367,10 @@ jjj | kkk | lll
     - set paragraph style (vertical-align) to top
 
 
+### 4.16. **(Under construction)** Convert KaTex <!-- {{{1 -->
+- implement convert method of KaTex XML.
+
+
 ### 4.99. not supported expressions <!-- {{{1 -->
 - nested tables.
 

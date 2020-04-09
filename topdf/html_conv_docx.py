@@ -324,11 +324,11 @@ class HtmlConvertDocx(object):  # {{{1
             if tag.name is None:
                 continue
             if tag.name == "thead":
-                warn("structure: tbl: enter thead")
+                info("structure: tbl: enter thead")
                 ret = self.extract_table_tree(tag, 0)
                 continue
             if tag.name == "tbody":
-                warn("structure: tbl: enter tbody")
+                info("structure: tbl: enter tbody")
                 ret2 = self.extract_table_tree(tag, num_row(ret))
                 ret.update(ret2)
                 continue
@@ -414,12 +414,12 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_list(self, elem: Tag, f_number: bool,  # {{{1
                      level: int, blk: BlockItemContainer) -> Optional[Text]:
-        info = self.style_list(f_number, level)
+        list_info = self.style_list(f_number, level)
         for tag in elem.children:
             if tag.name != "li":
                 continue
-            ret = self.extract_list_subs(None, tag, info, blk)
-            warn("structure: li : " + ret if len(ret) < 50 else ret[:50])
+            ret = self.extract_list_subs(None, tag, list_info, blk)
+            info("structure: li : " + ret if len(ret) < 50 else ret[:50])
         self.para = None
         return None
 
@@ -559,9 +559,17 @@ class HtmlConvertDocx(object):  # {{{1
             if tag.name in ("ul", "ol"):
                 self.extract_list(tag, tag.name == "ol", info.level + 1, blk)
                 para = None
+                continue
             elif tag.name in ("p", "div"):
                 ret += self.extract_list_subs(para, tag, info, blk)
-            elif tag.name is None:
+                continue
+
+            try:
+                self.extract_inlines(tag, para)
+                continue
+            except:
+                pass
+            if tag.name is None:
                 src = tag.string
                 src = src.replace("\n", " ")
                 if len(src.strip()) > 0:
@@ -706,9 +714,8 @@ class HtmlConvertDocx(object):  # {{{1
         return _info_list(f_number, style, level)
 
 
-def main() -> int:  # {{{1
-    opts = options.parse()
-    logging.basicConfig(level=logging.INFO)
+def main(opts: options.Options) -> int:  # {{{1
+    logging.basicConfig(level=opts.level_debug)
 
     common.init(opts.force_offline)
     data = open(opts.fname_in).read()
@@ -721,6 +728,7 @@ def main() -> int:  # {{{1
 
 
 if __name__ == "__main__":  # {{{1
-    main()
+    opts = options.parse()
+    main(opts)
 
 # vi: ft=python:fdm=marker

@@ -7,52 +7,23 @@ This Source Code Form is subject to the terms of the Mozilla Public License,
 v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
-from argparse import ArgumentParser
-import logging
 import os
 import subprocess as sp
 import sys
-from typing import List, Text
+from typing import Text
+
+try:
+    from . import options
+    from . import html_conv_docx
+except:
+    import options  # type: ignore
+    import html_conv_docx  # type: ignore
 
 
-class options(object):  # {{{1
+if True:
     cmd_pagedjs = "./node_modules/.bin/pagedjs-cli"
 
-    def __init__(self) -> None:  # {{{1
-        # self.fname_html = ""
-        # self.fname_pdf = ""
-        self.f_setup = False
-        self.f_check = False
-        self.f_test = False
-
-    @classmethod  # parser {{{1
-    def parser(cls) -> ArgumentParser:
-        arg = ArgumentParser()
-        # arg.add_argument("-o", "--output", default="")
-        # arg.add_argument("--override", action="store_true")
-        arg.add_argument("--setup", action="store_true")
-        arg.add_argument("--check", action="store_true")
-        arg.add_argument("--test", action="store_true")
-        # arg.add_argument("input_html", type=Text, nargs="?")
-        return arg
-
-    @classmethod  # help {{{1
-    def help(cls) -> int:
-        arg = cls.parser()
-        arg.print_help()
-        return 1
-
-    @classmethod  # parse {{{1
-    def parse(cls, args: List[Text]) -> 'options':
-        logging.basicConfig(level=logging.DEBUG)
-        ret = options()
-        opts = ret.parser().parse_args(args)
-        # ret.fname_pdf = opts.output
-        # ret.fname_html = opts.input_html
-        ret.f_setup = opts.setup
-        ret.f_check = opts.check
-        ret.f_test = opts.test
-        """
+    """
         # if len(ret.fname_pdf) > 0:
             # TODO(shimoda): auto numbering
             # src = ret.fname_pdf
@@ -68,7 +39,6 @@ class options(object):  # {{{1
             pass
             # ret.fname_pdf = cmn.number_output(opts.override, src, sfx)
         """
-        return ret
 
 
 def setup_pagedjs() -> int:  # {{{1
@@ -112,18 +82,21 @@ def test_pagedjs() -> int:  # {{{1
     return 0
 
 
-def main(args: List[str]) -> int:  # {{{1
-    opts = options.parse(args)
-    if opts.f_setup:
+def main() -> int:  # {{{1
+    opts = options.parse()
+    if opts.f_setup_pagedjs:
         return setup_pagedjs()
-    elif opts.f_check:
+    elif opts.f_check_pagedjs:
         return check_pagedjs()
-    elif opts.f_test:
+    elif opts.f_test_pagedjs:
         return test_pagedjs()
-    return options.help()
+    elif len(opts.fname_in) > 0:
+        return int(html_conv_docx.main(opts))
+    options.make_parser().print_help()
+    return 1
 
 
 if __name__ == "__main__":  # {{{1
-    ret = main(sys.argv[1:])
+    ret = main()
     sys.exit(ret)
 # vi: ft=python:fdm=marker
