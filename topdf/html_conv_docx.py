@@ -665,6 +665,18 @@ class HtmlConvertDocx(object):  # {{{1
         for i in range(1, 4):
             row.cells[i].paragraphs[0].style = common.docx_style(
                     self.output, "Stamps")
+            if "\n" not in row.cells[i].text:
+                tcpr = row.cells[i]._element.get_or_add_tcPr()
+                borders = OxmlElement("w:tcBorders")
+                tcpr.append(borders)
+                bs = OxmlElement("w:tl2br")
+                borders.append(bs)
+                bs.set(qn("w:color"), "000000")
+                bs.set(qn("w:space"), "0")
+                bs.set(qn("w:val"), "single")
+                bs.set(qn("w:sz"), "4")  # 1pt
+                # can not set tl2br in LibreOffice.
+                # this code was confirmed by w:bottom and color 00FF00
         return True
 
     def style_table_width_from(self, tbl: Table,  # {{{1

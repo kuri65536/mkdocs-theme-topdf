@@ -58,10 +58,10 @@ this is a sample of japan style technical report.
 - dl with class `before dl-tables`
 
 
-### 4.2. **Under construction** Script and Styles for stamps <!-- {{{1 -->
+### 4.2. Script and Styles for stamps <!-- {{{1 -->
 - made by a dl-dt-dd markup in markdown, made by 1dt, 3dd.
 - place after an elment have `class="table-3stamps"` .
-- TODO(shimoda): if stamp fields have no `<br>`, the slash line will be insereted.
+- if stamp fields have no `<br>`, the slash line will be insereted.
 - samples:
 
 ```markdown
