@@ -371,6 +371,26 @@ jjj | kkk | lll
 - implement convert method of KaTex XML.
 
 
+### 4.17. **(Under construction)** footnotes2 <!-- {{{1 -->
+- [@R1-1] convert markdown to print.
+- [@R2-1] convert markdown to presentation.
+- [@R2-2] convert images to print/ presentation.
+
+
+- [@S1-1-1] mkdocs (python-markdown)
+- [@S1-1-2] parse HTML and output: beautiful soup4, python-docx
+
+
+- [@S2-1-1] javascript, CSS
+
+
+- [@D1-1-1] script `mkdocs`, setup this plugin.
+- [@D1-1-2] this plugin: topdf/html_conv_docx.p.
+
+
+///Footnotes2 Go Here///
+
+
 ### 4.99. not supported expressions <!-- {{{1 -->
 - nested tables.
 
