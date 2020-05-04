@@ -141,9 +141,9 @@ function controller() {
     div.className = "topdf-ctrl";
     div.innerHTML = '' +
         '<a class="topdf-ctrl-btn" href="javascript:void()">A</a>' +
+        '<a class="topdf-ctrl-btn" href="javascript:void()">V</a>' +
         '<a class="topdf-ctrl-btn" href="javascript:void()">&lt;</a>' +
         '<a class="topdf-ctrl-btn" href="javascript:void()">&gt;</a>' +
-        '<a class="topdf-ctrl-btn" href="javascript:void()">V</a>' +
         '<a class="topdf-ctrl-btn" href="javascript:void()">footnotes2</a>';
 
     var fn_fn2_0 = function (e) {
@@ -171,6 +171,31 @@ function controller() {
             }
         }
     });
+
+    var n_navi = 0;
+    var fn_scr = function (add) {
+        var i = 0;
+        var j = n_navi;
+        n_navi += add;
+        for (var e of document.querySelectorAll(".toc a")) {
+            i += 1;
+            if (i <= j) {continue;}
+            var id_ = e.getAttribute("href");
+            if (!id_) {console.log("not have href: " + e); return;}
+            id_ = id_.substring(1);  // remove "#"
+            e = document.getElementById(id_);
+            if (!e) {console.log("not exists: " + id_); return;}
+            e.scrollIntoView(true);
+            return;
+        }
+        n_navi = i - 1;
+        console.log("over: " + n_navi);
+    };
+
+    var a_u = div.querySelector("a:nth-child(1)");
+    var a_d = div.querySelector("a:nth-child(2)");
+    a_u.addEventListener("click", function (ev) {fn_scr(-1);});
+    a_d.addEventListener("click", function (ev) {fn_scr(1);});
 }
 
 
