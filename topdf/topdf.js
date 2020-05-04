@@ -133,12 +133,54 @@ function fix_mkdocs_ids() {
 }
 
 
+/** <!-- controller {{{1 -->
+ */
+function controller() {
+    var div = document.createElement("div");
+    document.body.append(div);
+    div.className = "topdf-ctrl";
+    div.innerHTML = '' +
+        '<a class="topdf-ctrl-btn" href="javascript:void()">A</a>' +
+        '<a class="topdf-ctrl-btn" href="javascript:void()">&lt;</a>' +
+        '<a class="topdf-ctrl-btn" href="javascript:void()">&gt;</a>' +
+        '<a class="topdf-ctrl-btn" href="javascript:void()">V</a>' +
+        '<a class="topdf-ctrl-btn" href="javascript:void()">footnotes2</a>';
+
+    var fn_fn2_0 = function (e) {
+        e.style.display = "inline";
+        e.style.fontSize = "10pt";  // smaller
+    };
+    var fn_fn2_1 = function (e) {
+        e.style.display = "none";   // disappear
+    };
+    var fn_fn2_2 = function (e) {
+        e.style.display = "inline";
+        e.style.fontSize = "6pt";   // normal
+    };
+
+    var a_fn2 = div.querySelector("a:nth-child(5)");
+    var circum = 0;
+    a_fn2.addEventListener("click", function (ev) {
+        // change CSS
+        var n = circum = (circum + 1) % 3;
+        for (var e of document.querySelectorAll(".footnotes2-ref")) {
+            switch (n) {
+            case 1: fn_fn2_1(e); break;
+            case 2: fn_fn2_2(e); break;
+            default: fn_fn2_0(e); break;  /* case 0: */
+            }
+        }
+    });
+}
+
+
 /* main {{{1 */
 window.addEventListener('load', function() {
     fix_mkdocs_ids();
     dldtdd_tables();
     table_3stamps();
     code_blocks();
+    controller();
 });
 
 /* end of file {{{1

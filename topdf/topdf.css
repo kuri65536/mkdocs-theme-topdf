@@ -86,6 +86,38 @@ img {
     border: 1px solid #ddd;
     border-radius: 4px;
     margin: 1mm auto 1mm auto;
+
+}
+
+/* styles for footnotes2 {{{1
+a.footnotes2-ref {
+    display: none;
+}
+a.footnotes2-ref {
+    font-size: 10pt;
+    float: right;
+}
+*/
+a.footnotes2-ref {
+    font-size: 4pt;
+}
+
+
+/* styles for controller {{{1 */
+div.topdf-ctrl {
+    padding: 6px;
+    background: #FFFA;
+    border: #000A solid 4px;
+    position: fixed;
+    left: 80%; width: 19%;
+    top: 0; height: 20vh;
+}
+a.topdf-ctrl-btn {
+    display: block;
+    clear: both;
+    background: #CCC;
+    border: inset 2px;
+    height: 1em;
 }
 
 /* page breaks {{{1 */
