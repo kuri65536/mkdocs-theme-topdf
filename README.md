@@ -117,7 +117,7 @@ Demo <!-- {{{1 -->
 
 About scripts and styles
 --------------------------
-please see [the report sample](test/docs/report-3stamps.md)
+please see [the report sample](report-3stamps.md)
 
 
 
@@ -137,6 +137,12 @@ History <!-- {{{1 -->
 
 version
 : descriptions
+
+1.1.0
+: append controls for presensation.
+
+1.0.2
+: ignore katex outputs/ start to implement footnotes2.
 
 1.0.1
 : enable styles for `code` / reduce file size by styles/ auto numbers

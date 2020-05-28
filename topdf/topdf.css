@@ -107,18 +107,46 @@ a.footnotes2-ref {
 div.topdf-ctrl {
     padding: 6px;
     background: #FFFA;
-    border: #000A solid 4px;
+    border: #03A9F4AA solid 4px;
     position: fixed;
-    left: 80%; width: 19%;
-    top: 0; height: 20vh;
+    right: 0; width: 6.8em;
+    top: 0; height: 9.7em;
 }
 a.topdf-ctrl-btn {
-    display: block;
-    clear: both;
-    background: #CCC;
-    border: inset 2px;
-    height: 1em;
+    position: absolute;
+    padding: 0.25em 0.5em;
+    text-decoration: none;
+    color: #FFF;
+    background: #03A9F4AA;
+    border: solid 1px #0f9adaaa;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+    min-width: 1.1em;
+    text-align: center;
 }
+
+a.topdf-ctrl-btn:active {
+    border: solid 1px #03A9F4;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+div.topdf-ctrl.topdf-small  { transform: scale(1.0); }
+div.topdf-ctrl.topdf-normal { transform: scale(2.0);
+                              right: 5%; top: 10% !important;}
+div.topdf-ctrl.topdf-large  { transform: scale(3.0);
+                              right: 10%; top: 20% !important;}
+
+a.topdf-ctrl-btn:nth-child(1) { left: 2.6em; top: 0.3em; }
+a.topdf-ctrl-btn:nth-child(2) { left: 2.6em; top: 3.8em; }
+a.topdf-ctrl-btn:nth-child(3) { left: 5.0em; top: 2.0em; }
+a.topdf-ctrl-btn:nth-child(4) { left: 0.5em; top: 2.0em; }
+a.topdf-ctrl-btn:nth-child(5) { left: 0.9em; top: 6.0em; }
+a.topdf-ctrl-btn:nth-child(6) { left: 3.9em; top: 6.0em; }
+a.topdf-ctrl-btn:nth-child(7) { left: 0.7em; top: 8.2em; }
+
+
 
 /* page breaks {{{1 */
 @media print {

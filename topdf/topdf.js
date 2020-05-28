@@ -136,16 +136,53 @@ function fix_mkdocs_ids() {
 /** <!-- controller {{{1 -->
  */
 function controller() {
+    /// 1. manipulate controller/ define callback for change styles.
+    var chars_allow = [
+        ['A', 'V', '>', '<', '<->', 'stl'],
+        // ⬆ ↗ ➡ ↘ ⬇ ↙ ⬅ ↖ ↕ ↔ ↩ ↪ ⤴ ⤵ 🔃 🔄 🔙 🔚 🔛 🔜 🔝
+        ['⬆', '⬇', '➡', '⬅', '↔', '🔃'],
+        // 🔀 🔁 🔂 ▶ ⏩ ◀ ⏪ 🔼 ⏫ 🔽 ⏬ ⏹ ⏏ 🎦
+        ['🔼', '🔽', '▶', '◀', '🔁', '⏏'],
+    ];
+
     var div = document.createElement("div");
     document.body.append(div);
-    div.className = "topdf-ctrl";
-    div.innerHTML = '' +
-        '<a class="topdf-ctrl-btn" href="javascript:void()">A</a>' +
-        '<a class="topdf-ctrl-btn" href="javascript:void()">V</a>' +
-        '<a class="topdf-ctrl-btn" href="javascript:void()">&lt;</a>' +
-        '<a class="topdf-ctrl-btn" href="javascript:void()">&gt;</a>' +
-        '<a class="topdf-ctrl-btn" href="javascript:void()">footnotes2</a>';
+    div.classList.add("topdf-ctrl");
+    var markup = '<a class="topdf-ctrl-btn" href="javascript:void()">zzz</a>';
+    var html = '';
+    for (var i of chars_allow[0]) {
+        html += markup;
+    }
+    html += markup.replace("zzz", 'footnotes2');
+    div.innerHTML = html;
 
+    var circum_style = -1;
+    var fn_man = function () {
+        var n = circum_style = (circum_style + 1) % chars_allow.length;
+        var j = 0;
+        for (var i of chars_allow[n]) {
+            j += 1;
+            var anchor = div.querySelector('a:nth-child(' + j + ')');
+            anchor.innerText = i;
+        }
+    };
+    fn_man();
+    var a_st = div.querySelector("a:nth-child(6)");
+    a_st.addEventListener("click", fn_man);
+
+    /// 2. manipulate controlelr/ define callback for change styles.
+    var circum_enlarge = -1;
+    var a_s2 = div.querySelector("a:nth-child(5)");
+    a_s2.addEventListener("click", function (ev) {
+        var styles = ["topdf-normal", "topdf-large", "topdf-small"];
+        var n = circum_enlarge = (circum_enlarge + 1) % styles.length;
+        for (var name of styles) {
+            div.classList.remove(name, div.classList.contains(name));
+        }
+        div.classList.add(styles[n]);
+    });
+
+    /// 3. define callback for footnotes2
     var fn_fn2_0 = function (e) {
         e.style.display = "inline";
         e.style.fontSize = "10pt";  // smaller
@@ -158,7 +195,7 @@ function controller() {
         e.style.fontSize = "6pt";   // normal
     };
 
-    var a_fn2 = div.querySelector("a:nth-child(5)");
+    var a_fn2 = div.querySelector("a:nth-child(7)");
     var circum = 0;
     a_fn2.addEventListener("click", function (ev) {
         // change CSS
@@ -172,11 +209,13 @@ function controller() {
         }
     });
 
+    /// 3. define callback to jumping
     var n_navi = 0;
     var fn_scr = function (add) {
         var i = 0;
         var j = n_navi;
         n_navi += add;
+        n_navi = n_navi < 0 ? 0: n_navi;
         for (var e of document.querySelectorAll(".toc a")) {
             i += 1;
             if (i <= j) {continue;}
@@ -194,8 +233,12 @@ function controller() {
 
     var a_u = div.querySelector("a:nth-child(1)");
     var a_d = div.querySelector("a:nth-child(2)");
+    var a_r = div.querySelector("a:nth-child(3)");
+    var a_l = div.querySelector("a:nth-child(4)");
     a_u.addEventListener("click", function (ev) {fn_scr(-1);});
     a_d.addEventListener("click", function (ev) {fn_scr(1);});
+    a_r.addEventListener("click", function (ev) {fn_scr(-9999);});
+    a_l.addEventListener("click", function (ev) {fn_scr(9999); fn_scr(0);});
 }
 
 

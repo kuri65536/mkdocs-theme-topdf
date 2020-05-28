@@ -372,23 +372,38 @@ jjj | kkk | lll
 
 
 ### 4.17. **(Under construction)** footnotes2 <!-- {{{1 -->
+requirements for this theme
+
 - [@R1-1] convert markdown to print.
 - [@R2-1] convert markdown to presentation.
 - [@R2-2] convert images to print/ presentation.
 
 
+specifications for this theme
+
 - [@S1-1-1] mkdocs (python-markdown)
 - [@S1-1-2] parse HTML and output: beautiful soup4, python-docx
-
-
 - [@S2-1-1] javascript, CSS
 
 
+designs for this theme
+
 - [@D1-1-1] script `mkdocs`, setup this plugin.
-- [@D1-1-2] this plugin: topdf/html_conv_docx.p.
+- [@D1-1-2-1] parse HTML: `html_conv_docx.py`, manipulate docx: `common.py`
+
+
+program/scripts for this theme
+
+- [@P1-1-1] Makefile/ setup.py and mkdocs.yml
+- [@P1-1-2] `topdf/html_conv_docx.py` ...
 
 
 ///Footnotes2 Go Here///
+
+
+### 4.18. navigation controller <!-- {{{1 -->
+- implement a navigation controller for presentations.
+- TODO(shimoda): enable/disable in docuemnt or setup.
 
 
 ### 4.99. not supported expressions <!-- {{{1 -->
