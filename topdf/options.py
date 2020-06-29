@@ -24,6 +24,9 @@ class Options:
         self.f_check_pagedjs = False
         self.f_test_pagedjs = False
 
+        self.backends_bs4 = ('lxml', 'html.parser')
+        self.backend_bs4 = self.backends_bs4[0]
+
     @classmethod  # copy_from {{{1
     def copy_from(cls, nm: ap.Namespace) -> 'Options':
         ret = Options()

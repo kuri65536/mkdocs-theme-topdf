@@ -9,6 +9,7 @@ import logging
 from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
 import os
+import re
 from tempfile import NamedTemporaryFile as Temporary
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
@@ -135,8 +136,8 @@ class HtmlConvertDocx(object):  # {{{1
             info("after-tabl: " + (ret))
 
     def on_post_page(self, output_content: Text,  # {{{1
-                     config: Dict[Text, Text], **kwardgs: Text) -> Text:
-        soup = BeautifulSoup(output_content, 'html.parser')
+                     backend_bs4: Text) -> Text:
+        soup = BeautifulSoup(output_content, backend_bs4)
         dom = soup.find("body")
         self.extract_para(dom, 0)
         return output_content
@@ -221,6 +222,8 @@ class HtmlConvertDocx(object):  # {{{1
             if elem.parent.name in ("body", "div", ):
                 return None
         ret = Text(elem.string)
+        # [@D4-19-1] treat \n as empty characters.
+        ret = re.sub(r" *\n *", " ", ret)
         debg(ret.strip())
         return ret
 
@@ -314,12 +317,7 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_katex(self, elem: Tag, para: Paragraph  # {{{1
                       ) -> Optional[Text]:
-        """html source
-            <p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>D</mi><mi>a</mi><mi>t</mi><msub><mi>a</mi><mrow><mi>g</mi><mi>a</mi><mi>i</mi><mi>n</mi></mrow></msub><mo>=</mo><mo stretchy="false">(</mo><mi>D</mi><mi>a</mi><mi>t</mi><msub><mi>a</mi><mrow><mi>r</mi><mi>a</mi><mi>w</mi></mrow></msub><mo>+</mo><mtext>Offset</mtext><mo>−</mo><mtext>Ref</mtext><mo stretchy="false">)</mo><mo>×</mo><mtext>Gain</mtext><mo>×</mo><mn>0.001</mn><mo>+</mo><mtext>Ref</mtext></mrow><annotation encoding="application/x-tex">
-                Data_{gain}=(Data_{raw} + \text{Offset}-\text{Ref})×
-                    \text{Gain}×0.001+\text{Ref}
-                </annotation></semantics></math></span><span aria-hidden="true" class="katex-html"><span class="base"><span class="strut" style="height:0.969438em;vertical-align:-0.286108em;"></span><span class="mord mathdefault" style="margin-right:0.02778em;">D</span><span class="mord mathdefault">a</span><span class="mord mathdefault">t</span><span class="mord"><span class="mord mathdefault">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.311664em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.03588em;">g</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">i</span><span class="mord mathdefault mtight">n</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.286108em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathdefault" style="margin-right:0.02778em;">D</span><span class="mord mathdefault">a</span><span class="mord mathdefault">t</span><span class="mord"><span class="mord mathdefault">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.02778em;">r</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight" style="margin-right:0.02691em;">w</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.77777em;vertical-align:-0.08333em;"></span><span class="mord text"><span class="mord">Offset</span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">Ref</span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span><span class="mord text"><span class="mord">Gain</span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.72777em;vertical-align:-0.08333em;"></span><span class="mord">0</span><span class="mord">.</span><span class="mord">0</span><span class="mord">0</span><span class="mord">1</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord text"><span class="mord">Ref</span></span></span></span></span></span>
-            </p>
+        """html sample: moved to test/docs/report-docx.md
         """
         # TODO(shimoda): convert to image?
         anno = elem.find("annotation")
@@ -329,7 +327,7 @@ class HtmlConvertDocx(object):  # {{{1
                 para = self.para = self.output.add_paragraph()
             para.add_run(anno.text)
         else:
-            import pdb; pdb.set_trace()
+            breakpoint()
         return None
 
     def extract_table_tree(self, elem: Tag, row: int  # {{{1
@@ -589,7 +587,7 @@ class HtmlConvertDocx(object):  # {{{1
             try:
                 self.extract_inlines(tag, para)
                 continue
-            except:
+            except common.ParseError:
                 pass
             if tag.name is None:
                 src = tag.string
@@ -754,7 +752,7 @@ def main(opts: options.Options) -> int:  # {{{1
     common.init(opts.force_offline)
     data = open(opts.fname_in).read()
     prog = HtmlConvertDocx(opts.fname_in)
-    prog.on_post_page(data, {})
+    prog.on_post_page(data, opts.backend_bs4)
     prog.write_out(opts.fname_out)
     if opts.remove_temporaries:
         common.remove_temporaries()

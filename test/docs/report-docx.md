@@ -369,6 +369,87 @@ jjj | kkk | lll
 
 ### 4.16. **(Under construction)** Convert KaTex <!-- {{{1 -->
 - implement convert method of KaTex XML.
+- sample::
+
+<p><span class="katex-display"><span class="katex">
+ <span class="katex-mathml">
+  <math><semantics><mrow>
+    <mi>D</mi><mi>a</mi><mi>t</mi>
+    <msub><mi>a</mi>
+      <mrow><mi>g</mi><mi>a</mi><mi>i</mi><mi>n</mi></mrow></msub>
+    <mo>=</mo>
+    <mo stretchy="false">(</mo><mi>D</mi><mi>a</mi><mi>t</mi>
+    <msub><mi>a</mi>
+      <mrow><mi>r</mi><mi>a</mi><mi>w</mi></mrow></msub>
+    <mo>+</mo><mtext>Offset</mtext><mo stretchy="false">)</mo>
+    <mo>×</mo><mtext>Gain</mtext>
+  </mrow>
+  <annotation encoding="application/x-tex">
+    Data_{gain}=(Data_{raw} + \text{Offset})× \text{Gain}
+  </annotation></semantics></math>
+ </span>
+ <span aria-hidden="true" class="katex-html">
+  <span class="base">
+    <span class="strut" style="height:0.969438em;vertical-align:-0.286108em;"></span>
+    <span class="mord mathdefault" style="margin-right:0.02778em;">D</span>
+    <span class="mord mathdefault">a</span><span class="mord mathdefault">t</span>
+    <span class="mord"><span class="mord mathdefault">a</span>
+    <span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r">
+    <span class="vlist" style="height:0.311664em;">
+    <span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;">
+    <span class="pstrut" style="height:2.7em;"></span>
+    <span class="sizing reset-size6 size3 mtight"><span class="mord mtight">
+    <span class="mord mathdefault mtight" style="margin-right:0.03588em;">g</span>
+    <span class="mord mathdefault mtight">a</span>
+    <span class="mord mathdefault mtight">i</span>
+    <span class="mord mathdefault mtight">n</span>
+    </span></span></span></span>
+    <span class="vlist-s">​</span></span>
+    <span class="vlist-r"><span class="vlist" style="height:0.286108em;"><span>
+    </span></span></span></span></span></span>
+    <span class="mspace" style="margin-right:0.2777777777777778em;"></span>
+    <span class="mrel">=</span>
+    <span class="mspace" style="margin-right:0.2777777777777778em;"></span></span>
+  <span class="base">
+    <span class="strut" style="height:1em;vertical-align:-0.25em;"></span>
+    <span class="mopen">(</span>
+    <span class="mord mathdefault" style="margin-right:0.02778em;">D</span>
+    <span class="mord mathdefault">a</span><span class="mord mathdefault">t</span>
+    <span class="mord"><span class="mord mathdefault">a</span><span class="msupsub">
+    <span class="vlist-t vlist-t2"><span class="vlist-r">
+    <span class="vlist" style="height:0.151392em;">
+    <span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;">
+    <span class="pstrut" style="height:2.7em;"></span>
+    <span class="sizing reset-size6 size3 mtight"><span class="mord mtight">
+    <span class="mord mathdefault mtight" style="margin-right:0.02778em;">r</span>
+    <span class="mord mathdefault mtight">a</span>
+    <span class="mord mathdefault mtight" style="margin-right:0.02691em;">w
+    </span></span></span></span></span>
+    <span class="vlist-s">​</span></span>
+    <span class="vlist-r"><span class="vlist" style="height:0.15em;">
+    <span></span></span></span></span></span></span>
+    <span class="mspace" style="margin-right:0.2222222222222222em;"></span>
+    <span class="mbin">+</span>
+    <span class="mspace" style="margin-right:0.2222222222222222em;"></span>
+  </span>
+  <span class="base">
+    <span class="strut" style="height:0.77777em;vertical-align:-0.08333em;"></span>
+    <span class="mord text"><span class="mord">Offset</span></span>
+    <span class="mspace" style="margin-right:0.2222222222222222em;"></span>
+  </span>
+  <span class="base">
+    <span class="strut" style="height:1em;vertical-align:-0.25em;"></span>
+    <span class="mclose">)</span>
+    <span class="mspace" style="margin-right:0.2222222222222222em;"></span>
+    <span class="mbin">×</span>
+    <span class="mspace" style="margin-right:0.2222222222222222em;"></span>
+  </span>
+  <span class="base">
+    <span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span>
+    <span class="mord text"><span class="mord">Gain</span></span>
+  </span>
+ </span>
+</span></span></p>
 
 
 ### 4.17. **(Under construction)** footnotes2 <!-- {{{1 -->
@@ -404,6 +485,16 @@ program/scripts for this theme
 ### 4.18. navigation controller <!-- {{{1 -->
 - implement a navigation controller for presentations.
 - TODO(shimoda): enable/disable in docuemnt or setup.
+
+
+### 4.19. **(Under construction)** duplicated carridge return <!-- {{{1 -->
+- [@R4-19-1] treat return caracters as space or nothing.
+- test1: insert duplicated carridge returns (breaks)  
+    on paragraph.
+- test2: paragraph1  
+    contains 1 return  
+    contains 2 return  
+    contains 3 return  
 
 
 ### 4.99. not supported expressions <!-- {{{1 -->
