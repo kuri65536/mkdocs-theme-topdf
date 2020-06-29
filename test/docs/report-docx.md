@@ -97,6 +97,8 @@ th.no-stamps {
 ### 4.3. Script and Styles for tables <!-- {{{1 --> {: #css-tables }
 - this function is for improve to enable markdown syntax to  
     multi-line tables
+- [@R4-3-1] **bugfix**: tables are always auto width
+    in MS Word (not in LibreOffice).
 
 - CSS-styles predefined in `_extra.pdf`
 
@@ -487,10 +489,10 @@ program/scripts for this theme
 - TODO(shimoda): enable/disable in docuemnt or setup.
 
 
-### 4.19. **(Under construction)** duplicated carridge return <!-- {{{1 -->
+### 4.19. fixed: duplicated carridge return <!-- {{{1 -->
 - [@R4-19-1] treat return caracters as space or nothing.
 - test1: insert duplicated carridge returns (breaks)  
-    on paragraph.
+    after br element on paragraph.
 - test2: paragraph1  
     contains 1 return  
     contains 2 return  
@@ -498,6 +500,7 @@ program/scripts for this theme
 
 
 ### 4.99. not supported expressions <!-- {{{1 -->
+- [@4-99-001] sup elements.
 - nested tables.
 
 

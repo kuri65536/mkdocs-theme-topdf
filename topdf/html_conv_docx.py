@@ -156,6 +156,8 @@ class HtmlConvertDocx(object):  # {{{1
             return self.extract_em(elem, para)
         elif elem.name == "strong":
             return self.extract_strong(elem, para)
+        elif elem.name == "sup":
+            return self.extract_sup(elem, para)
         elif elem.name == "code":
             return self.extract_code(elem, para, pre=False)
         elif elem.name == "br":
@@ -290,6 +292,29 @@ class HtmlConvertDocx(object):  # {{{1
         else:
             style = common.docx_style(self.output, "Strong")
             para.add_run(s, style=style)
+        return None
+
+    def extract_sup(self, elem: Tag, para: Paragraph  # {{{1
+                    ) -> Optional[Text]:
+        # [@D4-99-001-1] treat sup elements
+        ret = ""
+        for tag in elem.children:
+            if tag.name == "a":
+                para = self.current_para_or_create(para)
+                para.add_run(ret)
+                ret = ""
+                # TODO(shimoda): append extra 'sup' styles for anchor.
+                self.extract_anchor(tag, para)
+                continue
+
+            content = self.extract_is_text(tag)
+            if isinstance(content, Text):
+                ret += content
+            elif content is not None:
+                breakpoint()
+        if len(ret) > 0:
+            para = self.current_para_or_create(para)
+            para.add_run(ret)
         return None
 
     def extract_anchor(self, elem: Tag, para: Paragraph  # {{{1
@@ -744,6 +769,11 @@ class HtmlConvertDocx(object):  # {{{1
         style = common.docx_style(self.output, style)
         self.style_exists_or_add_list(self.output, level, style, style_base)
         return _info_list(f_number, style, level)
+
+    def current_para_or_create(self, para: Paragraph) -> Paragraph:  # {{{1
+        if para is None:
+            para = self.para = self.output.add_paragraph()
+        return para
 
 
 def main(opts: options.Options) -> int:  # {{{1
