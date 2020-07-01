@@ -118,6 +118,7 @@ table2-5-3   | 20-50-30%
 table2-6-2   | 20-60-20%
 table2-2-2-4 | 20-20-20-40%%
 
+
 <br>
 
 <p class="before-dl-table table2-8"></p>
@@ -125,11 +126,17 @@ table2-2-2-4 | 20-20-20-40%%
 20%
 : 80%
 
+
+<br>
+
 <p class="before-dl-table table2-4-4"></p>
 
 20%
 : 40%
 : 40%
+
+
+<br>
 
 <p class="before-dl-table table2-2-2-4"></p>
 
@@ -137,6 +144,9 @@ table2-2-2-4 | 20-20-20-40%%
 : 20%
 : 20%
 : 40%
+
+
+<br>
 
 <p class="before-dl-table table3-3-3"></p>
 

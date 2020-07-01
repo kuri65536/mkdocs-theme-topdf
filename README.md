@@ -138,6 +138,9 @@ History <!-- {{{1 -->
 version
 : descriptions
 
+1.1.1
+: bugfix for 3stamps, br elements. and add support for sup elements.
+
 1.1.0
 : append controls for presensation.
 

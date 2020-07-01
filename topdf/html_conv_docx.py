@@ -656,11 +656,12 @@ class HtmlConvertDocx(object):  # {{{1
             return False
         for col, wid in zip(tbl.columns,
                             [Mm(114), Mm(20), Mm(20), Mm(20)]):
-            col.width = wid
+            col.cells[0].width = wid
         row = tbl.rows[0]
         row.height = Mm(20)
         mar = OxmlElement('w:tblCellMar')
         tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+        tbl.allow_autofit = False
         tbl._tblPr.append(mar)
         for ename, val in (('top', '0'), ('bottom', '0'),
                            ('left', '108'), ('right', '108'), ):
@@ -727,7 +728,8 @@ class HtmlConvertDocx(object):  # {{{1
     def style_table_width_from(self, tbl: Table,  # {{{1
                                classes: Iterable[Text]
                                ) -> bool:
-        ret = {"table2-8": [Mm(32), Mm(138)],
+        # total width: 160mm
+        ret = {"table2-8": [Mm(32), Mm(128)],
                "table3-7": [Mm(48), Mm(112)],
                "table4-6": [Mm(64), Mm(96)],
                "table5-5": [Mm(80), Mm(80)],
@@ -743,13 +745,17 @@ class HtmlConvertDocx(object):  # {{{1
         widths: List[Mm] = []
         for class_ in classes:
             if class_ in ret:
+                warn("cell width set by %s" % (class_))
                 widths = ret[class_]
                 break
         else:
             warn("width did not specified by class")
             return False
-        for col, wid in zip(tbl.columns, widths):
-            col.width = wid
+        tbl.allow_autofit = False
+        for j, row in enumerate(tbl.rows):
+            for i, wid in enumerate(widths):
+                warn("cell(%d,%d): width set to %d" % (j, i, wid))
+                row.cells[i].width = wid
         return True
 
     def style_exists_or_add_list(self, doc: Document, lvl: int,  # {{{1
