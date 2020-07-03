@@ -138,6 +138,11 @@ History <!-- {{{1 -->
 version
 : descriptions
 
+1.1.2
+:   - enable table styles to normal table.
+    - enable tables detail width (for docx only).
+    - enable tables auto width for docx.
+
 1.1.1
 : bugfix for 3stamps, br elements. and add support for sup elements.
 

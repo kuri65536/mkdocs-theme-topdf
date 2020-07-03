@@ -9,7 +9,8 @@ from logging import (error as eror, warning as warn, )
 import os
 import sys
 from tempfile import NamedTemporaryFile as Temporary
-from typing import (Callable, Dict, Iterable, List, Optional, Text, Tuple, )
+from typing import (Callable, Dict, Iterable, List, Optional, Set,
+                    Text, Tuple, )
 
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
@@ -46,11 +47,12 @@ class ParseError(Exception):  # {{{1
     pass
 
 
-def has_class(tag: Tag, name: Text) -> bool:  # {{{1
+def has_class(tag: Tag, *names: Text) -> bool:  # {{{1
     if tag.name is None:
         return False
-    ret: List[Text] = tag.attrs.get("class", [])
-    return name in ret
+    classes: Set[Text] = set(tag.attrs.get("class", []))
+    targets = set(names)
+    return len(classes & targets) > 0
 
 
 def has_prev_sibling(target: Tag, *tags: Text) -> bool:  # {{{1
@@ -84,6 +86,54 @@ def has_next_table(target: Tag) -> bool:  # {{{1
     return False
 
 
+def has_width_and_parse(classes: Iterable[Text]  # {{{1
+                        ) -> Tuple[Text, List[Mm]]:
+    def parse_float_or_0(src: Text) -> float:
+        try:
+            n = float(src)
+        except ValueError:
+            return 0.0
+        return n
+
+    def parse_base(src: Text) -> float:
+        n_max, n_sum = 0, 0.0
+        for num in src.split("-"):
+            n = parse_float_or_0(num)
+            if n <= 0.0:
+                if num == "a":
+                    continue
+                if num.endswith("mm") and parse_float_or_0(num[:-2]) > 0.0:
+                    continue
+                return float("nan")
+            n_max, n_sum = max(n, n_max), n_sum + n
+        if n_sum > 10.49999:
+            return 160.0 / n_sum
+        return float(160 / 10)
+
+    src = ""
+    for cls in classes:
+        if cls.startswith("table"):
+            src = cls
+            break
+    else:
+        return "", []
+    ret: List[Mm] = []
+    base = parse_base(src[5:])
+    if base != base:
+        return "", []
+    for num in src[5:].split("-"):
+        if num == "a":
+            ret.append(Mm(0))
+            continue
+        if num.endswith("mm"):
+            n = parse_float_or_0(num[:-2])
+            ret.append(Mm(n))
+            continue
+        n = parse_float_or_0(num)
+        ret.append(Mm(n * base))
+    return src, ret
+
+
 def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
     for elem in target.previous_siblings:
         if elem.name is None:
@@ -99,7 +149,7 @@ def is_online_mode() -> bool:  # {{{1
     try:
         socket.gethostbyname("www.python.org")
         return True
-    except:
+    except OSError:
         pass
     return False
 
@@ -131,11 +181,11 @@ def remove_temporaries() -> None:  # {{{1
     for fname in glb.seq_files:
         try:
             os.remove(fname)
-        except:
+        except OSError:
             pass
     try:
         os.rmdir("tmp")
-    except:
+    except OSError:
         pass
 
 
@@ -260,7 +310,7 @@ def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
 
 
 def docx_add_field(para: Paragraph, instr: Text, now: Optional[Text],  # {{{1
-                   dirty: Optional[bool]=None) -> None:
+                   dirty: Optional[bool] = None) -> None:
     r = para.add_run("")._r
     fld = OxmlElement('w:fldChar')
     fld.set(qn('w:fldCharType'), "begin")

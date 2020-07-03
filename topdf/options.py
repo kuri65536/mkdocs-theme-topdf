@@ -24,6 +24,9 @@ class Options:
         self.f_check_pagedjs = False
         self.f_test_pagedjs = False
 
+        self.classes_ignore_p = [
+                "before-dl-table", "none"]
+
         self.backends_bs4 = ('lxml', 'html.parser')
         self.backend_bs4 = self.backends_bs4[0]
 
@@ -76,8 +79,14 @@ def make_parser() -> ap.ArgumentParser:
 
 
 def parse() -> Options:
+    global current
+
     parser = make_parser()
     nm = parser.parse_args()
-    return Options.copy_from(nm)
+    current = Options.copy_from(nm)
+    return current
+
+
+current = Options()
 
 # vi: ft=python:fdm=marker

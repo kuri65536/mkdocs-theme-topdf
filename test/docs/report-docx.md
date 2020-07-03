@@ -350,6 +350,8 @@ row 2
 - sample markup::
 
 ```
+<p class="none table2-6-2"></p>
+
 aaa | bbb | ccc
 ----|-----|-----
 ddd | eee | fff
@@ -357,11 +359,36 @@ ggg | hh<br>hh | iii
 jjj | kkk | lll
 ```
 
+<p class="none table2-6-2"></p>
+
 aaa | bbb | ccc
 ----|-----|-----
 ddd | eee | fff
 ggg | hh<br>hh | iii
 jjj | kkk | lll
+
+
+sample markup for small columns
+{: .table2-6-10mm-10mm-10mm}
+
+term | desc. | ok | t1 | t2
+-----|-------|----|----|---
+name1 | abc  | o  | W  | R
+name2 | bcd  | x  |    | R
+...   | ...  | .. | .. | ..
+name3 | co2  | o  | W  |
+
+
+
+fit to contents
+{: .table1-a-2-a-a-a}
+
+name   | lvl | desc | 1 | 2 | 3
+-------|-----|------|---|---|---
+aby    | 6   | o    | dddddd   | s | aaaaa
+billy  | 7   | x    | eeeeeeee | s | bb
+catoly | ?   | o    | ff       | o | ccccccccccccc
+haty   | 3   | o    | ggg      | p | hhhh
 
 
 ### 4.14. Process images or figures <!-- {{{1 -->

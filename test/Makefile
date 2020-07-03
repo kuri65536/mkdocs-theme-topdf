@@ -2,6 +2,9 @@ test: readme.pdf
 
 pagedjs:=./node_modules/.bin/pagedjs-cli --outline-tags h2,h3,h4,h5,h6
 
+src:=../topdf/html_conv_docx.py \
+     ../topdf/common.py
+
 ### readme.pdf
 readme.pdf: site/readme.html
 	# wkhtmltopdf $(opt_pdf) $^ $@
@@ -26,10 +29,10 @@ site/report-3stamps.html: docs/report-3stamps.md $(venv)mkdocs
 
 
 ### report-docx.docx
-report-docx.docx: site/report-docx.html
-	./venv/bin/python ../topdf/html_conv_docx.py $^ -o $@
+report-docx.docx: site/report-docx.html $(src)
+	./venv/bin/python ../topdf/html_conv_docx.py $(word 1,$^) -o $@
 
-site/report-docx.html: docs/report-docx.md $(venv)mkdocs
+site/report-docx.html: docs/report-docx.md
 	$(venv)mkdocs build
 
 

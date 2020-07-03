@@ -410,9 +410,12 @@ class HtmlConvertDocx(object):  # {{{1
         tbl.autofit = False
         tbl.style = common.docx_style(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-        for (row, col), elem in sorted(dct.items(), key=lambda x: x[0]):
+        for (row, col), subelem in sorted(dct.items(), key=lambda x: x[0]):
             cell = tbl.rows[row].cells[col]
-            self.extract_table_cell(elem, cell)
+            self.extract_table_cell(subelem, cell)
+
+        classes = common.classes_from_prev_sibling(elem)
+        self.style_table_width_from(tbl, classes)
         return None
 
     def extract_pagebreak(self, elem: Tag) -> Optional[Text]:  # {{{1
@@ -541,7 +544,8 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_para(self, node: Tag, level: int) -> Optional[Text]:  # {{{1
         info("enter para...: %d-%s" % (level, node.name))
-        if node.name == "p" and common.has_class(node, "before-dl-table"):
+        if (node.name == "p" and
+                common.has_class(node, *options.current.classes_ignore_p)):
             return None
         para = None
         for elem in node.children:
@@ -661,7 +665,7 @@ class HtmlConvertDocx(object):  # {{{1
         row.height = Mm(20)
         mar = OxmlElement('w:tblCellMar')
         tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
-        tbl.allow_autofit = False
+        tbl.allow_autofit = True
         tbl._tblPr.append(mar)
         for ename, val in (('top', '0'), ('bottom', '0'),
                            ('left', '108'), ('right', '108'), ):
@@ -729,33 +733,20 @@ class HtmlConvertDocx(object):  # {{{1
                                classes: Iterable[Text]
                                ) -> bool:
         # total width: 160mm
-        ret = {"table2-8": [Mm(32), Mm(128)],
-               "table3-7": [Mm(48), Mm(112)],
-               "table4-6": [Mm(64), Mm(96)],
-               "table5-5": [Mm(80), Mm(80)],
-               "table2-2-6": [Mm(32), Mm(32), Mm(96)],
-               "table2-3-5": [Mm(32), Mm(48), Mm(80)],
-               "table2-4-4": [Mm(32), Mm(64), Mm(64)],
-               "table2-5-3": [Mm(32), Mm(80), Mm(48)],
-               "table2-6-2": [Mm(32), Mm(96), Mm(32)],
-               "table3-3-3": [Mm(53), Mm(53), Mm(53)],
-               "table2-2-2-4": [Mm(32), Mm(32), Mm(32), Mm(64)],
-               }
-
-        widths: List[Mm] = []
-        for class_ in classes:
-            if class_ in ret:
-                warn("cell width set by %s" % (class_))
-                widths = ret[class_]
-                break
-        else:
+        cls, widths = common.has_width_and_parse(classes)
+        if len(widths) < 1:
             warn("width did not specified by class")
             return False
+        warn("cell width set by %s" % cls)
         tbl.allow_autofit = False
         for j, row in enumerate(tbl.rows):
-            for i, wid in enumerate(widths):
+            for i, cell in enumerate(row.cells):
+                wid = widths[i] if i < len(widths) else 0
+                if wid < 1:
+                    # cell.width = None
+                    continue
                 warn("cell(%d,%d): width set to %d" % (j, i, wid))
-                row.cells[i].width = wid
+                cell.width = wid
         return True
 
     def style_exists_or_add_list(self, doc: Document, lvl: int,  # {{{1
