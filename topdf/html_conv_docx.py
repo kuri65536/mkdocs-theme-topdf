@@ -738,12 +738,16 @@ class HtmlConvertDocx(object):  # {{{1
             warn("width did not specified by class")
             return False
         warn("cell width set by %s" % cls)
-        tbl.allow_autofit = False
+        if Mm(0) in widths:
+            tbl.autofit = True
+            tbl.allow_autofit = True
         for j, row in enumerate(tbl.rows):
             for i, cell in enumerate(row.cells):
                 wid = widths[i] if i < len(widths) else 0
                 if wid < 1:
-                    # cell.width = None
+                    warn("cell(%d,%d): width set to auto" % (j, i))
+                    cell._tc.tcPr.tcW.type = 'auto'
+                    cell._tc.tcPr.tcW.w = 0
                     continue
                 warn("cell(%d,%d): width set to %d" % (j, i, wid))
                 cell.width = wid
