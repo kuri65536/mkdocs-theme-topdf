@@ -296,6 +296,7 @@ sample
 - aaaa
 - bbbb
     - bbb1
+        {: #test-nested-lists}
     - bbb2
 - cccc
     - ccc1
@@ -303,7 +304,7 @@ sample
 - dddd
     - ddd1
     - ddd2
-        - ddd2-1
+        - [ddd2-1](#test-nested-lists)
         - ddd2-2
             - ddd2-2-1
             - ddd2-2-2
@@ -541,6 +542,25 @@ program/scripts for this theme
     contains 1 return  
     contains 2 return  
     contains 3 return  
+
+
+### 4.20. guide: conditional documents <!-- {{{1 -->
+- by pcpp.
+- you can use [my verseion](https://github.com/kuri65536/pcpp)
+    to preserve trailing whitespaces for  
+    make return sentens, `<br />` elements.
+
+```bash
+$ ./venv/bin/pip install https://github.com/kuri65536/pcpp
+```
+
+
+#if 0
+
+sample  
+document not output.
+
+#endif
 
 
 ### 4.99. not supported expressions <!-- {{{1 -->

@@ -77,25 +77,74 @@ theme:
 ### write markdown
 write your document
 
+```bash
+$ vi docs/your/document.md
+```
+
+
+### convert to html
+```bash
+$ ./venv/bin/mkdocs build
+```
+
 
 ### convert to docx <!-- {{{1 -->
 ```bash
-$ /path/to/python -m topdf site/your/document.html -o document.docx
+$ /path/to/python -m topdf site/your/document/index.html -o document.docx
 ```
 
+see [problem with python-docx](#backend-python-docx)
 
-### convert with paged.js
+<img src="https://user-images.githubusercontent.com/11357613/86648803-245e5280-c01c-11ea-98fc-64cdcd73c399.png"
+  style="max-width: 100%;" />
+
+
+
+### (old method) convert with paged.js
 
 ```bash
-$ pagedjs-cli --outline-tags h1,h2,h3,h4,h5,h6 site/your/document.html
+$ pagedjs-cli --outline-tags h1,h2,h3,h4,h5,h6 site/your/document/index.html
      -o document.pdf  # 1-line
 ```
 
+see [problem with paged.js](#backend-paged-js)
+
+<img src="https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png"
+  style="max-width: 100%;" />
+
+
 
 ### About PDF output
+
+#### backend: python-docx
+- now, I choose this solution.
+- python-docx has some problems too,
+    - can't handle to include SVG images
+    - can't handle complex HTML. (it's my problem)
+    - you need Office365 account or MS Office license to generate pdf.
+    - LibreOffice and O365 output are different,  
+        AbiWord can't handle tables (may crash).
+
+
+#### backend: paged.js
+- I choose this for second, but not use now.
+- under development.
 - paged.js render the PDF with portable chrome and pupetter  
     please watch out the difference of rendering results among  
     them engine and your browser.
+- paged.js has some problems with mkdocs outputs.
+    - generated html-id is invalid for their javascript  
+        heading the digit aka: `1-contents`
+- paged.js has some problems.
+    - a multi-byte problem in pdflib.js, TOC can't handle multi-byte outputs.  
+        I made the patch and succeed to output,  
+        but this cause wide sub-effects and can't fix it.
+    - long tables across the pages, may break your tables.
+
+
+#### backend: wkhtmltopdf
+- I choose this for first, but not use now.
+- no-longer developped.
 - wkhtmltopdf render the PDF with webkit (old)  
     and stable release (0.12.5) can not generate TOC with its limitation.  
     wkhtmltopdf is more convinient to install, but  
@@ -109,7 +158,11 @@ $ pagedjs-cli --outline-tags h1,h2,h3,h4,h5,h6 site/your/document.html
 
 Demo <!-- {{{1 -->
 --------------------------
-[a sample output of PDF](https://github.com/kuri65536/mkdocs-theme-topdf/files/3993873/report-3stamps.pdf)
+[a sample output of PDF with paged.js](https://github.com/kuri65536/mkdocs-theme-topdf/files/3993873/report-3stamps.pdf)
+
+
+![screenshot in Android Word](https://user-images.githubusercontent.com/11357613/86648803-245e5280-c01c-11ea-98fc-64cdcd73c399.png)
+
 
 ![screenshot in pdf viewer](https://user-images.githubusercontent.com/11357613/70920996-cf9ac080-2066-11ea-81f2-0e7c840ebea1.png)
 
