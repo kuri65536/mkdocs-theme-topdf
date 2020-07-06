@@ -28,6 +28,8 @@ table.dl-table {
     width: 100%;
 }
 
+.table1-9 th:nth-child(2n+1) {width: 10%;}
+.table1-9 th:nth-child(2n+2) {width: 90%;}
 .table2-8 th:nth-child(2n+1) {width: 20%;}
 .table2-8 th:nth-child(2n+2) {width: 80%;}
 .table3-7 th:nth-child(2n+1) {width: 30%;}

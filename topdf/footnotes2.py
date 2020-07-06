@@ -12,7 +12,7 @@ Copyright The Python Markdown Project
 License: [BSD](https://opensource.org/licenses/bsd-license.php)
 
 """
-from typing import Text
+from typing import Dict, List, Text
 
 from markdown import Extension
 from markdown.inlinepatterns import InlineProcessor
@@ -161,46 +161,44 @@ class Footnote2Extension(Extension):
             return self.unique_ref('fn2ref{}{}'.format(
                     self.get_separator(), id), found)
 
-    def makeDiv(self, root):
+    def makeDiv(self):
         """ Return div of footnotes as et Element. """
 
         if not list(self.footnotes.keys()):
             return None
 
-        div = etree.Element("div")
-        div.set('class', 'footnote')
-        etree.SubElement(div, "hr")
-        ol = etree.SubElement(div, "ol")
-        surrogate_parent = etree.Element("div")
+        dct: Dict[Text, List[Text]] = {}
+        for refid, id in self.footnotes.items():
+            if id not in dct:
+                dct[id] = []
+            dct[id].append(refid)
+        keys = sorted(dct.keys())
 
-        for index, id in enumerate(self.footnotes.keys(), start=1):
-            li = etree.SubElement(ol, "li")
-            li.set("id", self.makeFootnoteId(id))
-            # Parse footnote with surrogate parent as li cannot be used.
-            # List block handlers have special logic to deal with li.
-            # When we are done parsing, we will copy everything over to li.
-            self.parser.parseChunk(surrogate_parent, self.footnotes[id])
-            for el in list(surrogate_parent):
-                li.append(el)
-                surrogate_parent.remove(el)
-            backlink = etree.Element("a")
-            backlink.set("href", "#" + self.makeFootnoteRefId(id))
-            backlink.set("class", "footnote2-backref")
-            backlink.set(
-                "title",
-                self.getConfig("BACKLINK_TITLE") % (index)
-            )
-            backlink.text = FN_BACKLINK_TEXT
+        dl = etree.Element("dl")
+        dl.set('class', 'footnotes2')
+        etree.SubElement(dl, "dt").text = "id"
+        etree.SubElement(dl, "dd").text = "descriptions/backlinks"
 
-            if len(li):
-                node = li[-1]
-                if node.tag == "p":
-                    node.text = node.text + NBSP_PLACEHOLDER
-                    node.append(backlink)
-                else:
-                    p = etree.SubElement(li, "p")
-                    p.append(backlink)
-        return div
+        for id in keys:
+            dt = etree.SubElement(dl, "dt")
+            dd = etree.SubElement(dl, "dd")
+
+            # Firefox Nightly 79 does not jump to dt's id attr.
+            anchor = etree.SubElement(dt, 'span')
+            # need a-href for python-markdown
+            # anchor.set("href", "javascript:void();")
+            anchor.set("id", self.makeFootnoteId(id))
+            anchor.text = id
+
+            for refid in dct[id]:
+                backlink = etree.Element("a")
+                backlink.set("href", "#" + refid)
+                backlink.set("class", "footnote2-backref")
+                backlink.text = FN_BACKLINK_TEXT
+
+                # TODO(shimoda): extract one line of text.
+                dd.append(backlink)
+        return dl
 
 
 class Footnote2InlineProcessor(InlineProcessor):
@@ -218,7 +216,7 @@ class Footnote2InlineProcessor(InlineProcessor):
         refid = self.footnotes.makeFootnoteRefId(id, found=True)
         sup.set('id', refid)
         a.set('href', '#' + self.footnotes.makeFootnoteId(id))
-        a.set('class', 'footnote2-ref')
+        a.set('class', 'footnotes2-ref')
         a.text = id
 
         self.footnotes.set_item(refid, id)
@@ -285,7 +283,7 @@ class Footnote2PostTreeprocessor(Treeprocessor):
     def run_placer(self, root: etree.Element) -> None:
         print("tree:%s-ext:%s" % (self, self.footnotes))
         placer = self.footnotes.findPlaceholder(root)
-        result = self.footnotes.makeDiv(root)
+        result = self.footnotes.makeDiv()
 
         if result is None and placer is None:
             return

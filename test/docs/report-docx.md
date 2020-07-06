@@ -244,6 +244,7 @@ sample
 
 ### 4.8. Convert anchors to docx bookmarks <!-- {{{1 -->
 - anchor tags were converted to `w:hyperlink`
+- **TODO(shimoda)** id attributes to bookmarks
 
 ```
 <w:hyperlink w:anchor="ahref_target_id"><w:r><w:t>
@@ -491,7 +492,9 @@ haty   | 3   | o    | ggg      | p | hhhh
 </span></span></p>
 
 
-### 4.17. **(Under construction)** footnotes2 <!-- {{{1 -->
+### 4.17. footnotes2 <!-- {{{1 -->
+belows are sample content for this footnotes2 extension.
+
 requirements for this theme
 
 - [@R1-1] convert markdown to print.
@@ -502,8 +505,9 @@ requirements for this theme
 specifications for this theme
 
 - [@S1-1-1] mkdocs (python-markdown)
-- [@S1-1-2] parse HTML and output: beautiful soup4, python-docx
+- [@S1-1-2] parse HTML and make output: beautiful-soup4, python-docx
 - [@S2-1-1] javascript, CSS
+- [@S2-1-2] javascript for navigations
 
 
 designs for this theme
@@ -516,7 +520,10 @@ program/scripts for this theme
 
 - [@P1-1-1] Makefile/ setup.py and mkdocs.yml
 - [@P1-1-2] `topdf/html_conv_docx.py` ...
+- [@R1-1] test, same id from multi-positions.
 
+
+<p class="before-dl-table table3-7"></p>
 
 ///Footnotes2 Go Here///
 

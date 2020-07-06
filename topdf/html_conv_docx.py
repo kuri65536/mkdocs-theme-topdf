@@ -166,6 +166,11 @@ class HtmlConvertDocx(object):  # {{{1
             return self.extract_anchor(elem, para)
         elif elem.name == "span" and common.has_class(elem, "katex-display"):
             return self.extract_katex(elem, para)
+        elif elem.name == "span":
+            text = elem.text
+            para = self.current_para_or_create(para)
+            para.add_run(text)
+            return text
         raise common.ParseError("%s is not implemented, yet" % elem.name)
 
     def extract_element(self, elem: Tag, para: Paragraph  # {{{1

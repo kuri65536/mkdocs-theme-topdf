@@ -138,6 +138,9 @@ History <!-- {{{1 -->
 version
 : descriptions
 
+1.1.3
+:   first version of footnotes2.
+
 1.1.2
 :   - enable table styles to normal table.
     - enable tables detail width (for docx only).

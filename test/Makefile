@@ -2,8 +2,12 @@ test: readme.pdf
 
 pagedjs:=./node_modules/.bin/pagedjs-cli --outline-tags h2,h3,h4,h5,h6
 
-src:=../topdf/html_conv_docx.py \
+src_docx:=../topdf/html_conv_docx.py \
      ../topdf/common.py
+
+src_pack:=../topdf/__init__.py \
+          ../topdf/__main__.py \
+          ../topdf/footnotes2.py \
 
 ### readme.pdf
 readme.pdf: site/readme.html
@@ -29,10 +33,10 @@ site/report-3stamps.html: docs/report-3stamps.md $(venv)mkdocs
 
 
 ### report-docx.docx
-report-docx.docx: site/report-docx.html $(src)
-	./venv/bin/python ../topdf/html_conv_docx.py $(word 1,$^) -o $@
+report-docx.docx: $(src_docx) site/report-docx.html
+	./venv/bin/python ../topdf/html_conv_docx.py $(lastword $^) -o $@
 
-site/report-docx.html: docs/report-docx.md
+site/report-docx.html: docs/report-docx.md $(venv)mkdocs
 	$(venv)mkdocs build
 
 
@@ -41,12 +45,12 @@ site/report-docx.html: docs/report-docx.md
 ./node_modules/.bin/pagedjs-cli:
 	npm install pagedjs-cli
 
-$(venv)mkdocs: venv
-	$(venv)pip install mkdocs
+$(venv)mkdocs: $(src_pack)
 	cd ..; test/$(venv)python setup.py install
 
 venv:
 	virtualenv -p python3.7 venv
+	$(venv)pip install mkdocs
 
 
 venv:=./venv/bin/
