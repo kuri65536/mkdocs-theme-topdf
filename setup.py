@@ -7,7 +7,7 @@ def readme():
         return f.read()
 
 
-VERSION = '1.1.3'
+VERSION = '1.2.0'
 
 long_description = (
     "This is a mkdocs theme, "
@@ -26,6 +26,7 @@ setup(
     author_email='kuri65536@hotmail.com',
     packages=find_packages(),
     include_package_data=True,
+    test_suite='tests',
     entry_points={
         'mkdocs.themes': [
             'topdf = topdf',

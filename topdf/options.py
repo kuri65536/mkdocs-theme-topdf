@@ -7,7 +7,7 @@
 import argparse as ap
 import logging
 import os
-from typing import (Text, )
+from typing import (List, Text, )
 
 
 class Options:
@@ -81,11 +81,11 @@ def make_parser() -> ap.ArgumentParser:
     return ret
 
 
-def parse() -> Options:
+def parse(args: List[Text]) -> Options:
     global current
 
     parser = make_parser()
-    nm = parser.parse_args()
+    nm = parser.parse_args(args)
     current = Options.copy_from(nm)
     return current
 

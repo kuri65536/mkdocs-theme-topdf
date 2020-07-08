@@ -272,8 +272,7 @@ class HtmlConvertDocx(object):  # {{{1
             return None
 
         # TODO(shimoda): style for the top-level emphasis
-        if para is None:
-            self.para = self.output.add_paragraph()
+        para = self.current_para_or_create(para)
         para.add_run(elem.text, style="Emphasis")
         return None
 
@@ -292,11 +291,9 @@ class HtmlConvertDocx(object):  # {{{1
     def extract_strong(self, elem: Tag, para: Paragraph  # {{{1
                        ) -> Optional[Text]:
         s = Text(elem.text)
-        if para is None:  # top level
-            self.output.add_paragraph(s)  # TODO(shimoda): strong block
-        else:
-            style = common.docx_style(self.output, "Strong")
-            para.add_run(s, style=style)
+        style = common.docx_style(self.output, "Strong")
+        para = self.current_para_or_create(para)
+        para.add_run(s, style=style)
         return None
 
     def extract_sup(self, elem: Tag, para: Paragraph  # {{{1
@@ -750,11 +747,11 @@ class HtmlConvertDocx(object):  # {{{1
             for i, cell in enumerate(row.cells):
                 wid = widths[i] if i < len(widths) else 0
                 if wid < 1:
-                    warn("cell(%d,%d): width set to auto" % (j, i))
+                    info("cell(%d,%d): width set to auto" % (j, i))
                     cell._tc.tcPr.tcW.type = 'auto'
                     cell._tc.tcPr.tcW.w = 0
                     continue
-                warn("cell(%d,%d): width set to %d" % (j, i, wid))
+                info("cell(%d,%d): width set to %d" % (j, i, wid))
                 cell.width = wid
         return True
 
@@ -786,7 +783,8 @@ def main(opts: options.Options) -> int:  # {{{1
     logging.basicConfig(level=opts.level_debug)
 
     common.init(opts.force_offline)
-    data = open(opts.fname_in, encoding=opts.encoding).read()
+    with open(opts.fname_in, encoding=opts.encoding) as fp:
+        data = fp.read()
     prog = HtmlConvertDocx(opts.fname_in)
     prog.on_post_page(data, opts.backend_bs4)
     prog.write_out(opts.fname_out)
@@ -796,7 +794,8 @@ def main(opts: options.Options) -> int:  # {{{1
 
 
 if __name__ == "__main__":  # {{{1
-    opts = options.parse()
+    import sys
+    opts = options.parse(sys.argv[1:])
     main(opts)
 
 # vi: ft=python:fdm=marker

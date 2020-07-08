@@ -170,7 +170,7 @@ Demo <!-- {{{1 -->
 
 About scripts and styles
 --------------------------
-please see [the report sample](report-3stamps.md)
+please see [the report sample](test/docs/report-3stamps.md)
 
 
 
@@ -190,6 +190,10 @@ History <!-- {{{1 -->
 
 version
 : descriptions
+
+1.2.0
+:   - fix parsing strong elements at heads of paragraphs.
+    - enable tests.
 
 1.1.3
 :   first version of footnotes2.
