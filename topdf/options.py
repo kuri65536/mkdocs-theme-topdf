@@ -12,6 +12,7 @@ from typing import (Text, )
 
 class Options:
     def __init__(self) -> None:  # {{{1
+        self.encoding = "utf-8"
         self.fname_in = ""
         self.fname_out = ""
 
@@ -34,6 +35,7 @@ class Options:
     def copy_from(cls, nm: ap.Namespace) -> 'Options':
         ret = Options()
 
+        ret.encoding = nm.encoding
         ret.level_debug = nm.verbose
         ret.remove_temporaries = not nm.keep_temporaries
         ret.force_offline = nm.offline
@@ -67,6 +69,7 @@ def make_parser() -> ap.ArgumentParser:
     # ret.add_argument("--override", action="store_true")
     ret.add_argument("--keep-temporaries", default=False, action="store_true")
     ret.add_argument("--offline", default=None, action="store_true")
+    ret.add_argument("--encoding", default="utf-8")
     ret.add_argument("input", nargs="?", type=Text)
 
     ret.add_argument("--verbose", default=30, type=int, choices=range(1, 51),

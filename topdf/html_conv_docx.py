@@ -786,7 +786,7 @@ def main(opts: options.Options) -> int:  # {{{1
     logging.basicConfig(level=opts.level_debug)
 
     common.init(opts.force_offline)
-    data = open(opts.fname_in).read()
+    data = open(opts.fname_in, encoding=opts.encoding).read()
     prog = HtmlConvertDocx(opts.fname_in)
     prog.on_post_page(data, opts.backend_bs4)
     prog.write_out(opts.fname_out)
