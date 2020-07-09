@@ -52,6 +52,100 @@ function dldtdd_tables() {
 }
 
 
+/* styled tables {{{1 */
+function styled_tables() {
+    function has_width_class(el) {
+        for (var cls of el.classList) {
+            if (!cls.startsWith("table")) {
+                continue;
+            }
+            cls = cls.substring(5);
+            ret = [];
+            for (var part of cls.split("-")) {
+                if (part == "a") {
+                    ret.push(0);
+                    continue;
+                }
+                // parse "1mm"
+                if (part.endsWith("mm")) {
+                    var dgt = part.substring(0, part.length - 2);
+                    var val = parseFloat(dgt);
+                    if (isNaN(val)) {
+                        ret = null;
+                        break;
+                    }
+                    ret.push(part);
+                    continue;
+                }
+                // parse "1"
+                var val = parseInt(part);
+                if (!isNaN(val)) {
+                    ret.push(val);
+                    continue;
+                }
+                var val = parseFloat(part);
+                if (!isNaN(val)) {
+                    ret.push(val);
+                    continue;
+                }
+                ret = null;
+                break;
+            }
+            if (ret === null) {
+                continue;
+            }
+            return ret;
+        }
+        return null;
+    }
+
+    function conv_width(widths) {
+        var sum = 0;
+        for (var i of widths) {
+            if ((i === 0) || (typeof i === "string")) {
+                continue;
+            }
+            sum += parseFloat(i);
+        }
+        sum = isNaN(sum) ? 16:
+              sum <= 10 ? 16: 160 / sum;
+        var ret = [];
+        for (var i of widths) {
+            if ((i === 0) || (typeof i === "string")) {
+                //
+            } else {
+                i = (i * sum) + "mm";
+            }
+            ret.push(i);
+        }
+        return ret;
+    }
+
+    var seq_tbls = document.querySelectorAll("table");
+    for (var tbl of seq_tbls) {
+        if (typeof(tbl.parentNode) == "undefined") {
+            continue;
+        }
+        var para = tbl.previousElementSibling;
+        var widths = has_width_class(para);
+        if (widths === null) {
+            continue;
+        }
+        widths = conv_width(widths);
+
+        var tr = tbl.querySelector("tr");
+        var tds = tbl.querySelectorAll("th, td");
+        for (var td of tds) {
+            if (widths.length < 1) {break;}
+            var width = widths.shift();
+            if (typeof width === "string") {
+                td.style.width = width;
+            }
+        }
+    }
+}
+
+
 /* 3stamps {{{1 */
 function table_3stamps() {
     var seq_tbl = document.querySelectorAll(".table-3stamps");
@@ -246,6 +340,7 @@ function controller() {
 window.addEventListener('load', function() {
     fix_mkdocs_ids();
     dldtdd_tables();
+    styled_tables();
     table_3stamps();
     code_blocks();
     controller();
