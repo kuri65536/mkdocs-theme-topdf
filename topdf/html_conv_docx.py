@@ -399,8 +399,8 @@ class HtmlConvertDocx(object):  # {{{1
         return ret
 
     def extract_table(self, elem: Tag) -> Optional[Text]:  # {{{1
-        # TODO(shimoda): rowspan, colspan, table in table or styled-cell etc...
         dct = self.extract_table_tree(elem, 0)
+        dct = common.table_update_rowcolspan(dct)  # [@P13-1-11] cell-span
         if len(dct) < 1:
             warn("table: did not have any data" + Text(elem.string))
             return None
@@ -414,6 +414,14 @@ class HtmlConvertDocx(object):  # {{{1
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         for (row, col), subelem in sorted(dct.items(), key=lambda x: x[0]):
             cell = tbl.rows[row].cells[col]
+            # [@P13-1-12] merging spaned cells
+            x, y = common.table_cellspan(subelem, "colspan", "rowspan")
+            if x != 0 or y != 0:
+                if col + x >= n_col or row + y >= n_row:
+                    raise IndexError("invalid colspan or rowspan in '%s'" %
+                                     Text(elem))
+                cel2 = tbl.rows[row + y].cells[col + x]
+                cell.merge(cel2)
             self.extract_table_cell(subelem, cell)
 
         classes = common.classes_from_prev_sibling(elem)

@@ -398,10 +398,10 @@ catoly | ?   | o    | ff       | o | ccccccccccccc
 haty   | 3   | o    | ggg      | p | hhhh
 
 
-### 4.13.1. **(Under construction)** rowspan and colspan <!-- {{{1 -->
+### 4.13.1. rowspan and colspan <!-- {{{1 -->
 - you need to generate tables have rowspan and colspan attributes by
     the `cell_row_span` extension.
-- **TODO(shimoda):** can't parse rowspan and colspan now, test-case:
+- [@R13-1-1] merge cells with rowspan and colspan in docx, test-case:
 
 
 |name   | lvl | desc |
@@ -410,6 +410,17 @@ haty   | 3   | o    | ggg      | p | hhhh
 |_     _| 7   | x    |
 |catoly | ?         ||
 |haty   | 3   | o    |
+
+
+test case 2, complex pattern:
+
+| co    | mp  | le   | x   | ca  | se  | 2   |
+|-------|-----|------|-----|-----|-----|-----|
+| c11   | c12       || c14 | c15           |||
+| c21   | c22       || c24 | c25 | c26 | c27 |
+| c31   | c32       || c34 | c35 | c36      ||
+| c41   |_         _||     | c45 | c46 | c47 |
+|_     _| c52 | c53  |_   _| c55 | c56 | c57 |
 
 
 ### 4.14. **(Under fix)** Process images or figures <!-- {{{1 -->

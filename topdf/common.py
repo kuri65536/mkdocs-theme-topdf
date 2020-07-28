@@ -143,6 +143,56 @@ def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
     return []
 
 
+def table_cellspan(e: Tag, *keys: Text) -> Tuple[int, ...]:  # {{{1
+    ret: Tuple[int, ...] = ()
+    for key in keys:
+        ret += ((int(e.get(key)) - 1) if e.has_attr(key) else 0, )
+    return ret
+
+
+def table_update_rowcolspan(dct: Dict[Tuple[int, int], Tag]  # {{{1
+                            ) -> Dict[Tuple[int, int], Tag]:
+    """[@P13-1-13] alignment cell potisions"""
+    rowspans: List[Set[int]] = [set()]
+    ret: Dict[Tuple[int, int], Tag] = {}
+    r, c = -1, 0
+    for (row, col), elem in sorted(dct.items(), key=lambda x: x[0]):
+        if r != row:
+            rowspans = rowspans[1:]
+            rowspans = rowspans if len(rowspans) > 0 else [set()]
+        r, c = row, col
+        while c in rowspans[0]:
+            c += 1
+        x, y = table_cellspan(elem, "colspan", "rowspan")
+        cols: Set[int] = {c}
+        ret[(r, c)] = elem
+        if x != 0:
+            for i in range(1, x + 1):
+                cols.add(c + i)
+        rowspans[0].update(cols)
+        if y != 0:
+            for i in range(1, y + 1):
+                if i >= len(rowspans):
+                    rowspans.append(cols)
+                else:
+                    rowspans[i].update(cols)
+    """while True:  # dump cells information
+        r, msg = -1, ""
+        for (row, col), elem in sorted(ret.items(), key=lambda x: x[0]):
+            x, y = table_cellspan(elem, "colspan", "rowspan")
+            if r != row:
+                warn("common.table:" + msg[1:])
+                msg, r = "", row
+            msg += ",(%d,%d" % (row, col)
+            if x > 0 or y > 0:
+                msg += "-%d,%d" % (x, y)
+            msg += ")"
+        if len(msg):
+            warn("common.table:" + msg[1:])
+        break"""
+    return ret
+
+
 def is_online_mode() -> bool:  # {{{1
     import socket
     socket.setdefaulttimeout(1.0)
