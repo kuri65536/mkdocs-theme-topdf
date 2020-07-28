@@ -553,7 +553,7 @@ class Styles(object):  # {{{1
         fmt.left_indent = fmt.right_indent = Mm(10)
         return name
 
-    @classmethod  # {{{1
+    @classmethod  # quote {{{1
     def quote(self, para: Paragraph) -> None:
         pPr = para._p.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
@@ -630,6 +630,21 @@ class Styles(object):  # {{{1
         # styles for stamps
         style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
         style.font.size = Pt(8)
+        return name
+
+    @style("CellHeader")  # {{{1
+    def init_cell_header(self, doc: Document, name: Text) -> Text:
+        "[@P13-2-11] style for header cells"
+        style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        style.base_style = doc.styles["Normal"]
+        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        return name
+
+    @style("CellNormal")  # {{{1
+    def init_cell_normal(self, doc: Document, name: Text) -> Text:
+        "[@P13-2-12] style for cells"
+        style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        style.base_style = doc.styles["Normal"]
         return name
 
     @style("Subtitle")  # {{{1

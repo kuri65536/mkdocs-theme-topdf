@@ -604,6 +604,12 @@ class HtmlConvertDocx(object):  # {{{1
             info("table: %s" % src)  # (row, col, src))
             para.add_run(src)
 
+        # [@P13-2-13] style for cells
+        style_name = "CellHeader" if elem.name == "th" else "CellNormal"
+        style = common.docx_style(self.output, style_name)
+        for para in cell.paragraphs:
+            para.style = style
+
     def extract_list_subs(self, para: Optional[Paragraph], elem: Tag,  # {{{1
                           info: _info_list, blk: BlockItemContainer) -> Text:
         ret = ""

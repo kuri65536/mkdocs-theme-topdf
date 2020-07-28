@@ -352,8 +352,8 @@ row 2
 
 
 
-### 4.13. **(Under fix)** tables <!-- {{{1 -->
-- **TODO(shimoda)** apply extra style to header.
+### 4.13. Tables <!-- {{{1 -->
+- [@R13-2-1] add extra styles to cells: `CellHeader` and `CellNormal` .
 - sample markup::
 
 ```
