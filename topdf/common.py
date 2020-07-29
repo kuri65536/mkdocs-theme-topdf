@@ -134,6 +134,16 @@ def has_width_and_parse(classes: Iterable[Text]  # {{{1
     return src, ret
 
 
+def count_tags_around_image(src: Tag):  # {{{1
+    "[@P14-1-12] image under a rule"
+    i = 0
+    for elem in src.children:
+        if elem.name is None:
+            continue
+        i += 1
+    return i
+
+
 def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
     for elem in target.previous_siblings:
         if elem.name is None:
@@ -578,6 +588,14 @@ class Styles(object):  # {{{1
     def init_caption(self, doc: Document, name: Text) -> Text:
         fmt = doc.styles['Caption'].paragraph_format
         fmt.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        return name
+
+    @style("Image")  # {{{1
+    def init_image(self, doc: Document, name: Text) -> Text:
+        "[@P14-1-11] style for single images"
+        style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        style.base_style = doc.styles["Normal"]
+        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         return name
 
     def init_list(self, doc: Document, name: Text) -> Text:  # {{{1

@@ -487,8 +487,11 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_img(self, elem: Tag, para: Paragraph  # {{{1
                     ) -> Optional[Text]:
-        if para is None:
-            para = self.para = self.output.add_paragraph()
+        para = self.current_para_or_create(para)
+        # [@P14-1-11] center images at some rules.
+        if common.count_tags_around_image(elem.parent) <= 2:
+            para.style = common.docx_style(self.output, "Image")
+
         src = elem.attrs.get("src", "")
         if len(src) < 1:
             warn("img-tag: was not specified 'src' attribute, ignored...")
