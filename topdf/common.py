@@ -369,7 +369,8 @@ def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
     return args
 
 
-def docx_add_field(para: Paragraph, instr: Text, now: Optional[Text],  # {{{1
+def docx_add_field(para: Paragraph, instr: Text,  # {{{1
+                   cache: Callable[[Paragraph], Paragraph],
                    dirty: Optional[bool] = None) -> None:
     r = para.add_run("")._r
     fld = OxmlElement('w:fldChar')
@@ -388,8 +389,8 @@ def docx_add_field(para: Paragraph, instr: Text, now: Optional[Text],  # {{{1
     fld.set(qn('w:fldCharType'), "separate")
     r.append(fld)
 
-    if now is not None:
-        para.add_run(now)
+    if cache is not None:
+        para = cache(para)
 
     r = para.add_run("")._r
     fld = OxmlElement('w:fldChar')
@@ -510,9 +511,13 @@ def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
         glb.numbers_of_captions[caption] += 1
     n = glb.numbers_of_captions[caption]
 
+    def cb(p: Paragraph) -> Paragraph:
+        p.add_run("%d" % n)
+        return p
+
     # TODO(shimoda): surround figure by frame
     para.add_run(caption + " ")  # r:vanish??
-    docx_add_field(para, r"SEQ %s \* ARABIC" % caption, "%d" % n)
+    docx_add_field(para, r"SEQ %s \* ARABIC" % caption, cb)
     para.add_run(". " + title)
 
 
@@ -631,17 +636,21 @@ class Styles(object):  # {{{1
         (style("List Bullet %d" % i))(init_list)
 
     def init_toc(self, doc: Document, name: Text) -> Text:  # {{{1
-        # line spacing of TOC
+        # [@P5-1-11] line spacing of TOC
+        level = name.split(" ")[2]
+        sname = "List" + ((" " + level) if level != "1" else "")
         style = doc.styles.add_style(
                 name, WD_STYLE_TYPE.PARAGRAPH
-                ).paragraph_format
-        style.space_after = Mm(1)
-        style.line_spacing = 1.0
-        style.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
+                )
+        style.base_style = doc.styles[sname]
+        fmt = style.paragraph_format
+        fmt.space_after = Mm(1)
+        fmt.line_spacing = 1.0
+        fmt.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
         return name
 
     for i in range(1, 10):
-        (style("Contents %d" % i))(init_toc)
+        (style("TOC Contents %d" % i))(init_toc)
 
     @style("Stamps")  # {{{1
     def init_stamps(self, doc: Document, name: Text) -> Text:

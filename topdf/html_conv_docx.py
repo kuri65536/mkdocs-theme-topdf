@@ -18,7 +18,6 @@ from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
 from docx.blkcntnr import BlockItemContainer  # type: ignore
-from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import (                  # type: ignore
         WD_ALIGN_PARAGRAPH, WD_BREAK,  # type: ignore
         )             # type: ignore
@@ -32,9 +31,11 @@ from docx.table import _Cell, Table  # type: ignore
 try:
     from . import common
     from . import options
+    from . import docx_toc
 except ImportError:
     import common  # type: ignore
     import options  # type: ignore
+    import docx_toc  # type: ignore
 
 
 if False:
@@ -184,9 +185,7 @@ class HtmlConvertDocx(object):  # {{{1
             self.header_set(elem.string)
             return None
         if "toc" in classes:
-            para = self.output.add_paragraph()
-            common.docx_add_field(para, r'TOC \o "1-9" \h', None, True)
-            para = self.para = self.output.add_paragraph()
+            self.para = docx_toc.generate_toc(self.output, elem)
             return None
 
         try:
@@ -772,14 +771,6 @@ class HtmlConvertDocx(object):  # {{{1
                 cell.width = wid
         return True
 
-    def style_exists_or_add_list(self, doc: Document, lvl: int,  # {{{1
-                                 tgt: Text, src: Text) -> None:
-        if tgt in doc.styles:
-            return
-        sty = doc.styles.add_style(tgt, WD_STYLE_TYPE.PARAGRAPH)
-        sty.base_style = doc.styles[src]
-        sty.paragraph_format.left_indent = Mm(15 + 10 * (lvl - 1))
-
     def style_list(self, f_number: bool, level: int) -> _info_list:  # {{{1
         style_base = "List Number" if f_number else "List Bullet"
         if level > 1:
@@ -787,7 +778,6 @@ class HtmlConvertDocx(object):  # {{{1
         else:
             style = style_base
         style = common.docx_style(self.output, style)
-        self.style_exists_or_add_list(self.output, level, style, style_base)
         return _info_list(f_number, style, level)
 
     def current_para_or_create(self, para: Paragraph) -> Paragraph:  # {{{1

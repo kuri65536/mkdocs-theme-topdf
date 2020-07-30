@@ -177,16 +177,17 @@ document number. ISO-nnnn-nn
 
 
 ### 4.5. **(Under fix)** TOC <!-- {{{1 -->
-- insert docx `TOC` field at `[TOC]` in markdown
-- now support just embed a `TOC` field into document.  
-    FIXME(shimoda): manipurate TOC contents by script
+- insert docx `TOC` field by `[TOC]` in markdown
+- [@5-2-1] now support just embed a `TOC` field and  
+    a simple list in documents.
+- **FIXME(shimoda):** manipurate TOC bookmarks and jumps.
 - LibreOffice users will need to update the `TOC` field by manual.
 - MS Word may ask to update the TOC field at launch,
 
     - from [pandoc issue #458](https://github.com/jgm/pandoc/issues/458),
         the `dirty` flag at a field element and `updateFields` in settings.xml
 
-- **TODO(shimoda)** remove line-height or
+- [@R5-1-1] remove line-height or
     reduce extra spaces after paragraph of TOC.
 
 
