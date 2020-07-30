@@ -5,12 +5,13 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import base64
-from logging import (error as eror, warning as warn, )
+from logging import (debug as debg, error as eror, warning as warn, )
 import os
 import sys
 from tempfile import NamedTemporaryFile as Temporary
 from typing import (Callable, Dict, Iterable, List, Optional, Set,
                     Text, Tuple, )
+import zlib
 
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
@@ -41,6 +42,7 @@ class glb:  # {{{1
     styles: List[Text] = []
     seq_styles: Dict[Text, Callable[['Styles', Document], Text]] = {}
     seq_files: List[Text] = []
+    bookmark_id = 1
 
 
 class ParseError(Exception):  # {{{1
@@ -521,6 +523,53 @@ def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
     para.add_run(". " + title)
 
 
+def docx_bookmark_normalize(name: Text) -> Text:  # {{{1
+    if len(name) > 32:
+        # [@P8-1-1]
+        pfx, sfx = name[:32], name[32:]
+        hash = zlib.adler32(name.encode("utf-8")) & 0xFFFFFFFF
+        sfx = ("0" * 8 + hex(hash)[2:])[-8:]
+        name = pfx + sfx
+    return name
+
+
+def docx_add_bookmark(para: Paragraph, name: Text, instr: Text):  # {{{1
+    id_ = glb.bookmark_id
+
+    def mark(tag: Text, name: Text):
+        mk = OxmlElement("w:bookmark" + tag)
+        mk.set(qn("w:id"), "%d" % id_)
+        if len(name) > 0:
+            name = docx_bookmark_normalize(name)
+            mk.set(qn("w:name"), name)
+            debg("book: " + name)
+        para._p.append(mk)
+
+    if len(name) > 0:
+        mark("Start", name)
+
+    para.add_run(instr)
+
+    if len(name) > 0:
+        mark("End", "")
+        glb.bookmark_id += 1
+
+
+def docx_add_hlink(para: Paragraph, instr: Text,  # {{{1
+                   name: Text) -> None:
+    link = OxmlElement("w:hyperlink")
+    para._p.append(link)
+    run = OxmlElement("w:r")
+    link.append(run)
+    text = OxmlElement("w:t")
+    run.append(text)
+
+    name = docx_bookmark_normalize(name)
+    link.set(qn("w:anchor"), name)
+    debg("link: " + name)
+    text.text = instr
+
+
 def style(name: Text  # {{{1
           ) -> Callable[[Callable[['Styles', Document, Text], Text]],
                         Callable[['Styles', Document], Text]]:
@@ -619,6 +668,10 @@ class Styles(object):  # {{{1
         fmt = style.paragraph_format
         fmt.left_indent = Mm(15 + 15 * (n - 1))
         fmt.first_line_indent = Mm(-5)
+        # [@P11-1-1] reduce extra spaces after paragraph
+        fmt.space_after = Mm(1)
+        fmt.line_spacing = 1.0
+        fmt.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
 
         """ failed to set
         ppr= i.element.get_or_add_pPr()

@@ -51,7 +51,6 @@ class _info_list:
 
 class HtmlConvertDocx(object):  # {{{1
     def __init__(self, src: Text) -> None:  # {{{1
-        self.bookmark_id = 0
         if common.is_target_in_http(src):
             self.url_target = src
         else:
@@ -320,25 +319,19 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_anchor(self, elem: Tag, para: Paragraph  # {{{1
                        ) -> Optional[Text]:
+        instr = Text(elem.text)
         url = elem.attrs.get("href", "")
         if len(url) < 1:
+            breakpoint()
             # TODO(shimoda): check `name` attribute for link target.
-            return Text(elem.text)
+            return instr
         if not url.startswith("#"):
             # TODO(shimoda): enable external link
-            return Text(elem.text)
+            return instr
 
-        link = OxmlElement("w:hyperlink")
-        if para is None:
-            para = self.para = self.output.add_paragraph()
-        para._p.append(link)
-        run = OxmlElement("w:r")
-        link.append(run)
-        text = OxmlElement("w:t")
-        run.append(text)
-
-        link.set(qn("w:anchor"), "ahref_" + url[1:])
-        text.text = Text(elem.text)
+        para = self.current_para_or_create(para)
+        # remove "#"
+        common.docx_add_hlink(para, instr, "ahref_" + url[1:])
         return None
 
     def extract_katex(self, elem: Tag, para: Paragraph  # {{{1
@@ -531,17 +524,7 @@ class HtmlConvertDocx(object):  # {{{1
         para = self.output.add_paragraph("", style=style)
 
         html_id = elem.attrs.get("id", "")
-        if len(html_id) > 0:
-            bs = OxmlElement("w:bookmarkStart")
-            be = OxmlElement("w:bookmarkEnd")
-            para._p.append(bs)
-            para._p.append(be)
-            bs.set(qn("w:id"), "%d" % self.bookmark_id)
-            be.set(qn("w:id"), "%d" % self.bookmark_id)
-            bs.set(qn("w:name"), "ahref_" + html_id)
-            self.bookmark_id += 1
-
-        para.add_run(ret)
+        common.docx_add_bookmark(para, "ahref_" + html_id, ret)
         self.para = None
         return None
 

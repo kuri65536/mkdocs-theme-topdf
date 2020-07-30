@@ -176,11 +176,10 @@ document number. ISO-nnnn-nn
 ```
 
 
-### 4.5. **(Under fix)** TOC <!-- {{{1 -->
+### 4.5. TOC <!-- {{{1 -->
 - insert docx `TOC` field by `[TOC]` in markdown
-- [@5-2-1] now support just embed a `TOC` field and  
-    a simple list in documents.
-- **FIXME(shimoda):** manipurate TOC bookmarks and jumps.
+- [@5-2-1] convert TOC html to `TOC` field and a list in documents.  
+    [@5-2-2] manipurate TOC bookmarks and hyper-links.
 - LibreOffice users will need to update the `TOC` field by manual.
 - MS Word may ask to update the TOC field at launch,
 
@@ -247,7 +246,9 @@ sample
 
 ### 4.8. Convert anchors to docx bookmarks <!-- {{{1 -->
 - anchor tags were converted to `w:hyperlink`
+- [@R8-1-1] at now, long bookmarks will convert with a simple normalization.
 - **TODO(shimoda)** id attributes to bookmarks
+- **TODO(shimdoa):** enable external links.
 
 ```
 <w:hyperlink w:anchor="ahref_target_id"><w:r><w:t>
@@ -276,7 +277,7 @@ sample
 ### 4.11. **(Under fix)** nested paragraphs <!-- {{{1 -->
 - not support nested p or div. this app just flat them.
 - nested `ul` or `ol` `li` tags inside `ul` or `ol`, a sample markup::
-- **TODO(shimoda)** remove line-height or
+- [@R11-1-1] remove line-height or
     reduce extra spaces after paragraph of ul-li-ul-li.
 
 ```
