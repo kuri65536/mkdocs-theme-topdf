@@ -638,6 +638,11 @@ class Styles(object):  # {{{1
         fmt.font.highlight_color = WD_COLOR_INDEX.YELLOW
         return name
 
+    @style("katex")  # {{{1
+    def init_katex(self, doc: Document, name: Text) -> Text:
+        doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        return name
+
     @style("Caption")  # {{{1
     def init_caption(self, doc: Document, name: Text) -> Text:
         fmt = doc.styles['Caption'].paragraph_format

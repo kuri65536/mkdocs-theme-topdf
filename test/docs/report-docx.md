@@ -247,7 +247,7 @@ sample
 ### 4.8. Convert anchors to docx bookmarks <!-- {{{1 -->
 - anchor tags were converted to `w:hyperlink`
 - [@R8-1-1] at now, long bookmarks will convert with a simple normalization.
-- **TODO(shimoda)** id attributes to bookmarks
+- [@R8-2-1] id attributes to bookmarks
 - **TODO(shimdoa):** enable external links.
 
 ```
@@ -268,13 +268,29 @@ sample
 </w:p>
 ```
 
+- title is a <a name="anchor-sample">sample</a> tag,  
+    link from  
+    [this statement](#anchor-sample)
+- a list item with anchored id (bullet)
+    {: #anchor-sample2 }
+1. a list item with anchored id (numbered)
+    {: #anchor-sample3 }
+
+paragraph with anchored id
+{: #anchor-sample4 }
+
+
+- [a link to sample2](#anchor-sample2)
+- [a link to sample3](#anchor-sample3)
+- [a link to sample4](#anchor-sample4)
+
 
 ### 4.10. **need help** Convert inner svg to DrawingML <!-- {{{1 -->
 - previous version of topdf demo embed stamps or simple examples as SVG.  
     but python-docx does not support SVG now.
 
 
-### 4.11. **(Under fix)** nested paragraphs <!-- {{{1 -->
+### 4.11. nested paragraphs <!-- {{{1 -->
 - not support nested p or div. this app just flat them.
 - nested `ul` or `ol` `li` tags inside `ul` or `ol`, a sample markup::
 - [@R11-1-1] remove line-height or
@@ -454,6 +470,7 @@ test case 2, complex pattern:
 
 ### 4.16. **(Under construction)** Convert KaTex <!-- {{{1 -->
 - implement convert method of KaTex XML.
+  **FIXME(shimoda):** convert with headless browsers.
 - sample::
 
 <p><span class="katex-display"><span class="katex">
@@ -607,9 +624,16 @@ document not output.
 #endif
 
 
+
+### 4.21. Other styles <!-- {{{1 -->
+- **FIXME(shimoda):** change a style for *emphasis* .
+
+
 ### 4.99. not supported expressions <!-- {{{1 -->
 - [@4-99-001] sup elements.
 - nested tables.
+- complex titles (h1-h6) like::
+    `<h2><a href="some where">aaa</a></h2>`
 
 
 5. Demo <!-- {{{1 -->

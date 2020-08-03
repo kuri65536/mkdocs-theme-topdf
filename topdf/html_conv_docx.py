@@ -51,6 +51,7 @@ class _info_list:
 
 class HtmlConvertDocx(object):  # {{{1
     def __init__(self, src: Text) -> None:  # {{{1
+        self.bookmarks_anchored: Dict[Text, Text] = {}
         if common.is_target_in_http(src):
             self.url_target = src
         else:
@@ -269,7 +270,6 @@ class HtmlConvertDocx(object):  # {{{1
             common.docx_add_caption(add_para(), elem.text, "Table")
             return None
 
-        # TODO(shimoda): style for the top-level emphasis
         para = self.current_para_or_create(para)
         para.add_run(elem.text, style="Emphasis")
         return None
@@ -278,7 +278,8 @@ class HtmlConvertDocx(object):  # {{{1
                      ) -> Optional[Text]:
         s = Text(elem.text)
         if para is None:  # top level
-            self.output.add_paragraph(s)  # TODO(shimoda): Code block
+            style = common.docx_style(self.output, "Quote")
+            self.output.add_paragraph(s, style)
         elif pre:
             para.add_run(s)
         else:
@@ -322,9 +323,13 @@ class HtmlConvertDocx(object):  # {{{1
         instr = Text(elem.text)
         url = elem.attrs.get("href", "")
         if len(url) < 1:
-            breakpoint()
-            # TODO(shimoda): check `name` attribute for link target.
-            return instr
+            name = elem.attrs.get("name", "")
+            if len(name) < 1:
+                return instr
+            if self.bookmark_from_db(name, elem):
+                return instr
+            common.docx_add_bookmark(para, "ahref_" + name, instr)
+            return None
         if not url.startswith("#"):
             # TODO(shimoda): enable external link
             return instr
@@ -341,10 +346,8 @@ class HtmlConvertDocx(object):  # {{{1
         # TODO(shimoda): convert to image?
         anno = elem.find("annotation")
         if anno is not None:
-            if para is None:
-                # TODO(shimoda): style
-                para = self.para = self.output.add_paragraph()
-            para.add_run(anno.text)
+            style = common.docx_style(self.output, "katex")
+            self.para = self.output.add_paragraph(anno.text, style)
         else:
             breakpoint()
         return None
@@ -523,6 +526,7 @@ class HtmlConvertDocx(object):  # {{{1
         style = common.docx_style(self.output, "Heading " + Text(level))
         para = self.output.add_paragraph("", style=style)
 
+        # [@P8-2-13] add id for titles
         html_id = elem.attrs.get("id", "")
         common.docx_add_bookmark(para, "ahref_" + html_id, ret)
         self.para = None
@@ -542,6 +546,8 @@ class HtmlConvertDocx(object):  # {{{1
         if (node.name == "p" and
                 common.has_class(node, *options.current.classes_ignore_p)):
             return None
+        bkname = self.bookmark_from_elem(node)  # [@P8-2-14] mark for <p>
+
         para = None
         for elem in node.children:
             ret = self.extract_element(elem, para)
@@ -549,6 +555,9 @@ class HtmlConvertDocx(object):  # {{{1
                 empty = ret.strip("\n")
                 if len(empty) < 1:
                     pass
+                elif para is None and len(bkname) > 0:  # [@P8-2-15] mark for p
+                    para = self.current_para_or_create(para)
+                    common.docx_add_bookmark(para, bkname, ret)
                 elif para is None:
                     self.para = para = self.output.add_paragraph(ret)
                 else:
@@ -576,7 +585,7 @@ class HtmlConvertDocx(object):  # {{{1
             elif tag.name in ("p", "div"):
                 if para is None:
                     para = cell.add_paragraph()
-                self.extract_as_run(para, tag)
+                self.extract_as_run(para, tag, "")
             elif tag.name in ("ul", "ol"):
                 self.extract_list(tag, tag.name == "ol", 1, cell)
                 para = None
@@ -604,7 +613,8 @@ class HtmlConvertDocx(object):  # {{{1
         else:
             if para is None:
                 para = blk.add_paragraph("", info.style)
-            return self.extract_as_run(para, elem)
+            bkname = self.bookmark_from_elem(elem)  # [@P8-2-11] mark for li-1
+            return self.extract_as_run(para, elem, bkname)
         for tag in elem.children:
             if tag.name in ("ul", "ol"):
                 self.extract_list(tag, tag.name == "ol", info.level + 1, blk)
@@ -631,17 +641,20 @@ class HtmlConvertDocx(object):  # {{{1
                 warn("can't parse complex html...%s" % tag.name)
         return ret
 
-    def extract_as_run(self, para: Paragraph, elem: Tag) -> Text:  # {{{1
+    def extract_as_run(self, para: Paragraph, elem: Tag,  # {{{1
+                       bkname: Text) -> Text:
         ret = ""
         if elem.name is None:  # NavigableString
             ret = Text(elem.string)
-            para.add_run(ret)
+            common.docx_add_bookmark(para, bkname, ret)  # [@P8-2-11] for li
             return ret
         for tag in elem.children:
             content = self.extract_is_text(tag)
             if isinstance(content, Text):
+                # [@P8-2-12] for li, head of paragraph
                 ret += content
-                para.add_run(content)
+                common.docx_add_bookmark(para, bkname, content)
+                bkname = ""
                 continue
             if content is None:
                 continue
@@ -650,6 +663,8 @@ class HtmlConvertDocx(object):  # {{{1
                         tag, para)
                 if isinstance(s, Text):
                     ret += s
+                if len(bkname) > 0:
+                    common.docx_add_bookmark(para, bkname, " ")  # [@P8-2-13]
             except common.ParseError:
                 pass
         return ret
@@ -763,10 +778,46 @@ class HtmlConvertDocx(object):  # {{{1
         style = common.docx_style(self.output, style)
         return _info_list(f_number, style, level)
 
-    def current_para_or_create(self, para: Paragraph) -> Paragraph:  # {{{1
-        if para is None:
+    def current_para_or_create(self, para: Paragraph, style: Text = ""  # {{{1
+                               ) -> Paragraph:
+        if para is not None:
+            return para
+        if len(style) < 1:
             para = self.para = self.output.add_paragraph()
+            return para
+        para = self.para = self.output.add_paragraph("", style)
         return para
+
+    def bookmark_from_elem(self, elem: Tag) -> Text:  # {{{1
+        # [@P8-2-14]
+        id_ = elem.attrs.get("id", "")
+        if len(id_) < 1:
+            return ""
+        if self.bookmark_from_db(id_, elem):
+            return ""  # this id is not anchored -> do not convert.
+        return "ahref_" + id_
+
+    def bookmark_from_db(self, s_href: Text, elem: Tag) -> bool:  # {{{1
+        db = self.bookmarks_anchored
+        if len(db) < 1:
+            seq = [i for i in elem.parents if i.name == "body"]
+            if len(seq) < 1:
+                return True
+            body = seq[0]
+            for elem in body.find_all("a"):
+                href = elem.attrs.get("href", "")
+                if len(href) < 1:
+                    continue
+                if not href.startswith("#"):
+                    continue
+                href = href[1:]
+                db[href] = href
+            if len(db) < 1:
+                db[""] = "dummy"
+            self.bookmarks_anchored = db  # optional
+        if s_href not in db:
+            return True
+        return False
 
 
 def main(opts: options.Options) -> int:  # {{{1
