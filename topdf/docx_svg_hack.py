@@ -130,7 +130,7 @@ def dump_file(elem: Tag, dname: Text) -> Text:  # {{{1
     return fname
 
 
-def compose_asvg(run, pic):  # {{{1
+def compose_asvg(pic: Tag) -> None:  # {{{1
     # [@P10-1-13] compose OOXML for SVG.
     embed = '{%s}embed' % (
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships")

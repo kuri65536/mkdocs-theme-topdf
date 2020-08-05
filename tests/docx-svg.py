@@ -20,13 +20,13 @@ class Tests(unittest.TestCase):
         fname = ftmp1.name
         ftmp1.close()
 
-        fnam2 = os.path.basename(__file__) + ".docx"
+        fnam2 = os.path.basename(__file__) + "ext.docx"
         opts = options.parse([fname, "-o", fnam2])
         tgt.main(opts)
 
         doc = Document(fnam2)
         output = doc.paragraphs[0].text
-        self.assertEqual(output, "abc cde")
+        self.assertEqual(output, "abc  cde")
 
     def svg_in(self):
         ftmp1 = tempfile("wt", delete=False)
@@ -41,7 +41,7 @@ class Tests(unittest.TestCase):
         fname = ftmp1.name
         ftmp1.close()
 
-        fnam2 = os.path.basename(__file__) + ".docx"
+        fnam2 = os.path.basename(__file__) + "inn.docx"
         opts = options.parse([fname, "-o", fnam2])
         tgt.main(opts)
 

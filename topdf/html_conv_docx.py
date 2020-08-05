@@ -500,6 +500,9 @@ class HtmlConvertDocx(object):  # {{{1
         w, h = common.image_width_and_height(fname)
         if (w, h) == (0, 0):
             # TODO(shimoda): implement for svg
+            docx_svg_hack.monkey()
+            pic = para.add_run().add_picture(fname)
+            docx_svg_hack.compose_asvg(pic)
             return None
         args = common.dot_to_page(w, h)
         para.add_run().add_picture(fname, **args)
@@ -512,10 +515,9 @@ class HtmlConvertDocx(object):  # {{{1
         docx_svg_hack.monkey()
 
         para = self.current_para_or_create(para)
-        run = para.add_run()
-        pic = run.add_picture(fname)
+        pic = para.add_run().add_picture(fname)
 
-        docx_svg_hack.compose_asvg(run, pic)
+        docx_svg_hack.compose_asvg(pic)
         return None
 
     def extract_title(self, elem: Tag) -> Optional[Text]:  # {{{1
