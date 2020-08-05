@@ -7,7 +7,7 @@ def readme():
         return f.read()
 
 
-VERSION = '1.2.0'
+VERSION = '1.3.0'
 
 long_description = (
     "This is a mkdocs theme, "

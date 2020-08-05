@@ -10,7 +10,6 @@ from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
 import os
 import re
-from tempfile import NamedTemporaryFile as Temporary
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
@@ -32,10 +31,12 @@ try:
     from . import common
     from . import options
     from . import docx_toc
+    from . import docx_svg_hack
 except ImportError:
     import common  # type: ignore
     import options  # type: ignore
     import docx_toc  # type: ignore
+    import docx_svg_hack  # type: ignore
 
 
 if False:
@@ -496,27 +497,25 @@ class HtmlConvertDocx(object):  # {{{1
             warn("img-tag: can not download, ignored...: " + src)
             return None
 
-        # FIXME(shimoda): sizing is to more flexible.
         w, h = common.image_width_and_height(fname)
+        if (w, h) == (0, 0):
+            # TODO(shimoda): implement for svg
+            return None
         args = common.dot_to_page(w, h)
         para.add_run().add_picture(fname, **args)
         return None
 
     def extract_svg(self, elem: Tag, para: Paragraph  # {{{1
                     ) -> Optional[Text]:
-        if para is None:
-            para = self.para = self.output.add_paragraph()
-        dname, fname = "tmp", ""
-        if not os.path.exists(dname):
-            os.mkdir(dname)
-        with Temporary(mode="wt", dir=dname, suffix=".svg", delete=False
-                       ) as fp:
-            fname = fp.name
-            fp.write(Text(elem))
-        common.glb.seq_files.append(fname)
-        info("structure: svg: is not supported by python-docx, %s" % fname)
-        # TODO(shimoda): import as xml.
-        # para.add_run().add_picture(fname, **args)
+        # [P10-1-11] convert to an imported svg.
+        fname = docx_svg_hack.dump_file(elem, "tmp")
+        docx_svg_hack.monkey()
+
+        para = self.current_para_or_create(para)
+        run = para.add_run()
+        pic = run.add_picture(fname)
+
+        docx_svg_hack.compose_asvg(run, pic)
         return None
 
     def extract_title(self, elem: Tag) -> Optional[Text]:  # {{{1

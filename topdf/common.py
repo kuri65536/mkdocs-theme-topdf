@@ -348,6 +348,12 @@ def image_width_and_height(src: Text) -> Tuple[int, int]:  # {{{1
         return get_image_size.get_image_size(src)  # type: ignore
     except get_image_size.UnknownImageFormat:
         pass
+    if src.endswith(".svg.gz"):
+        return (0, 0)
+    if src.endswith(".svgz"):
+        return (0, 0)
+    if src.endswith(".svg"):
+        return (0, 0)
     return (-1, -1)
 
 
@@ -358,6 +364,8 @@ def dot_to_mm(n: int) -> int:  # {{{1
 
 
 def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
+    if w < 1 and h < 1:
+        return {}
     if dot_to_mm(w) > Mm(210 - 40):
         args = {"width": Mm(210 - 40)}
         if dot_to_mm(h) > Mm(279 - 40):

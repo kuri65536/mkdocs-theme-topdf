@@ -285,9 +285,9 @@ paragraph with anchored id
 - [a link to sample4](#anchor-sample4)
 
 
-### 4.10. **need help** Convert inner svg to DrawingML <!-- {{{1 -->
-- previous version of topdf demo embed stamps or simple examples as SVG.  
-    but python-docx does not support SVG now.
+### 4.10. SVG <!-- {{{1 -->
+- [@R10-1-1] now support to convert inner svg as imported svg in docx.
+- **FIXME(shimoda):** convert to DrawingML?
 
 
 ### 4.11. nested paragraphs <!-- {{{1 -->

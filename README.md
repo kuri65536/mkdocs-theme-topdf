@@ -191,6 +191,9 @@ History <!-- {{{1 -->
 version
 : descriptions
 
+1.3.0
+:   - import SVG to docx.
+
 1.2.0
 :   - fix parsing strong elements at heads of paragraphs.
     - enable tests.
