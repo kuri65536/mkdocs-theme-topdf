@@ -12,10 +12,10 @@ import subprocess as sp
 import sys
 from typing import Text
 
-try:
+if sys.version_info.major == 3:
     from . import options
     from . import html_conv_docx
-except:
+else:
     import options  # type: ignore
     import html_conv_docx  # type: ignore
 
@@ -83,7 +83,7 @@ def test_pagedjs() -> int:  # {{{1
 
 
 def main() -> int:  # {{{1
-    opts = options.parse()
+    opts = options.parse(sys.argv)
     if opts.f_setup_pagedjs:
         return setup_pagedjs()
     elif opts.f_check_pagedjs:

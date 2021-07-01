@@ -90,7 +90,7 @@ $ ./venv/bin/mkdocs build
 
 ### convert to docx <!-- {{{1 -->
 ```bash
-$ /path/to/python -m topdf site/your/document/index.html -o document.docx
+$ ./venv/bin/todocx site/your/document/index.html -o document.docx
 ```
 
 see [problem with python-docx](#backend-python-docx)

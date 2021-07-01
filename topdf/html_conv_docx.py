@@ -10,6 +10,7 @@ from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
 import os
 import re
+import sys
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
@@ -27,12 +28,12 @@ from docx.text.paragraph import Paragraph  # type: ignore
 from docx.shared import Mm  # type: ignore
 from docx.table import _Cell, Table  # type: ignore
 
-try:
+if sys.version_info.major == 3:
     from . import common
     from . import options
     from . import docx_toc
     from . import docx_svg_hack
-except ImportError:
+else:
     import common  # type: ignore
     import options  # type: ignore
     import docx_toc  # type: ignore
@@ -835,9 +836,13 @@ def main(opts: options.Options) -> int:  # {{{1
     return 0
 
 
-if __name__ == "__main__":  # {{{1
+def main_script() -> int:
     import sys
     opts = options.parse(sys.argv[1:])
-    main(opts)
+    return main(opts)
+
+
+if __name__ == "__main__":  # {{{1
+    main_script()
 
 # vi: ft=python:fdm=marker

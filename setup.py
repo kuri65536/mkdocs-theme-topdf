@@ -30,14 +30,17 @@ setup(
     entry_points={
         'mkdocs.themes': [
             'topdf = topdf',
-        ]
+        ],
+        'console_scripts': ["topdf=topdf:main",
+                            "todocx=topdf.html_conv_docx:main_script"]
     },
-    require=["mkdocs",
-             "python-docx",
-             "bs4",
-             "requests",
-             "opsdroid-get-image-size",
-             ],
+    install_requires=[
+                      "mkdocs",
+                      "python-docx",
+                      "bs4",
+                      "requests",
+                      "opsdroid-get-image-size",
+                      ],
     long_description_content_type='text/markdown',
     long_description=long_description + "\n\n" + readme(),
     zip_safe=False
