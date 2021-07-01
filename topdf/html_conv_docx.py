@@ -18,9 +18,8 @@ from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
 from docx.blkcntnr import BlockItemContainer  # type: ignore
-from docx.enum.text import (                  # type: ignore
-        WD_ALIGN_PARAGRAPH, WD_BREAK,  # type: ignore
-        )             # type: ignore
+from docx.enum.text import (
+        WD_ALIGN_PARAGRAPH, WD_BREAK, )
 from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
@@ -792,7 +791,7 @@ class HtmlConvertDocx(object):  # {{{1
 
     def bookmark_from_elem(self, elem: Tag) -> Text:  # {{{1
         # [@P8-2-14]
-        id_ = elem.attrs.get("id", "")
+        id_: Text = elem.attrs.get("id", "")
         if len(id_) < 1:
             return ""
         if self.bookmark_from_db(id_, elem):

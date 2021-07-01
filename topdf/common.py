@@ -16,8 +16,7 @@ import zlib
 from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import (                  # type: ignore
-        WD_COLOR_INDEX, WD_LINE_SPACING,  # type: ignore
-        WD_PARAGRAPH_ALIGNMENT, )             # type: ignore
+        WD_COLOR_INDEX, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT, )
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
 from docx.shared import Mm, Pt, RGBColor  # type: ignore
@@ -98,7 +97,7 @@ def has_width_and_parse(classes: Iterable[Text]  # {{{1
         return n
 
     def parse_base(src: Text) -> float:
-        n_max, n_sum = 0, 0.0
+        n_max, n_sum = 0.0, 0.0
         for num in src.split("-"):
             n = parse_float_or_0(num)
             if n <= 0.0:
@@ -136,7 +135,7 @@ def has_width_and_parse(classes: Iterable[Text]  # {{{1
     return src, ret
 
 
-def count_tags_around_image(src: Tag):  # {{{1
+def count_tags_around_image(src: Tag) -> int:  # {{{1
     "[@P14-1-12] image under a rule"
     i = 0
     for elem in src.children:
@@ -380,7 +379,7 @@ def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
 
 
 def docx_add_field(para: Paragraph, instr: Text,  # {{{1
-                   cache: Callable[[Paragraph], Paragraph],
+                   cache: Optional[Callable[[Paragraph], Paragraph]],
                    dirty: Optional[bool] = None) -> None:
     r = para.add_run("")._r
     fld = OxmlElement('w:fldChar')
@@ -541,10 +540,11 @@ def docx_bookmark_normalize(name: Text) -> Text:  # {{{1
     return name
 
 
-def docx_add_bookmark(para: Paragraph, name: Text, instr: Text):  # {{{1
+def docx_add_bookmark(para: Paragraph, name: Text, instr: Text  # {{{1
+                      ) -> None:
     id_ = glb.bookmark_id
 
-    def mark(tag: Text, name: Text):
+    def mark(tag: Text, name: Text) -> None:
         mk = OxmlElement("w:bookmark" + tag)
         mk.set(qn("w:id"), "%d" % id_)
         if len(name) > 0:

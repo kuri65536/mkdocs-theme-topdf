@@ -20,7 +20,7 @@ try:
 except ImportError:
     import common  # type: ignore
 
-default_factory: Optional[Callable[[IO], Text]] = None
+default_factory: Optional[Callable[[IO[Text]], Text]] = None
 
 
 """sample1.docx {{{1
@@ -163,7 +163,7 @@ def compose_asvg(pic: Tag) -> None:  # {{{1
 
 class Svg(image.BaseImageHeader):  # {{{1
     @classmethod
-    def from_stream(cls, stream):
+    def from_stream(cls, stream: IO[Text]) -> '_SvgParser':
         """Return a |Svg| instance having header properties parsed from image
              in *stream*."""
         # [@P10-1-16]
@@ -173,18 +173,22 @@ class Svg(image.BaseImageHeader):  # {{{1
                    info.horz_dpi, info.vert_dpi)
 
     @property
-    def content_type(self):
+    def content_type(self) -> Text:
         return "image/svg"
 
 
-class _SvgParser(object):
+class _SvgParser(object):  # {{{1
+    def __init__(self) -> None:  # {{{1
+        self.horz_dpi = self.vert_dpi = 96  # from SVG 2 specification.
+        self.px_width: Optional[int] = 100
+        self.px_height: Optional[int] = 100
+
     @classmethod
-    def parse(cls, stream):
+    def parse(cls, stream: IO[Text]) -> '_SvgParser':
         """Return a |_SvgParser| instance containing the header properties
             parsed from the SVG image in *stream*."""
         # [@P10-1-14] parse header with lightweight method.
         ret = cls()
-        ret.horz_dpi = ret.vert_dpi = 96  # from SVG 2 specification.
 
         w, h = None, None
         context = etree.iterparse(stream, events=("start", ), tag=("svg", ))
@@ -206,7 +210,8 @@ class _SvgParser(object):
             ret.px_width, ret.px_height = w, h
         return ret
 
-    def parse_px(src: Text) -> Optional[int]:
+    @classmethod
+    def parse_px(cls, src: Text) -> Optional[int]:
         # [@P10-1-15] parse length for width and height.
         def parse_len(src: Text) -> Optional[float]:
             try:
@@ -240,17 +245,18 @@ class _SvgParser(object):
         return int(0.5 + ret)
 
 
-def _ImageHeaderFactory(stream):  # {{{1
+def _ImageHeaderFactory(stream: IO[Text]) -> image.BaseImageHeader:  # {{{1
     # [@P10-1-12] judge svg headers and relay to the default factory.
     stream.seek(0)
     buf = stream.read(32)
     if "<svg".encode("latin") in buf:
         stream.seek(0)
         return Svg.from_stream(stream)
+    assert default_factory is not None
     return default_factory(stream)
 
 
-def monkey():  # {{{1
+def monkey() -> None:  # {{{1
     # [@P10-1-11] register svg images to the docx header factory.
     global default_factory
     if default_factory is not None:
