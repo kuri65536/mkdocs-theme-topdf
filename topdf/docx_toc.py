@@ -45,6 +45,6 @@ def cache_toc(doc: Document, elem: Tag) -> Paragraph:  # {{{1
         else:
             common.docx_add_hlink(para, Text(elem.text), "ahref_" + id_)
         # [@P5-1-12] line spacing of TOC
-        para.style = common.docx_style(doc, "TOC Contents " + level)
+        para.style = common.Styles.get(doc, "TOC Contents " + level)
         para = doc.add_paragraph()
     return para

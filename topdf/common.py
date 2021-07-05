@@ -36,10 +36,22 @@ if False:
     List
 
 
+def parse_trailing_numbers(src: Text) -> Tuple[Text, int]:  # {{{1
+    ret_n, ret = 0, ""
+    for n, ch in enumerate(reversed(src)):
+        if len(ret) > 0:
+            ret = ch + ret
+            continue
+        if ch not in "0123456789":
+            ret = ch
+            continue
+        ret_n += ord(ch) - ord("0")
+    return ret.rstrip(), ret_n
+
+
 class glb:  # {{{1
     numbers_of_captions: Dict[Text, int] = {}
-    styles: List[Text] = []
-    seq_styles: Dict[Text, Callable[['Styles', Document], Text]] = {}
+    funcs_style_init: Dict[Text, Callable[['Styles', Document], Text]] = {}
     seq_files: List[Text] = []
     bookmark_id = 1
 
@@ -586,22 +598,32 @@ def style(name: Text  # {{{1
             ) -> Callable[['Styles', Document], Text]:
 
         def new_fn(self: 'Styles', doc: Document) -> Text:
+            Styles.allocated.append(name)
             return fn(self, doc, name)
 
-        glb.seq_styles[name] = new_fn
+        glb.funcs_style_init[name] = new_fn
         return new_fn
 
     return ret
 
 
 class Styles(object):  # {{{1
+    """- define styles in `init_***` and
+       - call `init_***` methods when styles were not defiend.
+    """
+    allocated: List[Text] = []
+
     @classmethod
     def get(cls, doc: Document, name: Text) -> Text:
-        if name not in glb.seq_styles:
-            raise ParseError("")
-        fn = glb.seq_styles[name]
-        self = Styles()
-        return fn(self, doc)
+        if name in Styles.allocated:
+            return name
+        fn = glb.funcs_style_init.get(name, None)
+        if fn is None:
+            if name in doc.styles:
+                return name
+            raise ParseError("not %s in " % name + ": " +
+                             ",".join(glb.funcs_style_init.keys()))
+        return fn(Styles(), doc)
 
     def init_heading(self, doc: Document, name: Text) -> Text:  # {{{1
         # failure code.
@@ -667,14 +689,10 @@ class Styles(object):  # {{{1
 
     def init_list(self, doc: Document, name: Text) -> Text:  # {{{1
         # list items indent
-        if name[-1] in "0123456789":
-            n = int(name.split(" ")[-1])
-        else:
-            n = 1
+        org, n = parse_trailing_numbers(name)
         if name in doc.styles:
             style = doc.styles[name]
         else:
-            org = " ".join(name.split(" ")[:-1])
             style_org = doc.styles[org]
             style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
             style.base_style = style_org
@@ -701,14 +719,21 @@ class Styles(object):  # {{{1
         (style("List Number %d" % i))(init_list)
         (style("List Bullet %d" % i))(init_list)
 
+    @style("TOC Contents")
+    def init_toc_contents(self, doc: Document, name: Text) -> Text:  # {{{1
+        doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        return name
+
     def init_toc(self, doc: Document, name: Text) -> Text:  # {{{1
         # [@P5-1-11] line spacing of TOC
-        level = name.split(" ")[2]
-        sname = "List" + ((" " + level) if level != "1" else "")
-        style = doc.styles.add_style(
-                name, WD_STYLE_TYPE.PARAGRAPH
-                )
+        sname, n = parse_trailing_numbers(name)
+        sname = Styles.get(doc, sname)  # TOC Contents 1 -> TOC Contents
+
+        style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        fmt = style.paragraph_format
+        fmt.left_indent = Mm(15 + 15 * (n - 1))
         style.base_style = doc.styles[sname]
+
         fmt = style.paragraph_format
         fmt.space_after = Mm(1)
         fmt.line_spacing = 1.0
@@ -759,25 +784,6 @@ class Styles(object):  # {{{1
         if len(seq) > 0:
             ppr.remove(seq[0])
         return name
-
-
-def docx_style(doc: Document, name: Text) -> Text:  # {{{1
-    if name in glb.styles:
-        return name
-
-    try:
-        name = Styles.get(doc, name)
-        glb.styles.append(name)
-        return name
-    except ParseError:
-        pass
-
-    for style in doc.styles:
-        if name != style.name:
-            continue
-        glb.styles.append(name)
-        return name
-    assert False, "can not found style: %s" % name
 
 
 def main(args: List[Text]) -> int:  # {{{1

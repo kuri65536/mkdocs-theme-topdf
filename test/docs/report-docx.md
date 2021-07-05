@@ -178,8 +178,8 @@ document number. ISO-nnnn-nn
 
 ### 4.5. TOC <!-- {{{1 -->
 - insert docx `TOC` field by `[TOC]` in markdown
-- [@5-2-1] convert TOC html to `TOC` field and a list in documents.  
-    [@5-2-2] manipurate TOC bookmarks and hyper-links.
+- [@R5-2-1] convert TOC html to `TOC` field and a list in documents.  
+    [@R5-2-2] manipurate TOC bookmarks and hyper-links.
 - LibreOffice users will need to update the `TOC` field by manual.
 - MS Word may ask to update the TOC field at launch,
 
@@ -188,6 +188,42 @@ document number. ISO-nnnn-nn
 
 - [@R5-1-1] remove line-height or
     reduce extra spaces after paragraph of TOC.
+
+- [@R5-2-3] nest over 4 hierarchy.
+
+
+#### test
+an para.
+
+##### over
+an para.
+
+##### 4 hierarchy
+an para.
+
+###### this
+an para.
+
+###### is
+an para.
+
+###### a
+an para.
+
+###### test
+an para.
+
+##### data
+an para.
+
+###### for
+an para.
+
+####### parse
+an para.
+
+######## sections.
+an para.
 
 
 ### 4.6. Styles for page-break <!-- {{{1 -->
@@ -293,8 +329,13 @@ paragraph with anchored id
 ### 4.11. nested paragraphs <!-- {{{1 -->
 - not support nested p or div. this app just flat them.
 - nested `ul` or `ol` `li` tags inside `ul` or `ol`, a sample markup::
+- TODO(shimoda): nested over 4 hierarchy
+- TODO(shimoda): process recover list item numbers to zero at the begging.
+- TODO(shimoda): reset number list to zero or one at the end of paragraph.
 - [@R11-1-1] remove line-height or
     reduce extra spaces after paragraph of ul-li-ul-li.
+
+#### list
 
 ```
 - aaaa
@@ -334,6 +375,66 @@ paragraph with anchored id
 - eeee
     1. eee-1
     2. eee-2
+
+
+#### ordered list
+
+```
+1. aaaa
+2. bbbb
+    1. bbb1
+    2. bbb2
+3. cccc
+    1. ccc1
+    2. ccc2
+4. dddd
+    1. ddd1
+    2. ddd2
+        1. ddd2-1
+        2. ddd2-2
+            1. ddd2-2-1
+            2. ddd2-2-2
+        3. ddd2-3
+            1. ddd2-2-1
+        4. ddd2-3
+            1. ddd2-2-1
+        5. ddd2-3
+    3. ddd2-3
+
+sample
+
+1. eee
+2. eee
+3. eee
+```
+
+1. aaaa
+2. bbbb
+    1. bbb1
+    2. bbb2
+3. cccc
+    1. ccc1
+    2. ccc2
+4. dddd
+    1. ddd1
+    2. ddd2
+        1. ddd2-1
+        2. ddd2-2
+            1. ddd2-2-1
+            2. ddd2-2-2
+        3. ddd2-3
+            1. ddd2-2-1
+        4. ddd2-3
+            1. ddd2-2-1
+        5. ddd2-3
+    3. ddd2-3
+
+sample
+
+1. eee
+2. eee
+3. eee
+
 
 
 ### 4.12. list in tables <!-- {{{1 -->
@@ -626,6 +727,7 @@ document not output.
 
 
 ### 4.21. Other styles <!-- {{{1 -->
+- **TODO(shimoda):** lost lines fter 2nd line.
 - **FIXME(shimoda):** change a style for *emphasis* .
 
 

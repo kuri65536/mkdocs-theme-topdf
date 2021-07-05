@@ -191,6 +191,9 @@ History <!-- {{{1 -->
 version
 : descriptions
 
+1.3.1
+:   - fix the errors with over 4 depth in TOC. R5-2-3
+
 1.3.0
 :   - import SVG to docx.
 

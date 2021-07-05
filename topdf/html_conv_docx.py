@@ -158,7 +158,7 @@ class HtmlConvertDocx(object):  # {{{1
             return self.extract_em(elem, para)
         elif elem.name == "strong":
             return self.extract_strong(elem, para)
-        elif elem.name == "sup":
+        elif elem.name in ("sup", "sub"):
             return self.extract_sup(elem, para)
         elif elem.name == "code":
             return self.extract_code(elem, para, pre=False)
@@ -170,9 +170,10 @@ class HtmlConvertDocx(object):  # {{{1
             return self.extract_katex(elem, para)
         elif elem.name == "span":
             text = elem.text
-            para = self.current_para_or_create(para)
-            para.add_run(text)
-            return text
+            if isinstance(text, Text):
+                para = self.current_para_or_create(para)
+                para.add_run(text)
+                return text
         raise common.ParseError("%s is not implemented, yet" % elem.name)
 
     def extract_element(self, elem: Tag, para: Paragraph  # {{{1
@@ -257,7 +258,7 @@ class HtmlConvertDocx(object):  # {{{1
 
     def extract_em(self, elem: Tag, para: Paragraph) -> Optional[Text]:  # {{{1
         def add_para() -> Paragraph:
-            style = common.docx_style(self.output, "Caption")
+            style = common.Styles.get(self.output, "Caption")
             self.para = self.output.add_paragraph("", style)
             return self.para
         classes = elem.attrs.get("class", [])
@@ -279,19 +280,19 @@ class HtmlConvertDocx(object):  # {{{1
                      ) -> Optional[Text]:
         s = Text(elem.text)
         if para is None:  # top level
-            style = common.docx_style(self.output, "Quote")
+            style = common.Styles.get(self.output, "Quote")
             self.output.add_paragraph(s, style)
         elif pre:
             para.add_run(s)
         else:
-            style = common.docx_style(self.output, "CodeChars")
+            style = common.Styles.get(self.output, "CodeChars")
             para.add_run(s, style=style)
         return None
 
     def extract_strong(self, elem: Tag, para: Paragraph  # {{{1
                        ) -> Optional[Text]:
         s = Text(elem.text)
-        style = common.docx_style(self.output, "Strong")
+        style = common.Styles.get(self.output, "Strong")
         para = self.current_para_or_create(para)
         para.add_run(s, style=style)
         return None
@@ -301,10 +302,11 @@ class HtmlConvertDocx(object):  # {{{1
         # [@D4-99-001-1] treat sup elements
         ret = ""
         for tag in elem.children:
-            if tag.name == "a":
+            if tag.name == "a" and len(ret) > 0:
                 para = self.current_para_or_create(para)
                 para.add_run(ret)
                 ret = ""
+            if tag.name == "a":
                 # TODO(shimoda): append extra 'sup' styles for anchor.
                 self.extract_anchor(tag, para)
                 continue
@@ -347,7 +349,7 @@ class HtmlConvertDocx(object):  # {{{1
         # TODO(shimoda): convert to image?
         anno = elem.find("annotation")
         if anno is not None:
-            style = common.docx_style(self.output, "katex")
+            style = common.Styles.get(self.output, "katex")
             self.para = self.output.add_paragraph(anno.text, style)
         else:
             breakpoint()
@@ -406,7 +408,7 @@ class HtmlConvertDocx(object):  # {{{1
         info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         tbl.autofit = False
-        tbl.style = common.docx_style(self.output, "Table Grid")
+        tbl.style = common.Styles.get(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         for (row, col), subelem in sorted(dct.items(), key=lambda x: x[0]):
             cell = tbl.rows[row].cells[col]
@@ -450,7 +452,7 @@ class HtmlConvertDocx(object):  # {{{1
         info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
         tbl = self.output.add_table(rows=n_row, cols=n_col)
         tbl.autofit = False
-        tbl.style = common.docx_style(self.output, "Table Grid")
+        tbl.style = common.Styles.get(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         n_row, i = -1, 0
         for tag in elem.children:
@@ -486,7 +488,7 @@ class HtmlConvertDocx(object):  # {{{1
         para = self.current_para_or_create(para)
         # [@P14-1-11] center images at some rules.
         if common.count_tags_around_image(elem.parent) <= 2:
-            para.style = common.docx_style(self.output, "Image")
+            para.style = common.Styles.get(self.output, "Image")
 
         src = elem.attrs.get("src", "")
         if len(src) < 1:
@@ -524,7 +526,7 @@ class HtmlConvertDocx(object):  # {{{1
         level = int(elem.name.lstrip("h"))
         ret = Text(elem.text)
         info("structure: hed: " + ret)
-        style = common.docx_style(self.output, "Heading " + Text(level))
+        style = common.Styles.get(self.output, "Heading " + Text(level))
         para = self.output.add_paragraph("", style=style)
 
         # [@P8-2-13] add id for titles
@@ -536,7 +538,7 @@ class HtmlConvertDocx(object):  # {{{1
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:  # {{{1
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
-        style = common.docx_style(self.output, "Quote")
+        style = common.Styles.get(self.output, "Quote")
         para = self.output.add_paragraph(ret, style=style)
         self.para = None
         common.Styles.quote(para)
@@ -601,7 +603,7 @@ class HtmlConvertDocx(object):  # {{{1
 
         # [@P13-2-13] style for cells
         style_name = "CellHeader" if elem.name == "th" else "CellNormal"
-        style = common.docx_style(self.output, style_name)
+        style = common.Styles.get(self.output, style_name)
         for para in cell.paragraphs:
             para.style = style
 
@@ -719,18 +721,18 @@ class HtmlConvertDocx(object):  # {{{1
             para = row.cells[0].paragraphs[-1]
             lines = para.text.split("\n")
             if len(lines) < 2:
-                para.style = common.docx_style(self.output, "Title")
+                para.style = common.Styles.get(self.output, "Title")
                 return True
             para.text = lines[0]
             para = row.cells[0].add_paragraph("\n".join(lines[1:]))
 
         for n, para in enumerate(row.cells[0].paragraphs):
             if n == 0:
-                para.style = common.docx_style(self.output, "Subtitle")
+                para.style = common.Styles.get(self.output, "Subtitle")
             else:
-                para.style = common.docx_style(self.output, "Title")
+                para.style = common.Styles.get(self.output, "Title")
         for i in range(1, 4):
-            row.cells[i].paragraphs[0].style = common.docx_style(
+            row.cells[i].paragraphs[0].style = common.Styles.get(
                     self.output, "Stamps")
             if "\n" not in row.cells[i].text:
                 tcpr = row.cells[i]._element.get_or_add_tcPr()
@@ -776,7 +778,7 @@ class HtmlConvertDocx(object):  # {{{1
             style = style_base + " %d" % level
         else:
             style = style_base
-        style = common.docx_style(self.output, style)
+        style = common.Styles.get(self.output, style)
         return _info_list(f_number, style, level)
 
     def current_para_or_create(self, para: Paragraph, style: Text = ""  # {{{1
