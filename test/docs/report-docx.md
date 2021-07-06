@@ -727,12 +727,12 @@ document not output.
 
 
 ### 4.21. Other styles <!-- {{{1 -->
-- **TODO(shimoda):** lost lines fter 2nd line.
+- [@R4-21-1] pre or code: lost lines after 2nd line.
 - **FIXME(shimoda):** change a style for *emphasis* .
 
 
 ### 4.99. not supported expressions <!-- {{{1 -->
-- [@4-99-001] sup elements.
+- [@R4-99-001] sup elements.
 - nested tables.
 - complex titles (h1-h6) like::
     `<h2><a href="some where">aaa</a></h2>`

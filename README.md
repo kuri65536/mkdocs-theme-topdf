@@ -193,6 +193,7 @@ version
 
 1.3.1
 :   - fix the errors with over 4 depth in TOC. R5-2-3
+:   - parse returns and add break in pre/code tags. R4-21-1
 
 1.3.0
 :   - import SVG to docx.

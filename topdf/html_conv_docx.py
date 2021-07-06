@@ -539,7 +539,11 @@ class HtmlConvertDocx(object):  # {{{1
         ret = Text(elem.string)
         info("structure: pre: " + ret.splitlines()[0])
         style = common.Styles.get(self.output, "Quote")
-        para = self.output.add_paragraph(ret, style=style)
+        # [@D4-21-1] parse lines and add runs and breaks for them.
+        for n, line in enumerate(ret.splitlines()):
+            if n == 0:
+                para = self.output.add_paragraph("", style=style)
+            para.add_run(line).add_break()
         self.para = None
         common.Styles.quote(para)
         return None
