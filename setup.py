@@ -40,6 +40,8 @@ setup(
                       "bs4",
                       "requests",
                       "opsdroid-get-image-size",
+                      "cell_row_span @ "
+                      "git+https://github.com/Neepawa/cell_row_span",
                       ],
     long_description_content_type='text/markdown',
     long_description=long_description + "\n\n" + readme(),
