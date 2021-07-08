@@ -43,8 +43,8 @@ if False:
     List
 
 
-class _info_list:
-    def __init__(self, f: bool, s: Text, l: int) -> None:
+class _info_list:  # {{{1
+    def __init__(self, f: bool, s: Text, l: int) -> None:  # {{{1
         self.f_number = f
         self.style = s
         self.level = l
@@ -631,11 +631,6 @@ class HtmlConvertDocx(object):  # {{{1
                 ret += self.extract_list_subs(para, tag, info, blk)
                 continue
 
-            try:
-                self.extract_inlines(tag, para)
-                continue
-            except common.ParseError:
-                pass
             if tag.name is None:
                 src = tag.string
                 src = src.replace("\n", " ")
@@ -644,8 +639,13 @@ class HtmlConvertDocx(object):  # {{{1
                         para = blk.add_paragraph("", info.style)
                     para.add_run(src)
                     ret += src
-            else:
-                warn("can't parse complex html...%s" % tag.name)
+                continue
+            try:
+                self.extract_inlines(tag, para)
+                continue
+            except common.ParseError:
+                pass
+            warn("can't parse complex html...%s" % tag.name)
         return ret
 
     def extract_as_run(self, para: Paragraph, elem: Tag,  # {{{1

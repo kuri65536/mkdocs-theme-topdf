@@ -351,6 +351,20 @@ paragraph with anchored id
         - ddd2-1
         - ddd2-2
             - ddd2-2-1
+                - ddd2-2-1-1
+                - ddd2-2-1-2
+                    - ddd2-2-1-2-1
+                    - ddd2-2-1-2-2
+                        - ddd2-2-1-2-2-1
+                        - ddd2-2-1-2-2-2
+                            - ddd2-2-1-2-2-2-1
+                            - ddd2-2-1-2-2-2-2
+                        - ddd2-2-1-2-2-3
+                        - ddd2-2-1-2-2-4
+                    - ddd2-2-1-2-3
+                    - ddd2-2-1-2-4
+                - ddd2-2-1-3
+                - ddd2-2-1-4
             - ddd2-2-2
         - ddd2-3
 - eeee
@@ -370,6 +384,18 @@ paragraph with anchored id
         - [ddd2-1](#test-nested-lists)
         - ddd2-2
             - ddd2-2-1
+                - ddd2-2-1-2
+                    - ddd2-2-1-2-1
+                    - ddd2-2-1-2-2
+                        - ddd2-2-1-2-2-1
+                        - ddd2-2-1-2-2-2
+                            - ddd2-2-1-2-2-2-1
+                            - ddd2-2-1-2-2-2-2
+                        - ddd2-2-1-2-2-3
+                        - ddd2-2-1-2-2-4
+                    - ddd2-2-1-2-3
+                    - ddd2-2-1-2-4
+                - ddd2-2-1-3
             - ddd2-2-2
         - ddd2-3
 - eeee

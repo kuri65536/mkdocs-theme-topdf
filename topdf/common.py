@@ -690,6 +690,7 @@ class Styles(object):  # {{{1
     def init_list(self, doc: Document, name: Text) -> Text:  # {{{1
         # list items indent
         org, n = parse_trailing_numbers(name)
+        org = Styles.get(doc, org)
         if name in doc.styles:
             style = doc.styles[name]
         else:
@@ -697,7 +698,7 @@ class Styles(object):  # {{{1
             style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
             style.base_style = style_org
         fmt = style.paragraph_format
-        fmt.left_indent = Mm(15 + 15 * (n - 1))
+        fmt.left_indent = Mm(12 + 12 * n)
         fmt.first_line_indent = Mm(-5)
         # [@P11-1-1] reduce extra spaces after paragraph
         fmt.space_after = Mm(1)
@@ -732,7 +733,11 @@ class Styles(object):  # {{{1
         style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
         fmt = style.paragraph_format
         fmt.left_indent = Mm(15 + 15 * (n - 1))
-        style.base_style = doc.styles[sname]
+        if n == 0:
+            style.base_style = doc.styles["Normal"]
+            fmt.right_indent = Mm(0)
+        else:
+            style.base_style = doc.styles[sname]
 
         fmt = style.paragraph_format
         fmt.space_after = Mm(1)
