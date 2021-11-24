@@ -4,6 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
+import strutils
+#[
 import base64
 from logging import (debug as debg, error as eror, warning as warn, )
 import os
@@ -242,12 +244,14 @@ def init(force_offline: bool) -> None:  # {{{1
         f_not_online = True
 
 
-def is_target_in_http(url: Text) -> bool:  # {{{1
-    if url.startswith("http://"):
-        return True
-    elif url.startswith("https://"):
-        return True
-    return False
+]#
+proc is_target_in_http*(url: string): bool =  # {{{1
+    if url.startsWith("http://"):
+        return true
+    elif url.startsWith("https://"):
+        return true
+    return false
+#[
 
 
 def remove_temporaries() -> None:  # {{{1
@@ -789,6 +793,11 @@ class Styles(object):  # {{{1
         if len(seq) > 0:
             ppr.remove(seq[0])
         return name
+]#
+proc init*(offline: bool): void =  # {{{1
+    discard
+
+#[
 
 
 def main(args: List[Text]) -> int:  # {{{1
@@ -805,5 +814,6 @@ def main(args: List[Text]) -> int:  # {{{1
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
 
+]#
 # {{{1 end of file
-# vi: ft=python:fdm=marker
+# vi: ft=nim:fdm=marker

@@ -1,23 +1,35 @@
-# Copyright (c) 2020, Shimoda <kuri65536 at hotmail dot com>
-#
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-import argparse as ap
+##[
+
+License::
+  Copyright (c) 2020, Shimoda <kuri65536 at hotmail dot com>
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+]##
 import logging
+#[
+import argparse as ap
 import os
 from typing import (List, Text, )
 
+]#
+type
+  Options* = ref object of RootObj  # {{{1
+    level_debug*: int
+    fname_in*, fname_out*: string
+    encoding*: string  # = "utf-8"
+    force_offline*: bool
+    remove_temporaries*: bool
 
-class Options:
-    def __init__(self) -> None:  # {{{1
-        self.encoding = "utf-8"
-        self.fname_in = ""
-        self.fname_out = ""
 
+proc initOptions*(): Options =  # {{{1
+    let self = Options()
+    block:
         self.level_debug = logging.INFO
+    return self
 
+#[
         self.remove_temporaries = True
         self.force_offline = False
 
@@ -27,9 +39,6 @@ class Options:
 
         self.classes_ignore_p = [
                 "before-dl-table", "none"]
-
-        self.backends_bs4 = ('lxml', 'html.parser')
-        self.backend_bs4 = self.backends_bs4[0]
 
     @classmethod  # copy_from {{{1
     def copy_from(cls, nm: ap.Namespace) -> 'Options':
@@ -92,4 +101,5 @@ def parse(args: List[Text]) -> Options:
 
 current = Options()
 
-# vi: ft=python:fdm=marker
+]#
+# vi: ft=nim:fdm=marker

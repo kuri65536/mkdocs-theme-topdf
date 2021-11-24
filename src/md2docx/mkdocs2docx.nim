@@ -5,12 +5,21 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 # include {{{1
-import logging
+import os
+import strformat
+import system
+import tables
+
+import ./docx
+import ./etree
+import ./private/common
+import ./private/logging
+import ./private/options
+import ./private/parse_html
+#[
 from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
-import os
 import re
-import sys
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
@@ -39,50 +48,70 @@ else:
     import docx_svg_hack  # type: ignore
 
 
-if False:
-    List
-
-
 class _info_list:  # {{{1
     def __init__(self, f: bool, s: Text, l: int) -> None:  # {{{1
         self.f_number = f
         self.style = s
         self.level = l
+]#
+
+type
+  HtmlConvertDocx = ref object of RootObj
+    bookmarks_anchored: Table[string, string]
+    url_target: string
+    output: docx.Document
+    para: docx.Paragraph
 
 
-class HtmlConvertDocx(object):  # {{{1
-    def __init__(self, src: Text) -> None:  # {{{1
-        self.bookmarks_anchored: Dict[Text, Text] = {}
+proc header_init(self: HtmlConvertDocx): void
+
+
+proc initHtmlConvertDocx(src: string): HtmlConvertDocx =  # {{{1
+    let self = HtmlConvertDocx()
+    self.bookmarks_anchored = initTable[string, string]()
+    block:
         if common.is_target_in_http(src):
             self.url_target = src
         else:
-            src = os.path.realpath(src)
+            let src = os.expandFilename(src)  ## .. todo:: realpath?
             self.url_target = src
 
-        doc = Document()
+    let update_fields = initOxmlElement("w:updateFields")
+    let doc = initDocument()
+    block:
         self.output = doc
-        update_fields = OxmlElement("w:updateFields")
+    block:
         update_fields.set(qn("w:val"), "true")
         doc.settings.element.append(update_fields)
         info("structure root")
-        self.para: Optional[Paragraph] = None  # doc.add_paragraph('')
+        self.para = nil
         self.header_init()
+    return self
 
-    def header_init(self) -> None:  # {{{1
+
+proc header_init(self: HtmlConvertDocx): void =  # {{{1
+    let
         sec = self.output.sections[0]
 
+    block:
         # page setting
         sec.page_width = Mm(210)
         sec.page_height = Mm(297)
-        sec.left_margin = sec.right_margin = sec.bottom_margin = Mm(20)
+    sec.bottom_margin = Mm(20)
+    sec.right_margin = sec.bottom_margin
+    sec.left_margin = sec.bottom_margin
+    block:
         sec.top_margin = Mm(20)  # 20 - 1
 
         # make header to right
         sec.header_distance = Mm(13)  # 20 - 1
+    let
         para = self.output.sections[0].header.paragraphs[0]
+    block:
         para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
         # page border as rectangle (old word style)
+    #[
         """<w:pict><v:rect id="shape_0" ID="Shape1" stroked="t"
                 style="position:absolute;margin-left:-5.8pt;margin-top:13.05pt;width:493.2pt;height:751.15pt">
                 <w10:wrap type="none"/>
@@ -91,31 +120,41 @@ class HtmlConvertDocx(object):  # {{{1
                           endcap="flat"/>
            </v:rect></w:pict>
         """
+    ]#
+    let
         v = "urn:schemas-microsoft-com:vml"
         w10 = "urn:schemas-microsoft-com:office:word"
-        r = para._p.add_r()
-        pict = OxmlElement('w:pict')
+    var
+        r = para.raw.add_r()
+    let pict = initOxmlElement("w:pict")
+    block:
         r.append(pict)
-        rect = etree.Element("{%s}rect" % v)
+    let rect = etree.initElement(fmt"{v}rect")
+    block:
         pict.append(rect)
-        rect.set('id', 'shape_0')  # page_border')
-        rect.set('ID', 'Shape1')   # _page_border')
-        rect.set('stroked', 't')
-        rect.set('style', 'position:absolute;'
-                 'margin-left:-5.8pt;margin-top:20.0pt;'
-                 'width:493.2pt;height:751.15pt')
-        wrap = etree.Element('{%s}wrap' % w10)
-        wrap.set('type', "none")
+    rect.set("id", "shape_0")  # page_border')
+    rect.set("ID", "Shape1")   # _page_border')
+    rect.set("stroked", "t")
+    rect.set("style", "position:absolute;" &
+             "margin-left:-5.8pt;margin-top:20.0pt;" &
+             "width:493.2pt;height:751.15pt")
+    let wrap = etree.initElement(fmt"{w10}wrap")
+    wrap.set("type", "none")
+    block:
         rect.append(wrap)
-        fill = etree.Element('{%s}fill' % v)
-        fill.set('on', "false")
+    let fill = etree.initElement(fmt"{v}fill")
+    block:
+        fill.set("on", "false")
         rect.append(fill)
-        stroke = etree.Element('{%s}stroke' % v)
-        stroke.set('color', "black")
-        stroke.set('weight', "12600")
-        stroke.set('joinstyle', "round")
-        stroke.set('endcap', "flat")
+    let stroke = etree.initElement(fmt"{v}stroke")
+    block:
+        stroke.set("color", "black")
+        stroke.set("weight", "12600")
+        stroke.set("joinstyle", "round")
+        stroke.set("endcap", "flat")
         rect.append(stroke)
+#[
+
 
     def header_set(self, src: Text) -> None:  # {{{1
         para = self.output.sections[0].header.paragraphs[0]
@@ -125,24 +164,28 @@ class HtmlConvertDocx(object):  # {{{1
         common.docx_add_field(para, "NUMPAGES", None)
         para.add_run(" )")
 
-    def write_out(self, fname: Text) -> None:
+]#
+proc write_out(self: HtmlConvertDocx, fname: string): void =  # {{{1
+    block:
         info("structure save")
         self.output.save(fname)
 
-        doc = Document(fname)
+    let doc = initDocument(fname)
+    block:
         for para in doc.paragraphs:
-            ret = Text(para.text)
-            info("after-para: " + (ret[0:10] if len(ret) > 9 else ret))
+            let ret = para.text
+            info("after-para: " & $(if len(ret) > 9: ret[0..10] else: ret))
         for tbl in doc.tables:
-            ret = "%d,%d" % (len(tbl.rows), len(tbl.rows[0].cells))
-            info("after-tabl: " + (ret))
+            let ret = $len(tbl.rows) & "," & $len(tbl.rows[0].cells)
+            info("after-tabl: " & ret)
 
-    def on_post_page(self, output_content: Text,  # {{{1
-                     backend_bs4: Text) -> Text:
-        soup = BeautifulSoup(output_content, backend_bs4)
-        dom = soup.find("body")
+
+proc on_post_page(self: HtmlConvertDocx,  # {{{1
+                  output_content: string): void =
+    let dom = parse_html.find_element("body")
+    block:
         self.extract_para(dom, 0)
-        return output_content
+#[
 
     def extract_is_text(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
         if elem.name is not None:
@@ -825,29 +868,27 @@ class HtmlConvertDocx(object):  # {{{1
         if s_href not in db:
             return True
         return False
+]#
 
-
-def main(opts: options.Options) -> int:  # {{{1
+proc main(opts: options.Options): int =  # {{{1
     logging.basicConfig(level=opts.level_debug)
 
     common.init(opts.force_offline)
-    with open(opts.fname_in, encoding=opts.encoding) as fp:
-        data = fp.read()
-    prog = HtmlConvertDocx(opts.fname_in)
-    prog.on_post_page(data, opts.backend_bs4)
+    let data = os.readAll(opts.fname_in)
+    let prog = initHtmlConvertDocx(opts.fname_in)
+    prog.on_post_page(data)
     prog.write_out(opts.fname_out)
     if opts.remove_temporaries:
         common.remove_temporaries()
     return 0
 
 
-def main_script() -> int:
-    import sys
-    opts = options.parse(sys.argv[1:])
+proc main_script(): int =  # {{{1
+    var opts = options.parse()
     return main(opts)
 
 
-if __name__ == "__main__":  # {{{1
-    main_script()
+when isMainModule:  # {{{1
+    sys.quit(main_script())
 
-# vi: ft=python:fdm=marker
+# vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker
