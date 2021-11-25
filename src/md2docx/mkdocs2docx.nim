@@ -6,11 +6,15 @@
 #
 # include {{{1
 import os
+import re
+import sequtils
 import strformat
+import strutils
 import system
 import tables
 
 import ./docx
+import ./docx_toc
 import ./etree
 import ./private/common
 import ./private/logging
@@ -19,7 +23,6 @@ import ./private/parse_html
 #[
 from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
-import re
 from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
 
 from bs4 import BeautifulSoup  # type: ignore
@@ -39,12 +42,10 @@ from docx.table import _Cell, Table  # type: ignore
 if sys.version_info.major == 3:
     from . import common
     from . import options
-    from . import docx_toc
     from . import docx_svg_hack
 else:
     import common  # type: ignore
     import options  # type: ignore
-    import docx_toc  # type: ignore
     import docx_svg_hack  # type: ignore
 
 
@@ -63,6 +64,15 @@ type
     para: docx.Paragraph
 
 
+proc bookmark_from_elem(self: HtmlConvertDocx, elem: Tag): string
+proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
+                            style = ""): Paragraph
+proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                     ): tuple[f: bool, s: string, t: Tag]
+proc extract_text(self: HtmlConvertDocx, elem: Tag
+                  ): tuple[f_none: bool, s: string]
+proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
+                  ): tuple[f: bool, r: string]
 proc header_init(self: HtmlConvertDocx): void
 
 
@@ -153,18 +163,20 @@ proc header_init(self: HtmlConvertDocx): void =  # {{{1
         stroke.set("joinstyle", "round")
         stroke.set("endcap", "flat")
         rect.append(stroke)
-#[
 
 
-    def header_set(self, src: Text) -> None:  # {{{1
+proc header_set(self: HtmlConvertDocx, src: string): void =  # {{{1
+    let
         para = self.output.sections[0].header.paragraphs[0]
-        para.add_run(src + "( ")
-        common.docx_add_field(para, "PAGE", None)
+    discard para.add_run(src & "( ")
+    common.docx_add_field(para, "PAGE")
+    block:
         para.add_run(" / ")
-        common.docx_add_field(para, "NUMPAGES", None)
+    common.docx_add_field(para, "NUMPAGES")
+    block:
         para.add_run(" )")
 
-]#
+
 proc write_out(self: HtmlConvertDocx, fname: string): void =  # {{{1
     block:
         info("structure save")
@@ -184,20 +196,27 @@ proc on_post_page(self: HtmlConvertDocx,  # {{{1
                   output_content: string): void =
     let dom = parse_html.find_element("body")
     block:
-        self.extract_para(dom, 0)
-#[
+        discard self.extract_para(dom, 0)
 
-    def extract_is_text(self, elem: Tag) -> Union[None, Text, Tag]:  # {{{1
-        if elem.name is not None:
-            return elem
-        elif "element.Comment" in Text(type(elem)):
-            return None  # ignore html comments
-        return self.extract_text(elem)
 
-    def extract_inlines(self, elem: Tag, para: Paragraph  # {{{1
-                        ) -> Optional[Text]:
+proc extract_is_text(self: HtmlConvertDocx, elem: Tag  # {{{1
+                     ): tuple[f: bool, s: string, t: Tag] =
+    if elem is ElementComment:
+        return (true, "", nil)  # ignore html comments
+    if len(elem.name) > 0:
+        return (false, "", elem)
+    block:
+        let (f, s) = self.extract_text(elem)
+        return (f, s, nil)
+
+
+proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                     ): tuple[f: bool, s: string] =
+    block:
         # inline elements
         if elem.name == "em":
+            return (false, "")
+        #[
             return self.extract_em(elem, para)
         elif elem.name == "strong":
             return self.extract_strong(elem, para)
@@ -217,30 +236,38 @@ proc on_post_page(self: HtmlConvertDocx,  # {{{1
                 para = self.current_para_or_create(para)
                 para.add_run(text)
                 return text
-        raise common.ParseError("%s is not implemented, yet" % elem.name)
+        ]#
+    raise newException(common.ParseError,
+                       elem.name & " is not implemented, yet")
 
-    def extract_element(self, elem: Tag, para: Paragraph  # {{{1
-                        ) -> Union[None, Text, Tag]:
-        is_text = self.extract_is_text(elem)
-        if (is_text is None) or isinstance(is_text, Text):
-            return is_text
 
-        classes = elem.attrs.get("class", [])
+proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                     ): tuple[f: bool, s: string, t: Tag] =
+    let (f1, is_text, tag) = self.extract_is_text(elem)
+    if f1:
+        return (true, "", nil)
+    if isNil(tag):
+        return (false, is_text, nil)
+
+    let classes = elem.attrs.getOrDefault("class", "").split(" ")
+    block:
         if "doc-num" in classes:
             self.header_set(elem.string)
-            return None
+            return (true, "", nil)
         if "toc" in classes:
             self.para = docx_toc.generate_toc(self.output, elem)
-            return None
+            return (true, "", nil)
 
-        try:
-            return self.extract_inlines(elem, para)
-        except common.ParseError:
-            pass
+    try:
+        let (f, s) = self.extract_inlines(elem, para)
+        return (f, s, nil)
+    except common.ParseError:
+        discard
 
         # block elements
-        if elem.name in ("script", "style"):
-            return None  # just ignore these elements.
+    if elem.name in ["script", "style"]:
+        return (true, "", nil)  # just ignore these elements.
+    #[
         elif elem.name == "hr":
             return self.extract_pagebreak(elem)
         elif elem.name == "dl":
@@ -261,22 +288,26 @@ proc on_post_page(self: HtmlConvertDocx,  # {{{1
             return self.extract_title(elem)
         elif elem.name in ("pre", "code"):
             return self.extract_codeblock(elem)
-        elif elem.name in ("p", "div"):
-            pass
-        else:
-            pass  # for debug: import pdb; pdb.set_trace()
+    ]#
+    elif elem.name in ["p", "div"]:
+        discard
+    else:
+        discard  # for debug: import pdb; pdb.set_trace()
         # p, article or ...
-        return elem
+    return (false, "", elem)
 
-    def extract_text(self, elem: Tag) -> Optional[Text]:  # {{{1
+
+proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
+                  ): tuple[f_none: bool, s: string] =
         if elem.string == "\n":
-            if elem.parent.name in ("body", "div", ):
-                return None
-        ret = Text(elem.string)
+            if elem.parent.name in ["body", "div", ]:
+                return (true, "")
+        var ret = elem.string
         # [@D4-19-1] treat \n as empty characters.
-        ret = re.sub(r" *\n *", " ", ret)
+        ret = re.replace(ret, re" *\n *", " ")
         debg(ret.strip())
-        return ret
+        return (false, ret)
+#[
 
     def extract_br(self, elem: Tag, para: Paragraph) -> Text:  # {{{1
         # sometime bs4 fails to parse `br` tag and surround text.
@@ -591,33 +622,42 @@ proc on_post_page(self: HtmlConvertDocx,  # {{{1
         common.Styles.quote(para)
         return None
 
-    def extract_para(self, node: Tag, level: int) -> Optional[Text]:  # {{{1
-        info("enter para...: %d-%s" % (level, node.name))
+]#
+proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
+                  ): tuple[f: bool, r: string] =
+    block:
+        info(fmt"enter para...: {level}-{node.name}")
         if (node.name == "p" and
-                common.has_class(node, *options.current.classes_ignore_p)):
-            return None
+                common.has_class(node, options.current.classes_ignore_p)):
+            return (false, "")
+    let
         bkname = self.bookmark_from_elem(node)  # [@P8-2-14] mark for <p>
 
-        para = None
-        for elem in node.children:
-            ret = self.extract_element(elem, para)
-            if isinstance(ret, Text):
+    var para: Paragraph = nil
+    for elem in node.children:
+        let (f, ret, tag) = self.extract_element(elem, para)
+        if (not f) and isNil(tag):
+            let
                 empty = ret.strip("\n")
+            block:
                 if len(empty) < 1:
-                    pass
-                elif para is None and len(bkname) > 0:  # [@P8-2-15] mark for p
+                    discard
+                elif isNil(para) and len(bkname) > 0:  # [@P8-2-15] mark for p
                     para = self.current_para_or_create(para)
                     common.docx_add_bookmark(para, bkname, ret)
-                elif para is None:
-                    self.para = para = self.output.add_paragraph(ret)
+                elif isNil(para):
+                    para = self.output.add_paragraph(ret)
+                    self.para = para
                 else:
                     para.add_run(ret)
-            elif ret is not None:
+        elif f:
+            discard
                 self.extract_para(elem, level + 1)
-            else:
+        else:
                 if para != self.para:
                     para = self.para
-        return None
+    return (false, "")
+#[
 
     def extract_table_cell(self, elem: Tag, cell: _Cell) -> None:  # {{{1
         # FIXME(shimoda): simplify complex code...
@@ -828,53 +868,67 @@ proc on_post_page(self: HtmlConvertDocx,  # {{{1
         style = common.Styles.get(self.output, style)
         return _info_list(f_number, style, level)
 
-    def current_para_or_create(self, para: Paragraph, style: Text = ""  # {{{1
-                               ) -> Paragraph:
-        if para is not None:
+
+]#
+proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,  # {{{1
+                            style = ""): Paragraph =
+    if not isNil(para):
             return para
-        if len(style) < 1:
-            para = self.para = self.output.add_paragraph()
+    if len(style) < 1:
+        let para = self.output.add_paragraph()
+        self.para = para
+        block:
             return para
-        para = self.para = self.output.add_paragraph("", style)
+    let para = self.output.add_paragraph("", style)
+    block:
+        self.para = para
         return para
 
-    def bookmark_from_elem(self, elem: Tag) -> Text:  # {{{1
-        # [@P8-2-14]
-        id_: Text = elem.attrs.get("id", "")
-        if len(id_) < 1:
-            return ""
-        if self.bookmark_from_db(id_, elem):
-            return ""  # this id is not anchored -> do not convert.
-        return "ahref_" + id_
 
-    def bookmark_from_db(self, s_href: Text, elem: Tag) -> bool:  # {{{1
+proc bookmark_from_db(self: HtmlConvertDocx, s_href: string,  # {{{1
+                      elem: Tag): bool =
+    var
         db = self.bookmarks_anchored
+    block:
         if len(db) < 1:
-            seq = [i for i in elem.parents if i.name == "body"]
+            var body: Tag
+            let seq = filter(elem.parents, proc(i: Tag): bool = i.name == "body")
             if len(seq) < 1:
-                return True
+                return true
             body = seq[0]
             for elem in body.find_all("a"):
-                href = elem.attrs.get("href", "")
+              var
+                href = elem.attrs.getOrDefault("href", "")
+              block:
                 if len(href) < 1:
                     continue
                 if not href.startswith("#"):
                     continue
-                href = href[1:]
+                href = href[1..^1]
                 db[href] = href
             if len(db) < 1:
                 db[""] = "dummy"
             self.bookmarks_anchored = db  # optional
-        if s_href not in db:
-            return True
-        return False
-]#
+    if s_href not_in db:
+        return true
+    return false
+
+
+proc bookmark_from_elem(self: HtmlConvertDocx, elem: Tag): string =  # {{{1
+        # [@P8-2-14]
+    let id = elem.attrs.getOrDefault("id", "")
+    if len(id) < 1:
+            return ""
+    if self.bookmark_from_db(id, elem):
+            return ""  # this id is not anchored -> do not convert.
+    return "ahref_" & id
+
 
 proc main(opts: options.Options): int =  # {{{1
     logging.basicConfig(level=opts.level_debug)
 
     common.init(opts.force_offline)
-    let data = os.readAll(opts.fname_in)
+    let data = system.readFile(opts.fname_in)
     let prog = initHtmlConvertDocx(opts.fname_in)
     prog.on_post_page(data)
     prog.write_out(opts.fname_out)
@@ -884,11 +938,12 @@ proc main(opts: options.Options): int =  # {{{1
 
 
 proc main_script(): int =  # {{{1
-    var opts = options.parse()
+    let args = commandLineParams()
+    var opts = options.parse(args)
     return main(opts)
 
 
 when isMainModule:  # {{{1
-    sys.quit(main_script())
+    system.quit(main_script())
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

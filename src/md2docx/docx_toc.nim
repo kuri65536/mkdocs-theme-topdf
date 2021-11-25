@@ -5,6 +5,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 # include {{{1
+import ./docx
+import ./etree
+import ./private/parse_html
+#[
 import re
 from typing import Text
 
@@ -18,8 +22,10 @@ try:
 except ImportError:
     import common  # type: ignore
 
-
-def generate_toc(doc: Document, elem: Tag) -> Paragraph:  # {{{1
+]#
+proc generate_toc*(doc: Document, elem: Tag): Paragraph =  # {{{1
+    discard
+#[
     def cb(para: Paragraph) -> Paragraph:
         return cache_toc(doc, elem)
         return para
@@ -48,3 +54,5 @@ def cache_toc(doc: Document, elem: Tag) -> Paragraph:  # {{{1
         para.style = common.Styles.get(doc, "TOC Contents " + level)
         para = doc.add_paragraph()
     return para
+]#
+# vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

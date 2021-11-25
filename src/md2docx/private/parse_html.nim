@@ -11,13 +11,36 @@ import tables
 
 
 type
-  XmlElement* = ref object of RootObj
-    children: seq[XmlElement]
-    attrs: Table[string, string]
+  XmlElement* = ref XmlElementObj
+  XmlElementObj* = object of RootObj
+    children*: seq[XmlElement]
+    attrs*: Table[string, string]
+
+  Tag* = ref object of XmlElement
+    name*, string*: string
+    parent*: Tag
+
+  ElementComment* = ref object of Tag
+    discard
 
 
-proc find_element*(name: string): XmlElement =  # {{{1
-
+proc find_element*(name: string): Tag =  # {{{1
     return result
+
+
+proc find_all*(self: Tag, name: string): seq[Tag] =  # {{{1
+    result = @[]
+    for elem in self.children:
+        let i = cast[Tag](elem)
+        if len(i.children) > 0:
+            let subseq = i.find_all(name)
+            result.add(subseq)
+        if i.name == name:
+            result.add(i)
+    return result
+
+
+proc parents*(self: Tag): seq[Tag] =  # {{{1
+    discard
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

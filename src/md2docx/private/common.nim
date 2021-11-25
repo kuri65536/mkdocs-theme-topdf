@@ -4,11 +4,28 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
+import /usr/lib/nim/pure/options
+import os
 import strutils
+import tables
+
+import ../docx
+import parse_html
+
+
+type
+  Global = ref object of RootObj
+    seq_files: seq[string]
+
+  ParseError* = object of CatchableError
+
+
+var glb = Global()
+
+
 #[
 import base64
 from logging import (debug as debg, error as eror, warning as warn, )
-import os
 import sys
 from tempfile import NamedTemporaryFile as Temporary
 from typing import (Callable, Dict, Iterable, List, Optional, Set,
@@ -34,10 +51,6 @@ except ImportError:
     f_not_online = True
 
 
-if False:
-    List
-
-
 def parse_trailing_numbers(src: Text) -> Tuple[Text, int]:  # {{{1
     ret_n, ret = 0, ""
     for n, ch in enumerate(reversed(src)):
@@ -51,24 +64,23 @@ def parse_trailing_numbers(src: Text) -> Tuple[Text, int]:  # {{{1
     return ret.rstrip(), ret_n
 
 
-class glb:  # {{{1
     numbers_of_captions: Dict[Text, int] = {}
     funcs_style_init: Dict[Text, Callable[['Styles', Document], Text]] = {}
-    seq_files: List[Text] = []
     bookmark_id = 1
 
 
-class ParseError(Exception):  # {{{1
-    pass
-
-
-def has_class(tag: Tag, *names: Text) -> bool:  # {{{1
-    if tag.name is None:
-        return False
-    classes: Set[Text] = set(tag.attrs.get("class", []))
-    targets = set(names)
-    return len(classes & targets) > 0
-
+]#
+proc has_class*(tag: Tag, names: varargs[string]): bool =  # {{{1
+    const key = "class"
+    if len(tag.name) < 1:
+        return false
+    let cls = tag.attrs.getOrDefault(key, "")
+    let classes = cls.split(" ")
+    for name in names:
+        if classes.contains(name):
+            return true
+    return false
+#[
 
 def has_prev_sibling(target: Tag, *tags: Text) -> bool:  # {{{1
     for elem in target.previous_siblings:
@@ -251,21 +263,21 @@ proc is_target_in_http*(url: string): bool =  # {{{1
     elif url.startsWith("https://"):
         return true
     return false
-#[
 
 
-def remove_temporaries() -> None:  # {{{1
+proc remove_temporaries*(): void =  # {{{1
     for fname in glb.seq_files:
         try:
-            os.remove(fname)
+            os.removeFile(fname)
         except OSError:
-            pass
+            discard
     try:
-        os.rmdir("tmp")
+        os.removeDir("tmp")
     except OSError:
-        pass
+        discard
 
 
+#[
 def download_image(url_doc: Text, src: Text) -> Text:  # {{{1
     # absolute
     if src.startswith("http://"):
@@ -393,36 +405,46 @@ def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
                 "height": dot_to_mm(h)}
     return args
 
-
-def docx_add_field(para: Paragraph, instr: Text,  # {{{1
-                   cache: Optional[Callable[[Paragraph], Paragraph]],
-                   dirty: Optional[bool] = None) -> None:
-    r = para.add_run("")._r
-    fld = OxmlElement('w:fldChar')
-    fld.set(qn('w:fldCharType'), "begin")
-    if dirty is not None:
-        fld.set(qn('w:dirty'), "true" if dirty else "false")
+]#
+proc docx_add_field*(para: Paragraph, instr: string,  # {{{1
+                     cache: proc(para: Paragraph): Paragraph,
+                     dirty: Option[bool]): void =
+  block:
+    let r = para.add_run("").r
+    let fld = initOxmlElement("w:fldChar")
+    fld.set(qn("w:fldCharType"), "begin")
+    if dirty.isSome:
+        let v = if dirty.get(): "true" else: "false"
+        fld.set(qn("w:dirty"), v)
     r.append(fld)
 
-    r = para.add_run("")._r
-    cmd = OxmlElement('w:instrText')
+  block:
+    let r = para.add_run("").r
+    let cmd = initOxmlElement("w:instrText")
     cmd.text = instr
     r.append(cmd)
 
-    r = para.add_run("")._r
-    fld = OxmlElement('w:fldChar')
-    fld.set(qn('w:fldCharType'), "separate")
+  block:
+    let r = para.add_run("").r
+    let fld = initOxmlElement("w:fldChar")
+    fld.set(qn("w:fldCharType"), "separate")
     r.append(fld)
 
-    if cache is not None:
-        para = cache(para)
+  block:
+    let para = cache(para)
 
-    r = para.add_run("")._r
-    fld = OxmlElement('w:fldChar')
-    fld.set(qn('w:fldCharType'), "end")
+    let r = para.add_run("").r
+    let fld = initOxmlElement("w:fldChar")
+    fld.set(qn("w:fldCharType"), "end")
     r.append(fld)
 
 
+proc docx_add_field*(para: Paragraph, instr: string): void =  # {{{1
+    proc fn_dummy(src: Paragraph): Paragraph =
+        return src
+    docx_add_field(para, instr, fn_dummy, none(bool))
+
+#[
 def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
                      ) -> None:
     """
@@ -556,8 +578,11 @@ def docx_bookmark_normalize(name: Text) -> Text:  # {{{1
     return name
 
 
-def docx_add_bookmark(para: Paragraph, name: Text, instr: Text  # {{{1
-                      ) -> None:
+]#
+proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
+                        ): void =
+    discard
+    #[
     id_ = glb.bookmark_id
 
     def mark(tag: Text, name: Text) -> None:
@@ -577,8 +602,9 @@ def docx_add_bookmark(para: Paragraph, name: Text, instr: Text  # {{{1
     if len(name) > 0:
         mark("End", "")
         glb.bookmark_id += 1
+    ]#
 
-
+#[
 def docx_add_hlink(para: Paragraph, instr: Text,  # {{{1
                    name: Text) -> None:
     link = OxmlElement("w:hyperlink")

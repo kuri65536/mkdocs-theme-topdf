@@ -7,11 +7,11 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
+import argparse
+
 import logging
 #[
-import argparse as ap
 import os
-from typing import (List, Text, )
 
 ]#
 type
@@ -21,24 +21,25 @@ type
     encoding*: string  # = "utf-8"
     force_offline*: bool
     remove_temporaries*: bool
+    classes_ignore_p*: seq[string]
+
+var current*: Options = nil
 
 
 proc initOptions*(): Options =  # {{{1
-    let self = Options()
+    let self = Options(
+        remove_temporaries: true,
+        classes_ignore_p: @["before-dl-table", "none"],
+    )
     block:
         self.level_debug = logging.INFO
     return self
 
 #[
-        self.remove_temporaries = True
-        self.force_offline = False
-
         self.f_setup_pagedjs = False
         self.f_check_pagedjs = False
         self.f_test_pagedjs = False
 
-        self.classes_ignore_p = [
-                "before-dl-table", "none"]
 
     @classmethod  # copy_from {{{1
     def copy_from(cls, nm: ap.Namespace) -> 'Options':
@@ -72,34 +73,30 @@ proc initOptions*(): Options =  # {{{1
         return ret
 
 
-def make_parser() -> ap.ArgumentParser:
-    ret = ap.ArgumentParser()
-    ret.add_argument("-o", "--output", default="", type=Text)
-    # ret.add_argument("--override", action="store_true")
-    ret.add_argument("--keep-temporaries", default=False, action="store_true")
-    ret.add_argument("--offline", default=None, action="store_true")
-    ret.add_argument("--encoding", default="utf-8")
+]#
+proc make_parser(): ArgumentParser =
+    let ret = ArgumentParser()
+    ret.add_argument('o', "--output", default="")
+    # ret.add_argument(' ', "--override", action="store_true")
+    ret.add_argument(' ', "--keep-temporaries", default=False, action="store_true")
+    ret.add_argument(' ', "--offline", default=None, action="store_true")
+    ret.add_argument(' ', "--encoding", default="utf-8")
     ret.add_argument("input", nargs="?", type=Text)
 
-    ret.add_argument("--verbose", default=30, type=int, choices=range(1, 51),
+    ret.add_argument(' ', "--verbose", default=30, type=int, choices=range(1, 51),
                      metavar="[1-50]", help="specify verbose message level, "
                      "DEBUG(10),INFO(20),WARNING(30),ERROR(40),FATAL(50)")
-    ret.add_argument("--setup-paged-js", action="store_true")
-    ret.add_argument("--check-paged-js", action="store_true")
-    ret.add_argument("--test-paged-js", action="store_true")
+    ret.add_argument(' ', "--setup-paged-js", action="store_true")
+    ret.add_argument(' ', "--check-paged-js", action="store_true")
+    ret.add_argument(' ', "--test-paged-js", action="store_true")
     return ret
 
 
-def parse(args: List[Text]) -> Options:
-    global current
-
+proc parse(args: seq[string]): Options =  # {{{1
     parser = make_parser()
     nm = parser.parse_args(args)
     current = Options.copy_from(nm)
     return current
 
 
-current = Options()
-
-]#
 # vi: ft=nim:fdm=marker

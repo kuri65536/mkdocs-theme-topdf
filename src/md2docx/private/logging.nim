@@ -10,6 +10,10 @@ License::
 const INFO* = 30
 
 
+proc debg*(msg: string): void =  # {{{1
+    discard
+
+
 proc info*(msg: string): void =  # {{{1
     discard
 

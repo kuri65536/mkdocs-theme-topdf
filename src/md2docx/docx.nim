@@ -17,10 +17,13 @@ type
     RIGHT = 1
 
   OxmlElement* = ref object of RootObj
-    name: string
+    name, text*: string
 
   DocumentSettings* = ref object of RootObj
     element*: OxmlElement
+
+  Style* = ref object of RootObj
+    discard
 
   Section* = ref object of RootObj
     page_width*, page_height*,
@@ -31,7 +34,7 @@ type
     paragraphs*: seq[Paragraph]
 
   Runner* = ref object of RootObj
-    discard
+    r*: OxmlElement
 
   Paragraph* = ref object of RootObj
     alignment*: WD_ALIGN_PARAGRAPH
@@ -96,6 +99,14 @@ proc append*(self: Runner, src: OxmlElement): void =  # {{{1
 
 
 proc text*(self: Paragraph): string =  # {{{1
+    discard
+
+
+proc add_run*(self: Paragraph, src: string): Runner {.discardable.} =  # {{{1
+    discard
+
+
+proc add_paragraph*(self: Document, text = "", style = ""): Paragraph =  # {{{1
     discard
 
 
