@@ -71,6 +71,8 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): tuple[f: bool, s: string, t: Tag]
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                 ): tuple[f: bool, s: string]
+proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                    ): tuple[f: bool, s: string]
 proc extract_text(self: HtmlConvertDocx, elem: Tag
                   ): tuple[f_none: bool, s: string]
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
@@ -218,9 +220,9 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         # inline elements
         if elem.name == "em":
             return self.extract_em(elem, para)
-        #[
         elif elem.name == "strong":
             return self.extract_strong(elem, para)
+        #[
         elif elem.name in ("sup", "sub"):
             return self.extract_sup(elem, para)
         elif elem.name == "code":
@@ -372,13 +374,17 @@ proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             para.add_run(s, style=style)
         return None
 
-    def extract_strong(self, elem: Tag, para: Paragraph  # {{{1
-                       ) -> Optional[Text]:
-        s = Text(elem.text)
+]#
+proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                    ): tuple[f: bool, s: string] =
+    let s = elem.text
+    let
         style = common.Styles.get(self.output, "Strong")
         para = self.current_para_or_create(para)
+    block:
         para.add_run(s, style=style)
-        return None
+        return (true, "")
+#[
 
     def extract_sup(self, elem: Tag, para: Paragraph  # {{{1
                     ) -> Optional[Text]:
