@@ -6,6 +6,8 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
+import tables
+
 import etree
 
 
@@ -54,6 +56,7 @@ type
     settings*: DocumentSettings
     sections*: seq[Section]
     tables*: seq[DocxTable]
+    styles*: Table[string, Style]
 
 
 proc qn*(src: string): string =  # {{{1
@@ -102,7 +105,8 @@ proc text*(self: Paragraph): string =  # {{{1
     discard
 
 
-proc add_run*(self: Paragraph, src: string): Runner {.discardable.} =  # {{{1
+proc add_run*(self: Paragraph, src: string, style=""  # {{{1
+              ): Runner {.discardable.} =
     discard
 
 

@@ -69,6 +69,8 @@ proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
                             style = ""): Paragraph
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): tuple[f: bool, s: string, t: Tag]
+proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                ): tuple[f: bool, s: string]
 proc extract_text(self: HtmlConvertDocx, elem: Tag
                   ): tuple[f_none: bool, s: string]
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
@@ -215,9 +217,8 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     block:
         # inline elements
         if elem.name == "em":
-            return (false, "")
-        #[
             return self.extract_em(elem, para)
+        #[
         elif elem.name == "strong":
             return self.extract_strong(elem, para)
         elif elem.name in ("sup", "sub"):
@@ -330,25 +331,33 @@ proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
             para.add_run("\n")
         return ret
 
-    def extract_em(self, elem: Tag, para: Paragraph) -> Optional[Text]:  # {{{1
-        def add_para() -> Paragraph:
+]#
+proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                ): tuple[f: bool, s: string] =
+    proc add_para(): Paragraph =
+        let
             style = common.Styles.get(self.output, "Caption")
+        block:
             self.para = self.output.add_paragraph("", style)
             return self.para
-        classes = elem.attrs.get("class", [])
+    let classes = elem.attrs.getOrDefault("class", "").split(" ")
+    block:
         if "table-tag" in classes:
             common.docx_add_caption(add_para(), elem.text, "Table")
-            return None
+            return (true, "")
         if common.has_prev_sibling(elem, "img", "svg"):
             common.docx_add_caption(add_para(), elem.text, "Figure")
-            return None
+            return (true, "")
         if common.has_next_table(elem):
             common.docx_add_caption(add_para(), elem.text, "Table")
-            return None
+            return (true, "")
 
+    let
         para = self.current_para_or_create(para)
+    block:
         para.add_run(elem.text, style="Emphasis")
-        return None
+        return (true, "")
+#[
 
     def extract_code(self, elem: Tag, para: Paragraph, pre: bool  # {{{1
                      ) -> Optional[Text]:

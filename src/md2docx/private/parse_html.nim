@@ -17,7 +17,7 @@ type
     attrs*: Table[string, string]
 
   Tag* = ref object of XmlElement
-    name*, string*: string
+    name*, string*, text*: string
     parent*: Tag
 
   ElementComment* = ref object of Tag
@@ -42,5 +42,14 @@ proc find_all*(self: Tag, name: string): seq[Tag] =  # {{{1
 
 proc parents*(self: Tag): seq[Tag] =  # {{{1
     discard
+
+
+proc next_siblings*(self: Tag): seq[Tag] =  # {{{1
+    discard
+
+
+proc previous_siblings*(self: Tag): seq[Tag] =  # {{{1
+    discard
+
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

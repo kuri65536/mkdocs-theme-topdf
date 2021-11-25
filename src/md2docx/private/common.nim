@@ -14,13 +14,23 @@ import parse_html
 
 
 type
+  StylesObj = object of RootObj
+    ##[- define styles in `init_***` and
+       - call `init_***` methods when styles were not defiend.
+    ]##
+    allocated: seq[string]
+
   Global = ref object of RootObj
     seq_files: seq[string]
+    numbers_of_captions: Table[string, int]
+    funcs_style_init: Table[string,
+                            proc(self: StylesObj, doc: Document): string]
 
   ParseError* = object of CatchableError
 
 
 var glb = Global()
+var Styles* = StylesObj()
 
 
 #[
@@ -64,7 +74,6 @@ def parse_trailing_numbers(src: Text) -> Tuple[Text, int]:  # {{{1
     return ret.rstrip(), ret_n
 
 
-    numbers_of_captions: Dict[Text, int] = {}
     funcs_style_init: Dict[Text, Callable[['Styles', Document], Text]] = {}
     bookmark_id = 1
 
@@ -80,38 +89,38 @@ proc has_class*(tag: Tag, names: varargs[string]): bool =  # {{{1
         if classes.contains(name):
             return true
     return false
-#[
 
-def has_prev_sibling(target: Tag, *tags: Text) -> bool:  # {{{1
+
+proc has_prev_sibling*(target: Tag, tags: varargs[string]): bool =  # {{{1
     for elem in target.previous_siblings:
-        if elem.name is None:
+        if len(elem.name) < 1:
             continue
         if elem.name in tags:
-            return True
+            return true
         break
-    return False
+    return false
 
 
-def has_next_table(target: Tag) -> bool:  # {{{1
+proc has_next_table*(target: Tag): bool =  # {{{1
     for elem in target.next_siblings:
-        if elem.name is None:
+        if len(elem.name) < 1:
             continue
         if elem.name == "table":
-            return True
+            return true
         break
-    parent = target.parent
-    if parent is None:
-        return False
+    let parent = target.parent
+    if isNil(parent):
+        return false
     for elem in parent.next_siblings:
-        if elem.name is None:
+        if len(elem.name) < 1:
             continue
         if elem.name == "p":
-            cls = elem.attrs.get("class", [])
+            let cls = elem.attrs.getOrDefault("class", "").split(" ")
             if "before-dl-table" in cls:
-                return True
+                return true
         break
-    return False
-
+    return false
+#[
 
 def has_width_and_parse(classes: Iterable[Text]  # {{{1
                         ) -> Tuple[Text, List[Mm]]:
@@ -444,10 +453,9 @@ proc docx_add_field*(para: Paragraph, instr: string): void =  # {{{1
         return src
     docx_add_field(para, instr, fn_dummy, none(bool))
 
-#[
-def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
-                     ) -> None:
-    """
+
+proc docx_add_caption*(para: Paragraph, title, caption: string): void =  # {{{1
+    #[
         <w:p><w:pPr>
             <w:pStyle w:val="Normal"/><w:bidi w:val="0"/><w:jc w:val="left"/>
             <w:rPr></w:rPr></w:pPr>
@@ -551,22 +559,22 @@ def docx_add_caption(para: Paragraph, title: Text, caption: Text  # {{{1
                                mso-position-horizontal:center;
                                mso-position-horizontal-relative:text">
           <v:textbox...
-    """
-    if caption not in glb.numbers_of_captions:
+    ]#
+    if caption not_in glb.numbers_of_captions:
         glb.numbers_of_captions[caption] = 1
     else:
         glb.numbers_of_captions[caption] += 1
-    n = glb.numbers_of_captions[caption]
+    let n = glb.numbers_of_captions[caption]
 
-    def cb(p: Paragraph) -> Paragraph:
-        p.add_run("%d" % n)
+    proc cb(p: Paragraph): Paragraph =
+        p.add_run($n)
         return p
 
     # TODO(shimoda): surround figure by frame
-    para.add_run(caption + " ")  # r:vanish??
-    docx_add_field(para, r"SEQ %s \* ARABIC" % caption, cb)
-    para.add_run(". " + title)
-
+    para.add_run(caption & " ")  # r:vanish??
+    docx_add_field(para, r"SEQ %s \* ARABIC" % caption, cb, none(bool))
+    para.add_run(". " & title)
+#[
 
 def docx_bookmark_normalize(name: Text) -> Text:  # {{{1
     if len(name) > 32:
@@ -637,23 +645,20 @@ def style(name: Text  # {{{1
     return ret
 
 
-class Styles(object):  # {{{1
-    """- define styles in `init_***` and
-       - call `init_***` methods when styles were not defiend.
-    """
-    allocated: List[Text] = []
-
-    @classmethod
-    def get(cls, doc: Document, name: Text) -> Text:
+]#
+proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
         if name in Styles.allocated:
             return name
-        fn = glb.funcs_style_init.get(name, None)
-        if fn is None:
+        if name in glb.funcs_style_init:
             if name in doc.styles:
                 return name
-            raise ParseError("not %s in " % name + ": " +
-                             ",".join(glb.funcs_style_init.keys()))
-        return fn(Styles(), doc)
+            var msg = "not " & name & " in : "
+            for key in glb.funcs_style_init.keys():
+                msg &= ", " & key
+            raise newException(ParseError, msg)
+        let fn = glb.funcs_style_init[name]
+        return fn(cls, doc)
+#[
 
     def init_heading(self, doc: Document, name: Text) -> Text:  # {{{1
         # failure code.
