@@ -78,6 +78,10 @@ proc append*(self: OxmlElement, src: Element): void =  # {{{1
     discard
 
 
+proc append*(self: ptr OxmlElement, src: OxmlElement): void =  # {{{1
+    discard
+
+
 proc append*(self, src: OxmlElement): void =  # {{{1
     discard
 
@@ -90,12 +94,8 @@ proc Mm*(src: int): Length =  # {{{1
     discard
 
 
-proc add_r*(self: OxmlElement): Runner =  # {{{1
-    result = Runner()
-
-
-proc append*(self: Runner, src: OxmlElement): void =  # {{{1
-    discard
+proc add_r*(self: OxmlElement): OxmlElement =  # {{{1
+    result = OxmlElement()
 
 
 proc text*(self: Paragraph): string =  # {{{1

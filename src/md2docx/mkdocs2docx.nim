@@ -134,7 +134,7 @@ proc header_init(self: HtmlConvertDocx): void =  # {{{1
     let
         v = "urn:schemas-microsoft-com:vml"
         w10 = "urn:schemas-microsoft-com:office:word"
-    var
+    let
         r = para.raw.add_r()
     let pict = initOxmlElement("w:pict")
     block:
@@ -634,11 +634,12 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
         bkname = self.bookmark_from_elem(node)  # [@P8-2-14] mark for <p>
 
     var para: Paragraph = nil
-    for elem in node.children:
+    for i in node.children:
+        let elem = cast[Tag](i)
         let (f, ret, tag) = self.extract_element(elem, para)
         if (not f) and isNil(tag):
             let
-                empty = ret.strip("\n")
+                empty = ret.strip(chars = {'\n'})
             block:
                 if len(empty) < 1:
                     discard

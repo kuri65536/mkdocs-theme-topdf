@@ -7,7 +7,7 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
-import argparse
+# import argparse
 
 import logging
 #[
@@ -22,6 +22,9 @@ type
     force_offline*: bool
     remove_temporaries*: bool
     classes_ignore_p*: seq[string]
+
+  ArgumentParser* = ref object of RootObj  # {{{1
+    discard
 
 var current*: Options = nil
 
@@ -76,6 +79,7 @@ proc initOptions*(): Options =  # {{{1
 ]#
 proc make_parser(): ArgumentParser =
     let ret = ArgumentParser()
+    #[
     ret.add_argument('o', "--output", default="")
     # ret.add_argument(' ', "--override", action="store_true")
     ret.add_argument(' ', "--keep-temporaries", default=False, action="store_true")
@@ -89,14 +93,19 @@ proc make_parser(): ArgumentParser =
     ret.add_argument(' ', "--setup-paged-js", action="store_true")
     ret.add_argument(' ', "--check-paged-js", action="store_true")
     ret.add_argument(' ', "--test-paged-js", action="store_true")
+    ]#
     return ret
 
 
-proc parse(args: seq[string]): Options =  # {{{1
+proc parse*(args: seq[string]): Options =  # {{{1
+    var parser: ArgumentParser
     parser = make_parser()
+    return Options()
+    #[
     nm = parser.parse_args(args)
     current = Options.copy_from(nm)
     return current
+    ]#
 
 
 # vi: ft=nim:fdm=marker
