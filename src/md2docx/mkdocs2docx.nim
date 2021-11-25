@@ -64,15 +64,21 @@ type
     para: docx.Paragraph
 
 
+proc bookmark_from_db(self: HtmlConvertDocx, s_href: string,
+                      elem: Tag): bool
 proc bookmark_from_elem(self: HtmlConvertDocx, elem: Tag): string
 proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
                             style = ""): Paragraph
+proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                    ): tuple[f: bool, s: string] {.discardable.}
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): tuple[f: bool, s: string, t: Tag]
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                 ): tuple[f: bool, s: string]
-proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string]
+proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                 ): tuple[f: bool, s: string]
 proc extract_text(self: HtmlConvertDocx, elem: Tag
                   ): tuple[f_none: bool, s: string]
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
@@ -222,9 +228,9 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return self.extract_em(elem, para)
         elif elem.name == "strong":
             return self.extract_strong(elem, para)
-        #[
-        elif elem.name in ("sup", "sub"):
+        elif elem.name in ["sup", "sub"]:
             return self.extract_sup(elem, para)
+        #[
         elif elem.name == "code":
             return self.extract_code(elem, para, pre=False)
         elif elem.name == "br":
@@ -384,14 +390,18 @@ proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     block:
         para.add_run(s, style=style)
         return (true, "")
-#[
 
-    def extract_sup(self, elem: Tag, para: Paragraph  # {{{1
-                    ) -> Optional[Text]:
+
+proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                 ): tuple[f: bool, s: string] =
         # [@D4-99-001-1] treat sup elements
+    var
         ret = ""
-        for tag in elem.children:
+    for i in elem.children:
+        let tag = cast[Tag](i)
+        block:
             if tag.name == "a" and len(ret) > 0:
+                var para: Paragraph
                 para = self.current_para_or_create(para)
                 para.add_run(ret)
                 ret = ""
@@ -400,36 +410,43 @@ proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                 self.extract_anchor(tag, para)
                 continue
 
-            content = self.extract_is_text(tag)
-            if isinstance(content, Text):
-                ret += content
-            elif content is not None:
-                breakpoint()
+        let (f, content, elem) = self.extract_is_text(tag)
+        block:
+            if not f and isNil(elem):
+                ret &= content
+            elif not isNil(elem):
+                raise newException(ParseError, "unknown pattern...")
         if len(ret) > 0:
+            var para: Paragraph
             para = self.current_para_or_create(para)
             para.add_run(ret)
-        return None
+        return (true, "")
 
-    def extract_anchor(self, elem: Tag, para: Paragraph  # {{{1
-                       ) -> Optional[Text]:
-        instr = Text(elem.text)
-        url = elem.attrs.get("href", "")
+
+proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                    ): tuple[f: bool, s: string] =
+    let instr = elem.text
+    let url = elem.attrs.getOrDefault("href", "")
+    block:
         if len(url) < 1:
-            name = elem.attrs.get("name", "")
+            let name = elem.attrs.getOrDefault("name", "")
             if len(name) < 1:
-                return instr
+                return (false, instr)
             if self.bookmark_from_db(name, elem):
-                return instr
-            common.docx_add_bookmark(para, "ahref_" + name, instr)
-            return None
+                return (false, instr)
+            common.docx_add_bookmark(para, "ahref_" & name, instr)
+            return (true, "")
         if not url.startswith("#"):
             # TODO(shimoda): enable external link
-            return instr
+            return (false, instr)
 
+    let
         para = self.current_para_or_create(para)
         # remove "#"
-        common.docx_add_hlink(para, instr, "ahref_" + url[1:])
-        return None
+    block:
+        common.docx_add_hlink(para, instr, "ahref_" & url[1..^1])
+    return (true, "")
+#[
 
     def extract_katex(self, elem: Tag, para: Paragraph  # {{{1
                       ) -> Optional[Text]:

@@ -5,11 +5,13 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import /usr/lib/nim/pure/options
+import hashes
 import os
 import strutils
 import tables
 
 import ../docx
+import logging
 import parse_html
 
 
@@ -574,19 +576,19 @@ proc docx_add_caption*(para: Paragraph, title, caption: string): void =  # {{{1
     para.add_run(caption & " ")  # r:vanish??
     docx_add_field(para, r"SEQ %s \* ARABIC" % caption, cb, none(bool))
     para.add_run(". " & title)
-#[
 
-def docx_bookmark_normalize(name: Text) -> Text:  # {{{1
+
+proc docx_bookmark_normalize(name: string): string =  # {{{1
+    var name = ""
     if len(name) > 32:
         # [@P8-1-1]
-        pfx, sfx = name[:32], name[32:]
-        hash = zlib.adler32(name.encode("utf-8")) & 0xFFFFFFFF
-        sfx = ("0" * 8 + hex(hash)[2:])[-8:]
-        name = pfx + sfx
+        var (pfx, sfx) = (name[0..32], name[32..^1])
+        let hash = hash(name)
+        sfx = ("00000000" & toHex(hash))[^8..^1]
+        name = pfx & sfx
     return name
 
 
-]#
 proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
                         ): void =
     discard
@@ -612,21 +614,22 @@ proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
         glb.bookmark_id += 1
     ]#
 
-#[
-def docx_add_hlink(para: Paragraph, instr: Text,  # {{{1
-                   name: Text) -> None:
-    link = OxmlElement("w:hyperlink")
-    para._p.append(link)
-    run = OxmlElement("w:r")
+
+proc docx_add_hlink*(para: Paragraph, instr, name: string,  # {{{1
+                     ): void =
+    let link = initOxmlElement("w:hyperlink")
+    para.raw.append(link)
+    let run = initOxmlElement("w:r")
     link.append(run)
-    text = OxmlElement("w:t")
+    let text = initOxmlElement("w:t")
     run.append(text)
 
+    var name: string
     name = docx_bookmark_normalize(name)
     link.set(qn("w:anchor"), name)
-    debg("link: " + name)
+    debg("link: " & name)
     text.text = instr
-
+#[
 
 def style(name: Text  # {{{1
           ) -> Callable[[Callable[['Styles', Document, Text], Text]],
