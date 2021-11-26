@@ -71,6 +71,8 @@ proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
                             style = ""): Paragraph
 proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string] {.discardable.}
+proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
+                  pre: bool): tuple[f: bool, s: string]
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): tuple[f: bool, s: string, t: Tag]
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
@@ -230,9 +232,9 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return self.extract_strong(elem, para)
         elif elem.name in ["sup", "sub"]:
             return self.extract_sup(elem, para)
-        #[
         elif elem.name == "code":
-            return self.extract_code(elem, para, pre=False)
+            return self.extract_code(elem, para, pre=false)
+        #[
         elif elem.name == "br":
             return self.extract_br(elem, para)
         elif elem.name == "a":
@@ -365,22 +367,29 @@ proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     block:
         para.add_run(elem.text, style="Emphasis")
         return (true, "")
-#[
 
-    def extract_code(self, elem: Tag, para: Paragraph, pre: bool  # {{{1
-                     ) -> Optional[Text]:
-        s = Text(elem.text)
-        if para is None:  # top level
+
+proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,  # {{{1
+                  pre: bool): tuple[f: bool, s: string] =
+    let s = elem.text
+    if isNil(para):  # top level
+        let
             style = common.Styles.get(self.output, "Quote")
+        block:
             self.output.add_paragraph(s, style)
+        return (true, "")
+    block:
+        if false:
+            discard
         elif pre:
             para.add_run(s)
         else:
+            var style: string
             style = common.Styles.get(self.output, "CodeChars")
             para.add_run(s, style=style)
-        return None
+    return (true, "")
 
-]#
+
 proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                     ): tuple[f: bool, s: string] =
     let s = elem.text

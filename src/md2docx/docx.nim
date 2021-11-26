@@ -110,7 +110,8 @@ proc add_run*(self: Paragraph, src: string, style=""  # {{{1
     discard
 
 
-proc add_paragraph*(self: Document, text = "", style = ""): Paragraph =  # {{{1
+proc add_paragraph*(self: Document, text = "", style = ""  # {{{1
+                    ): Paragraph {.discardable.} =
     discard
 
 
