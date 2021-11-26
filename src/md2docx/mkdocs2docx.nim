@@ -71,6 +71,7 @@ proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
                             style = ""): Paragraph
 proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string] {.discardable.}
+proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph): string
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
                   pre: bool): tuple[f: bool, s: string]
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
@@ -234,9 +235,9 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return self.extract_sup(elem, para)
         elif elem.name == "code":
             return self.extract_code(elem, para, pre=false)
-        #[
         elif elem.name == "br":
-            return self.extract_br(elem, para)
+            return (false, self.extract_br(elem, para))
+        #[
         elif elem.name == "a":
             return self.extract_anchor(elem, para)
         elif elem.name == "span" and common.has_class(elem, "katex-display"):
@@ -318,30 +319,35 @@ proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
         ret = re.replace(ret, re" *\n *", " ")
         debg(ret.strip())
         return (false, ret)
-#[
 
-    def extract_br(self, elem: Tag, para: Paragraph) -> Text:  # {{{1
+
+proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                ): string =
         # sometime bs4 fails to parse `br` tag and surround text.
-        n, ret = 0, ""
-        for tag in elem.children:
+    var (n, ret, para) = (0, "", para)
+    for i in elem.children:
+        let tag = cast[Tag](i)
+        block:
             n += 1
-            content = self.extract_is_text(tag)
-            if content is None:
+        var (f, content, e) = self.extract_is_text(tag)
+        if f:
                 continue
-            if isinstance(content, Text):
+        if isNil(e):
                 para.add_run(content)
-            else:
-                content = self.extract_inlines(tag, para)
-                if not isinstance(content, Text):
+        else:
+            (f, content) = self.extract_inlines(tag, para)
+            if f:
                     continue
-            ret += content
+        block:
+            ret &= content
+    block:
         if n < 1:
-            if para is None:
+            if isNil(para):
                 para = self.output.add_paragraph()
             para.add_run("\n")
         return ret
 
-]#
+
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                 ): tuple[f: bool, s: string] =
     proc add_para(): Paragraph =
