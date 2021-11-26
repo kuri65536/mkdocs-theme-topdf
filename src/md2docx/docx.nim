@@ -18,6 +18,9 @@ type
   WD_ALIGN_PARAGRAPH* = enum
     RIGHT = 1
 
+  WD_BREAK* = enum
+    PAGE = 1
+
   OxmlElement* = ref object of RootObj
     name, text*: string
 
@@ -105,8 +108,13 @@ proc text*(self: Paragraph): string =  # {{{1
     discard
 
 
-proc add_run*(self: Paragraph, src: string, style=""  # {{{1
+proc add_run*(self: Paragraph, src = "", style=""  # {{{1
               ): Runner {.discardable.} =
+    discard
+
+
+proc add_break*(self: Runner, typ: WD_BREAK  # {{{1
+                    ): void =
     discard
 
 

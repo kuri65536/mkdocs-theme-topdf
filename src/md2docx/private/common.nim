@@ -14,6 +14,7 @@ import ../docx
 import logging
 import parse_html
 
+export Option, get, isNone, isSome, none, some
 
 type
   StylesObj = object of RootObj

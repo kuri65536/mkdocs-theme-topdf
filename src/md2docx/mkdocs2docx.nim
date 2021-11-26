@@ -75,7 +75,7 @@ proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph): string
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
                   pre: bool): tuple[f: bool, s: string]
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                     ): tuple[f: bool, s: string, t: Tag]
+                     ): tuple[s: Option[string], t: Tag]
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                 ): tuple[f: bool, s: string]
 proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph
@@ -86,6 +86,7 @@ proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                  ): tuple[f: bool, s: string]
 proc extract_text(self: HtmlConvertDocx, elem: Tag
                   ): tuple[f_none: bool, s: string]
+proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
                   ): tuple[f: bool, r: string]
 proc header_init(self: HtmlConvertDocx): void
@@ -243,47 +244,49 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return self.extract_anchor(elem, para)
         elif elem.name == "span" and common.has_class(elem, "katex-display"):
             return self.extract_katex(elem, para)
-        #[
         elif elem.name == "span":
+            var text = ""
             text = elem.text
-            if isinstance(text, Text):
+            if len(text) > 0:
+                var para: Paragraph
                 para = self.current_para_or_create(para)
                 para.add_run(text)
-                return text
-        ]#
+                return (false, text)
     raise newException(common.ParseError,
                        elem.name & " is not implemented, yet")
 
 
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                     ): tuple[f: bool, s: string, t: Tag] =
+                     ): tuple[s: Option[string], t: Tag] =
     let (f1, is_text, tag) = self.extract_is_text(elem)
     if f1:
-        return (true, "", nil)
+        return (none(string), nil)
     if isNil(tag):
-        return (false, is_text, nil)
+        return (some(is_text), nil)
 
     let classes = elem.attrs.getOrDefault("class", "").split(" ")
     block:
         if "doc-num" in classes:
             self.header_set(elem.string)
-            return (true, "", nil)
+            return (none(string), nil)
         if "toc" in classes:
             self.para = docx_toc.generate_toc(self.output, elem)
-            return (true, "", nil)
+            return (none(string), nil)
 
     try:
         let (f, s) = self.extract_inlines(elem, para)
-        return (f, s, nil)
+        if f:
+            return (none(string), nil)
+        return (some(s), nil)
     except common.ParseError:
         discard
 
         # block elements
     if elem.name in ["script", "style"]:
-        return (true, "", nil)  # just ignore these elements.
-    #[
-        elif elem.name == "hr":
-            return self.extract_pagebreak(elem)
+        return (none(string), nil)  # just ignore these elements.
+    elif elem.name == "hr":
+        return (self.extract_pagebreak(elem), nil)
+        #[
         elif elem.name == "dl":
             return self.extract_dldtdd(elem)
         elif elem.name == "ul":
@@ -302,13 +305,13 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return self.extract_title(elem)
         elif elem.name in ("pre", "code"):
             return self.extract_codeblock(elem)
-    ]#
+        ]#
     elif elem.name in ["p", "div"]:
         discard
     else:
         discard  # for debug: import pdb; pdb.set_trace()
         # p, article or ...
-    return (false, "", elem)
+    return (none(string), elem)
 
 
 proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
@@ -552,11 +555,15 @@ proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         self.style_table_width_from(tbl, classes)
         return None
 
-    def extract_pagebreak(self, elem: Tag) -> Optional[Text]:  # {{{1
-        if self.para is None:
+]#
+proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag  # {{{1
+                       ): Option[string] =
+    if isNil(self.para):
             self.para = self.output.add_paragraph()
+    else:
         self.para.add_run().add_break(WD_BREAK.PAGE)
-        return None
+    return none(string)
+#[
 
     def extract_dldtdd(self, elem: Tag) -> Optional[Text]:  # {{{1
         classes = common.classes_from_prev_sibling(elem)
@@ -688,9 +695,10 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
     var para: Paragraph = nil
     for i in node.children:
         let elem = cast[Tag](i)
-        let (f, ret, tag) = self.extract_element(elem, para)
-        if (not f) and isNil(tag):
+        let (s, tag) = self.extract_element(elem, para)
+        if s.isSome:
             let
+                ret = s.get()
                 empty = ret.strip(chars = {'\n'})
             block:
                 if len(empty) < 1:
@@ -703,7 +711,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                     self.para = para
                 else:
                     para.add_run(ret)
-        elif f:
+        elif s.isNone:
             discard
                 self.extract_para(elem, level + 1)
         else:
