@@ -24,6 +24,10 @@ type
     discard
 
 
+proc find*(self: Tag, name: string): Tag =  # {{{1
+    discard
+
+
 proc find_element*(name: string): Tag =  # {{{1
     return result
 

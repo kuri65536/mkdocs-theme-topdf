@@ -78,6 +78,8 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): tuple[f: bool, s: string, t: Tag]
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                 ): tuple[f: bool, s: string]
+proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                   ): tuple[f: bool, s: string]
 proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string]
 proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
@@ -237,11 +239,11 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return self.extract_code(elem, para, pre=false)
         elif elem.name == "br":
             return (false, self.extract_br(elem, para))
-        #[
         elif elem.name == "a":
             return self.extract_anchor(elem, para)
         elif elem.name == "span" and common.has_class(elem, "katex-display"):
             return self.extract_katex(elem, para)
+        #[
         elif elem.name == "span":
             text = elem.text
             if isinstance(text, Text):
@@ -461,21 +463,24 @@ proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     block:
         common.docx_add_hlink(para, instr, "ahref_" & url[1..^1])
     return (true, "")
-#[
 
-    def extract_katex(self, elem: Tag, para: Paragraph  # {{{1
-                      ) -> Optional[Text]:
-        """html sample: moved to test/docs/report-docx.md
-        """
+
+proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                   ): tuple[f: bool, s: string] =
+    ##[html sample: moved to test/docs/report-docx.md
+    ]##
         # TODO(shimoda): convert to image?
+    let
         anno = elem.find("annotation")
-        if anno is not None:
+    if not isNil(anno):
+            var style = ""
             style = common.Styles.get(self.output, "katex")
             self.para = self.output.add_paragraph(anno.text, style)
-        else:
-            breakpoint()
-        return None
+    else:
+        raise newException(ParseError, "unknown pattern...")
+    return (true, "")
 
+#[
     def extract_table_tree(self, elem: Tag, row: int  # {{{1
                            ) -> Dict[Tuple[int, int], Tag]:
         def num_row(dct: Dict[Tuple[int, int], Tag]) -> int:
