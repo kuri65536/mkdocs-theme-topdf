@@ -5,6 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import /usr/lib/nim/pure/options
+import algorithm
 import hashes
 import os
 import strutils
@@ -123,55 +124,61 @@ proc has_next_table*(target: Tag): bool =  # {{{1
                 return true
         break
     return false
-#[
 
-def has_width_and_parse(classes: Iterable[Text]  # {{{1
-                        ) -> Tuple[Text, List[Mm]]:
-    def parse_float_or_0(src: Text) -> float:
+
+proc has_width_and_parse*(classes: seq[string]  # {{{1
+                          ): tuple[s: string, l: seq[Length]] =
+    proc parse_float_or_0(src: string): float =
+        var n: float
         try:
-            n = float(src)
+            n = parseFloat(src)
         except ValueError:
             return 0.0
         return n
 
-    def parse_base(src: Text) -> float:
-        n_max, n_sum = 0.0, 0.0
+    proc parse_base(src: string): float =
+        var (n_max, n_sum) = (0.0, 0.0)
         for num in src.split("-"):
+            var n: float
             n = parse_float_or_0(num)
             if n <= 0.0:
                 if num == "a":
                     continue
-                if num.endswith("mm") and parse_float_or_0(num[:-2]) > 0.0:
+                if num.endswith("mm") and parse_float_or_0(num[0..^2]) > 0.0:
                     continue
-                return float("nan")
-            n_max, n_sum = max(n, n_max), n_sum + n
+                return NaN
+            (n_max, n_sum) = (max(n, n_max), n_sum + n)
         if n_sum > 10.49999:
             return 160.0 / n_sum
         return float(160 / 10)
 
+    var src: string
     src = ""
     for cls in classes:
         if cls.startswith("table"):
             src = cls
             break
-    else:
-        return "", []
-    ret: List[Mm] = []
-    base = parse_base(src[5:])
+    if len(src) < 1:
+        return ("", @[])
+    var
+        ret: seq[Length] = @[]
+        base: float
+    base = parse_base(src[5..^1])
     if base != base:
-        return "", []
-    for num in src[5:].split("-"):
+        return ("", @[])
+    for num in src[5..^1].split("-"):
         if num == "a":
-            ret.append(Mm(0))
+            ret.add(Mm(0))
             continue
         if num.endswith("mm"):
-            n = parse_float_or_0(num[:-2])
-            ret.append(Mm(n))
+            var n = parse_float_or_0(num[0..^2])
+            ret.add(Mm(n))
             continue
+        var n: float
         n = parse_float_or_0(num)
-        ret.append(Mm(n * base))
-    return src, ret
-
+        ret.add(Mm(n * base))
+    return (src, ret)
+#[
 
 def count_tags_around_image(src: Tag) -> int:  # {{{1
     "[@P14-1-12] image under a rule"
@@ -183,48 +190,78 @@ def count_tags_around_image(src: Tag) -> int:  # {{{1
     return i
 
 
-def classes_from_prev_sibling(target: Tag) -> Iterable[Text]:  # {{{1
+]#
+proc classes_from_prev_sibling*(target: Tag): seq[string] =  # {{{1
     for elem in target.previous_siblings:
-        if elem.name is None:
+        if len(elem.name) < 1:
             continue
-        ret: List[Text] = elem.attrs.get("class", [])
-        return ret + []
-    return []
+        var ret = elem.attrs.getOrDefault("class", "").split(" ")
+        return ret
+    return @[]
 
 
-def table_cellspan(e: Tag, *keys: Text) -> Tuple[int, ...]:  # {{{1
-    ret: Tuple[int, ...] = ()
+proc table_cellspan*(e: Tag, keys: varargs[string]): seq[int] =  # {{{1
+    var ret: seq[int] = @[]
     for key in keys:
-        ret += ((int(e.get(key)) - 1) if e.has_attr(key) else 0, )
+        if e.has_attr(key):
+            let n = parseInt(e.attrs.getOrDefault(key, "0"))
+            ret.add(n - 1)
+        else:
+            ret.add(0)
     return ret
 
 
-def table_update_rowcolspan(dct: Dict[Tuple[int, int], Tag]  # {{{1
-                            ) -> Dict[Tuple[int, int], Tag]:
-    """[@P13-1-13] alignment cell potisions"""
-    rowspans: List[Set[int]] = [set()]
-    ret: Dict[Tuple[int, int], Tag] = {}
-    r, c = -1, 0
-    for (row, col), elem in sorted(dct.items(), key=lambda x: x[0]):
+iterator sorted_by_keys*[A, B](self: TableRef[A, B],  # {{{1
+                               fn: proc(a, b: A): int): tuple[key: A, val: B] =
+    var keys: seq[A]
+    for k in self.keys():
+        keys.add(k)
+    for k in sorted(keys, fn):
+        yield (k, self[k])
+
+
+proc table_update_rowcolspan*(dct: TableRef[tuple[r, c: int], Tag]  # {{{1
+                              ): TableRef[tuple[r, c: int], Tag] =
+    ## [@P13-1-13] alignment cell potisions
+    proc cmp_rc(a, b: tuple[r, c: int]): int =
+        if a.r > b.r: return 1
+        if a.r < b.r: return -1
+        if a.c > b.c: return 1
+        if a.c < b.c: return -1
+        return 0
+
+    proc update(self: var seq[int], src: seq[int]): void =
+        for i in src:
+            self.add(i)
+
+    var
+        rowspans: seq[seq[int]]
+        ret = newTable[tuple[r, c: int], Tag]()
+        (r, c) = (-1, 0)
+    for tup, elem in sorted_by_keys(dct, cmp_rc):
+        let (row, col) = tup
         if r != row:
-            rowspans = rowspans[1:]
-            rowspans = rowspans if len(rowspans) > 0 else [set()]
-        r, c = row, col
+            rowspans = rowspans[1..^1]
+            rowspans = if len(rowspans) > 0: rowspans  else: @[@[0]]
+        (r, c) = (row, col)
         while c in rowspans[0]:
             c += 1
-        x, y = table_cellspan(elem, "colspan", "rowspan")
-        cols: Set[int] = {c}
+        var x, y: int
+        (x, y) = table_cellspan(elem, "colspan", "rowspan")
+        var cols = @[c]
         ret[(r, c)] = elem
         if x != 0:
-            for i in range(1, x + 1):
+            for i in 1..x:
+              if cols.contains(i):
                 cols.add(c + i)
         rowspans[0].update(cols)
         if y != 0:
-            for i in range(1, y + 1):
+            for i in 1..y:
                 if i >= len(rowspans):
-                    rowspans.append(cols)
+                    rowspans.add(cols)
                 else:
                     rowspans[i].update(cols)
+    #[
     """while True:  # dump cells information
         r, msg = -1, ""
         for (row, col), elem in sorted(ret.items(), key=lambda x: x[0]):
@@ -239,7 +276,9 @@ def table_update_rowcolspan(dct: Dict[Tuple[int, int], Tag]  # {{{1
         if len(msg):
             warn("common.table:" + msg[1:])
         break"""
+    ]#
     return ret
+#[
 
 
 def is_online_mode() -> bool:  # {{{1

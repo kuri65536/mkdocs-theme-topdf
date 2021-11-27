@@ -18,6 +18,10 @@ proc info*(msg: string): void =  # {{{1
     discard
 
 
+proc warn*(msg: string): void =  # {{{1
+    discard
+
+
 proc basicConfig*(level: int): void =  # {{{1
     discard
 

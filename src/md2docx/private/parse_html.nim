@@ -13,15 +13,19 @@ import tables
 type
   XmlElement* = ref XmlElementObj
   XmlElementObj* = object of RootObj
-    children*: seq[XmlElement]
     attrs*: Table[string, string]
 
   Tag* = ref object of XmlElement
+    children*: seq[Tag]
     name*, string*, text*: string
     parent*: Tag
 
   ElementComment* = ref object of Tag
     discard
+
+
+proc has_attr*(self: Tag, k: string): bool =  # {{{1
+    return self.attrs.hasKey(k)
 
 
 proc find*(self: Tag, name: string): Tag =  # {{{1

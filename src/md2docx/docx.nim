@@ -18,6 +18,9 @@ type
   WD_ALIGN_PARAGRAPH* = enum
     RIGHT = 1
 
+  WD_TABLE_ALIGNMENT* = enum
+    CENTER = 1
+
   WD_BREAK* = enum
     PAGE = 1
 
@@ -29,6 +32,10 @@ type
 
   Style* = ref object of RootObj
     discard
+
+  BlockItemContainerObj* = object of RootObj
+    discard
+  BlockItemContainer* = ref BlockItemContainerObj
 
   Section* = ref object of RootObj
     page_width*, page_height*,
@@ -44,15 +51,19 @@ type
   Paragraph* = ref object of RootObj
     alignment*: WD_ALIGN_PARAGRAPH
     raw*: OxmlElement
+    style*: string
 
-  TableCell* = ref object of RootObj
-    discard
+  TableCell* = ref object of BlockItemContainerObj
+    paragraphs*: seq[Paragraph]
 
   TableRow* = ref object of RootObj
     cells*: seq[TableCell]
 
   DocxTable* = ref object of RootObj
     rows*: seq[TableRow]
+    autofit*: bool
+    style*: string
+    alignment*: WD_TABLE_ALIGNMENT
 
   Document* = ref object of RootObj
     paragraphs*: seq[Paragraph]
@@ -96,6 +107,10 @@ proc set*(self: OxmlElement, name, val: string): void =  # {{{1
     discard
 
 
+proc Mm*(src: float): Length =  # {{{1
+    discard
+
+
 proc Mm*(src: int): Length =  # {{{1
     discard
 
@@ -120,6 +135,18 @@ proc add_break*(self: Runner, typ: WD_BREAK  # {{{1
 
 proc add_paragraph*(self: Document, text = "", style = ""  # {{{1
                     ): Paragraph {.discardable.} =
+    discard
+
+
+proc add_paragraph*(self: TableCell): Paragraph =  # {{{1
+    discard
+
+
+proc merge*(a, b: TableCell): void =  # {{{1
+    discard
+
+
+proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
     discard
 
 

@@ -71,25 +71,37 @@ proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
                             style = ""): Paragraph
 proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string] {.discardable.}
+proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,
+                    bkname: string): string {.discardable.}
 proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph): string
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
                   pre: bool): tuple[f: bool, s: string]
+proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): tuple[s: Option[string], t: Tag]
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                 ): tuple[f: bool, s: string]
 proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                    ): tuple[f: bool, s: string]
+proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool, level: int,
+                  blk: BlockItemContainer): Option[string] {.discardable.}
 proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string]
 proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                  ): tuple[f: bool, s: string]
+proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string]
+proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,
+                        cell: TableCell): void
 proc extract_text(self: HtmlConvertDocx, elem: Tag
                   ): tuple[f_none: bool, s: string]
 proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
                   ): tuple[f: bool, r: string]
 proc header_init(self: HtmlConvertDocx): void
+proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,
+                        classes: seq[string]): bool
+proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,
+                            classes: seq[string]): bool {.discardable.}
 
 
 proc initHtmlConvertDocx(src: string): HtmlConvertDocx =  # {{{1
@@ -227,7 +239,7 @@ proc extract_is_text(self: HtmlConvertDocx, elem: Tag  # {{{1
 
 
 proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                     ): tuple[f: bool, s: string] =
+                     ): tuple[f: bool, s: string] {.discardable.} =
     block:
         # inline elements
         if elem.name == "em":
@@ -286,9 +298,12 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         return (none(string), nil)  # just ignore these elements.
     elif elem.name == "hr":
         return (self.extract_pagebreak(elem), nil)
+    elif elem.name == "dl":
+        return (self.extract_dldtdd(elem), nil)
+    block:
+        if false:
+            discard
         #[
-        elif elem.name == "dl":
-            return self.extract_dldtdd(elem)
         elif elem.name == "ul":
             return self.extract_list(elem, False, 1, self.output)
         elif elem.name == "ol":
@@ -306,6 +321,8 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         elif elem.name in ("pre", "code"):
             return self.extract_codeblock(elem)
         ]#
+    if false:
+        discard
     elif elem.name in ["p", "div"]:
         discard
     else:
@@ -483,79 +500,122 @@ proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         raise newException(ParseError, "unknown pattern...")
     return (true, "")
 
-#[
-    def extract_table_tree(self, elem: Tag, row: int  # {{{1
-                           ) -> Dict[Tuple[int, int], Tag]:
-        def num_row(dct: Dict[Tuple[int, int], Tag]) -> int:
+
+proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
+                        ): TableRef[tuple[r, c: int], Tag] =
+    proc num_row(dct: TableRef[tuple[r: int, c: int], Tag]): int =
+        var
             ret = -1
-            for (row, col) in dct.keys():
+        for row, col in dct.keys():
                 ret = max(ret, row)
+        block:
             return ret + 1
 
-        ret: Dict[Tuple[int, int], Tag] = {}
-        f_row = False
-        for tag in elem.children:
-            if tag.name is None:
+    proc update(self, src: TableRef[tuple[r: int, c: int], Tag]): void =
+        for k, v in src.pairs():
+            self[k] = v
+
+    var
+        ret = newTable[tuple[r, c: int], Tag]()
+    var f_row = false
+    for tag in elem.children:
+        block:
+            if len(tag.name) < 1:
                 continue
             if tag.name == "thead":
                 info("structure: tbl: enter thead")
                 ret = self.extract_table_tree(tag, 0)
                 continue
-            if tag.name == "tbody":
+        if tag.name == "tbody":
+            block:
                 info("structure: tbl: enter tbody")
+            var ret2: TableRef[tuple[r, c: int], Tag]
+            block:
                 ret2 = self.extract_table_tree(tag, num_row(ret))
                 ret.update(ret2)
                 continue
-            if tag.name == "tfoot":
+        if tag.name == "tfoot":
+            block:
                 warn("structure: tbl: enter tfoot")
+            var ret2: TableRef[tuple[r, c: int], Tag]
+            block:
                 ret2 = self.extract_table_tree(tag, num_row(ret))
                 ret.update(ret2)
                 continue
+        block:
             if tag.name != "tr":
                 warn("table tree: %s in table" % tag.name)
                 continue
-            f_row, col, row = True, 0, (row + 1 if f_row else row)
+        var (f_row, col, row) = (true, 0, (row + (if f_row: 1 else: 0)))
+        block:
             for cell in tag.children:
-                if cell.name is None:
+                if len(cell.name) < 1:
                     continue
-                if cell.name not in ("th", "td", ):
+                if cell.name not_in ["th", "td", ]:
                     warn("table tree: %s in tr" % cell.name)
                     continue
-                ret[row, col] = cell
+                ret[(row, col)] = cell
                 col += 1
         return ret
 
-    def extract_table(self, elem: Tag) -> Optional[Text]:  # {{{1
+
+proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
+    var
         dct = self.extract_table_tree(elem, 0)
+    block:
         dct = common.table_update_rowcolspan(dct)  # [@P13-1-11] cell-span
         if len(dct) < 1:
-            warn("table: did not have any data" + Text(elem.string))
-            return None
-        n_row = max([tup[0] for tup in dct.keys()]) + 1
-        n_col = max([tup[1] for tup in dct.keys()]) + 1
+            warn("table: did not have any data" & elem.string)
+            return none(string)
 
-        info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
+    proc max_key[A, B](self: TableRef[A, B], fn: proc(src: A): int): int =
+        var ret: seq[int]
+        for tup in self.keys(): ret.add(fn(tup))
+        return max(ret)
+
+    proc cmp_rc(a, b: tuple[r, c: int]): int =
+        if a.r > b.r: return 1
+        if a.r < b.r: return -1
+        if a.c > b.c: return 1
+        if a.c < b.c: return -1
+        return 0
+
+    var
+        n_row = max_key(dct, proc(x: tuple[r, c: int]): int = x.r) + 1
+        n_col = max_key(dct, proc(x: tuple[r, c: int]): int = x.c) + 1
+
+    block:
+        info("structure: tbl: {elem.name} ({n_row},{n_col})")
+    var
         tbl = self.output.add_table(rows=n_row, cols=n_col)
-        tbl.autofit = False
+    tbl.autofit = false
+    block:
         tbl.style = common.Styles.get(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-        for (row, col), subelem in sorted(dct.items(), key=lambda x: x[0]):
+    for tup, subelem in sorted_by_keys(dct, cmp_rc):
+        var
+            (row, col) = tup
             cell = tbl.rows[row].cells[col]
             # [@P13-1-12] merging spaned cells
-            x, y = common.table_cellspan(subelem, "colspan", "rowspan")
+            xy = common.table_cellspan(subelem, "colspan", "rowspan")
+        var (x, y) = (xy[0], xy[1])
+        block:
             if x != 0 or y != 0:
                 if col + x >= n_col or row + y >= n_row:
-                    raise IndexError("invalid colspan or rowspan in '%s'" %
-                                     Text(elem))
+                    raise newException(IndexError, "invalid colspan or " &
+                                       "rowspan in '" & elem.string)
+                var cel2: TableCell
                 cel2 = tbl.rows[row + y].cells[col + x]
                 cell.merge(cel2)
             self.extract_table_cell(subelem, cell)
 
+    var
         classes = common.classes_from_prev_sibling(elem)
+    block:
         self.style_table_width_from(tbl, classes)
-        return None
+    return none(string)
 
-]#
+
 proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag  # {{{1
                        ): Option[string] =
     if isNil(self.para):
@@ -563,46 +623,60 @@ proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag  # {{{1
     else:
         self.para.add_run().add_break(WD_BREAK.PAGE)
     return none(string)
-#[
 
-    def extract_dldtdd(self, elem: Tag) -> Optional[Text]:  # {{{1
+
+proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
+                    ): Option[string] =
+    var
+        n_row = 0
+        n_col = 0
+        i = 0
+        classes: seq[string]
+    block:
         classes = common.classes_from_prev_sibling(elem)
-        if "before-dl-table" not in classes:
-            warn("can not convert dl tags, "
+        if "before-dl-table" not_in classes:
+            warn("can not convert dl tags, " &
                  "docx does not have difinition lists")
-            return None
+            return none(string)
 
-        n_row = n_col = i = 0
         for tag in elem.children:
-            if tag.name not in ("dt", "dd"):
+            if tag.name not_in ["dt", "dd"]:
                 continue
             if tag.name == "dt":
-                n_row, i = n_row + 1, 1
+                (n_row, i) = (n_row + 1, 1)
                 continue
             i += 1
             n_col = max(i, n_col)
 
-        info("structure: tbl: %s (%d,%d)" % (elem.name, n_row, n_col))
+        info(fmt"structure: tbl: {elem.name} ({n_row},{n_col})")
+    var tbl: DocxTable
+    block:
         tbl = self.output.add_table(rows=n_row, cols=n_col)
-        tbl.autofit = False
+    tbl.autofit = false
+    block:
         tbl.style = common.Styles.get(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-        n_row, i = -1, 0
-        for tag in elem.children:
-            if tag.name not in ("dt", "dd"):
+    (n_row, i) = (-1, 0)
+    for tag in elem.children:
+        if tag.name not_in ["dt", "dd"]:
                 continue
-            elif tag.name == "dt":
-                n_row, i = n_row + 1, 0
-            else:
+        elif tag.name == "dt":
+            (n_row, i) = (n_row + 1, 0)
+        else:
                 i += 1
+        block:
             self.extract_table_cell(tag, tbl.rows[n_row].cells[i])
+    block:
         if self.style_table_stamps(tbl, classes):
-            return None
+            return none(string)
         self.style_table_width_from(tbl, classes)
-        return None
+    return none(string)
 
-    def extract_list(self, elem: Tag, f_number: bool,  # {{{1
-                     level: int, blk: BlockItemContainer) -> Optional[Text]:
+
+proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  level: int,  # {{{1
+                  blk: BlockItemContainer): Option[string] {.discardable.} =
+    discard
+        #[
         list_info = self.style_list(f_number, level)
         for tag in elem.children:
             if tag.name != "li":
@@ -718,42 +792,50 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                 if para != self.para:
                     para = self.para
     return (false, "")
-#[
 
-    def extract_table_cell(self, elem: Tag, cell: _Cell) -> None:  # {{{1
+
+proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
+                        cell: TableCell): void =
         # FIXME(shimoda): simplify complex code...
-        para: Optional[Paragraph] = cell.paragraphs[-1]
-        for tag in elem.children:
+    var para = if len(cell.paragraphs) > 0: cell.paragraphs[^1] else: nil
+    for tag in elem.children:
+        var src: string
+        block:
             src = ""
             try:
                 self.extract_inlines(tag, para)
                 continue
             except common.ParseError:
-                pass
-            if tag.name is None:
+                discard
+        if len(tag.name) < 1:
                 src = tag.string
                 src = src.replace("\n", " ")
-            elif tag.name in ("p", "div"):
-                if para is None:
+        elif tag.name in ["p", "div"]:
+                if isNil(para):
                     para = cell.add_paragraph()
                 self.extract_as_run(para, tag, "")
-            elif tag.name in ("ul", "ol"):
+        elif tag.name in ["ul", "ol"]:
+            block:
                 self.extract_list(tag, tag.name == "ol", 1, cell)
-                para = None
+            para = nil
+            block:
                 continue
-            else:
+        else:
                 debg("can't extract %s in a table-cell" % tag.name)
                 continue
-            if para is None:
+        if isNil(para):
                 para = cell.add_paragraph()
+        block:
             info("table: %s" % src)  # (row, col, src))
             para.add_run(src)
 
         # [@P13-2-13] style for cells
-        style_name = "CellHeader" if elem.name == "th" else "CellNormal"
+        var style_name = if elem.name == "th": "CellHeader"  else: "CellNormal"
+        var style = ""
         style = common.Styles.get(self.output, style_name)
         for para in cell.paragraphs:
             para.style = style
+#[
 
     def extract_list_subs(self, para: Optional[Paragraph], elem: Tag,  # {{{1
                           info: _info_list, blk: BlockItemContainer) -> Text:
@@ -792,8 +874,11 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
             warn("can't parse complex html...%s" % tag.name)
         return ret
 
-    def extract_as_run(self, para: Paragraph, elem: Tag,  # {{{1
-                       bkname: Text) -> Text:
+]#
+proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,  # {{{1
+                    bkname: string): string =
+    discard
+    #[
         ret = ""
         if elem.name is None:  # NavigableString
             ret = Text(elem.string)
@@ -820,11 +905,12 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                 pass
         return ret
 
-    def style_table_stamps(self, tbl: Table,  # {{{1
-                           classes: Iterable[Text]
-                           ) -> bool:
-        if "table-3stamps" not in classes:
-            return False
+]#
+proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
+                        classes: seq[string]): bool =
+    if "table-3stamps" not_in classes:
+            return false
+    #[
         for col, wid in zip(tbl.columns,
                             [Mm(114), Mm(20), Mm(20), Mm(20)]):
             col.cells[0].width = wid
@@ -895,12 +981,14 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                 # can not set tl2br in LibreOffice.
                 # this code was confirmed by w:bottom and color 00FF00
         return True
+    ]#
 
-    def style_table_width_from(self, tbl: Table,  # {{{1
-                               classes: Iterable[Text]
-                               ) -> bool:
+
+proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
+                            classes: seq[string]): bool {.discardable.} =
         # total width: 160mm
-        cls, widths = common.has_width_and_parse(classes)
+    var (cls, widths) = common.has_width_and_parse(classes)
+    #[
         if len(widths) < 1:
             warn("width did not specified by class")
             return False
