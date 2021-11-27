@@ -48,12 +48,6 @@ else:
     import options  # type: ignore
     import docx_svg_hack  # type: ignore
 
-
-class _info_list:  # {{{1
-    def __init__(self, f: bool, s: Text, l: int) -> None:  # {{{1
-        self.f_number = f
-        self.style = s
-        self.level = l
 ]#
 
 type
@@ -62,6 +56,11 @@ type
     url_target: string
     output: docx.Document
     para: docx.Paragraph
+
+  info_list = ref object of RootObj
+    f_number: bool
+    style: string
+    level: int
 
 
 proc bookmark_from_db(self: HtmlConvertDocx, s_href: string,
@@ -85,6 +84,9 @@ proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                    ): tuple[f: bool, s: string]
 proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool, level: int,
                   blk: BlockItemContainer): Option[string] {.discardable.}
+proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,
+                       elem: Tag, info: info_list,
+                       blk: BlockItemContainer): string
 proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string]
 proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
@@ -98,6 +100,7 @@ proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
                   ): tuple[f: bool, r: string]
 proc header_init(self: HtmlConvertDocx): void
+proc style_list(self: HtmlConvertDocx, f_number: bool, level: int): info_list
 proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,
                         classes: seq[string]): bool
 proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,
@@ -300,6 +303,8 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         return (self.extract_pagebreak(elem), nil)
     elif elem.name == "dl":
         return (self.extract_dldtdd(elem), nil)
+    elif elem.name == "table":
+        return (self.extract_table(elem), nil)
     block:
         if false:
             discard
@@ -308,8 +313,6 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return self.extract_list(elem, False, 1, self.output)
         elif elem.name == "ol":
             return self.extract_list(elem, True, 1, self.output)
-        elif elem.name == "table":
-            return self.extract_table(elem)
         elif elem.name == "details":
             return self.extract_details(elem)
         elif elem.name == "img":
@@ -675,16 +678,19 @@ proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
 
 proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  level: int,  # {{{1
                   blk: BlockItemContainer): Option[string] {.discardable.} =
-    discard
-        #[
+    var
+        ret = ""
         list_info = self.style_list(f_number, level)
-        for tag in elem.children:
+    for tag in elem.children:
+        block:
             if tag.name != "li":
                 continue
-            ret = self.extract_list_subs(None, tag, list_info, blk)
-            info("structure: li : " + ret if len(ret) < 50 else ret[:50])
-        self.para = None
-        return None
+        ret = self.extract_list_subs(nil, tag, list_info, blk)
+        block:
+            info("structure: li : " & (if len(ret) < 50: ret else: ret[0..50]))
+    self.para = nil
+    return none(string)
+#[
 
     def extract_details(self, elem: Tag) -> Optional[Text]:
         debg("structure: details: not implemented, skipped...")
@@ -835,10 +841,13 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
         style = common.Styles.get(self.output, style_name)
         for para in cell.paragraphs:
             para.style = style
-#[
 
-    def extract_list_subs(self, para: Optional[Paragraph], elem: Tag,  # {{{1
-                          info: _info_list, blk: BlockItemContainer) -> Text:
+
+proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,  # {{{1
+                       elem: Tag, info: info_list,
+                       blk: BlockItemContainer): string =
+    discard
+    #[
         ret = ""
         for tag in elem.children:
             if tag.name in ("p", "div", "ul", "ol"):
@@ -1007,18 +1016,22 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
                 info("cell(%d,%d): width set to %d" % (j, i, wid))
                 cell.width = wid
         return True
+]#
 
-    def style_list(self, f_number: bool, level: int) -> _info_list:  # {{{1
-        style_base = "List Number" if f_number else "List Bullet"
+proc style_list(self: HtmlConvertDocx, f_number: bool, level: int  # {{{1
+                ): info_list =
+    var
+        style = ""
+        style_base = if f_number: "List Number" else: "List Bullet"
+    block:
         if level > 1:
-            style = style_base + " %d" % level
+            style = style_base & " " & $level
         else:
             style = style_base
         style = common.Styles.get(self.output, style)
-        return _info_list(f_number, style, level)
+    return info_list(f_number: f_number, style: style, level: level)
 
 
-]#
 proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,  # {{{1
                             style = ""): Paragraph =
     if not isNil(para):
