@@ -24,6 +24,7 @@ type
     CENTER = 1
 
   WD_BREAK* = enum
+    LINE = 0
     PAGE = 1
 
   OxmlElement* = ref object of RootObj
@@ -160,7 +161,7 @@ proc add_run*(self: Paragraph, src = "", style=""  # {{{1
     discard
 
 
-proc add_break*(self: Runner, typ: WD_BREAK  # {{{1
+proc add_break*(self: Runner, typ = WD_BREAK.LINE  # {{{1
                     ): void =
     discard
 

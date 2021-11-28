@@ -74,6 +74,7 @@ proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,
 proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph): string
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
                   pre: bool): tuple[f: bool, s: string]
+proc extract_codeblock(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_details(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
@@ -322,15 +323,8 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         return (self.extract_svg(elem, para), nil)
     elif elem.name in ["h1", "h2", "h3", "h4", "h5", "h6", ]:
         return (self.extract_title(elem), nil)
-    block:
-        if false:
-            discard
-        #[
-        elif elem.name in ("pre", "code"):
-            return self.extract_codeblock(elem)
-        ]#
-    if false:
-        discard
+    elif elem.name in ["pre", "code"]:
+        return (self.extract_codeblock(elem), nil)
     elif elem.name in ["p", "div"]:
         discard
     else:
@@ -770,22 +764,28 @@ proc extract_title(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
     block:
         self.para = nil
     return none(string)
-#[
 
-    def extract_codeblock(self, elem: Tag) -> Optional[Text]:  # {{{1
-        ret = Text(elem.string)
-        info("structure: pre: " + ret.splitlines()[0])
+
+proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
+                       ): Option[string] =
+    var ret = elem.string
+    var style: string
+    var para: Paragraph
+    var n = 0
+    info("structure: pre: " & ret.splitlines()[0])
+    block:
         style = common.Styles.get(self.output, "Quote")
         # [@D4-21-1] parse lines and add runs and breaks for them.
-        for n, line in enumerate(ret.splitlines()):
+        for line in ret.split('\n'):
             if n == 0:
                 para = self.output.add_paragraph("", style=style)
             para.add_run(line).add_break()
-        self.para = None
+            n += 1
+        self.para = nil
         common.Styles.quote(para)
-        return None
+    return none(string)
 
-]#
+
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                   ): tuple[f: bool, r: string] =
     block:

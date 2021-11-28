@@ -732,8 +732,10 @@ proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
         fmt.left_indent = fmt.right_indent = Mm(10)
         return name
 
-    @classmethod  # quote {{{1
-    def quote(self, para: Paragraph) -> None:
+]#
+proc quote*(self: StylesObj, para: Paragraph): void =  # {{{1
+    discard
+    #[
         pPr = para._p.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
         pPr.append(pBdr)
@@ -744,6 +746,8 @@ proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
             b.set(qn('w:space'), '4')
             b.set(qn('w:color'), '000000')
             pBdr.append(b)
+    ]#
+#[
 
     @style("CodeChars")  # {{{1
     def init_codechars(self, doc: Document, name: Text) -> Text:
