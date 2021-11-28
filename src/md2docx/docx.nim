@@ -19,6 +19,7 @@ type
     RIGHT = 1
 
   WD_TABLE_ALIGNMENT* = enum
+    LEFT = 0
     CENTER = 1
 
   WD_BREAK* = enum
@@ -51,19 +52,31 @@ type
   Paragraph* = ref object of RootObj
     alignment*: WD_ALIGN_PARAGRAPH
     raw*: OxmlElement
+    text*: string
     style*: string
 
   TableCell* = ref object of BlockItemContainerObj
     paragraphs*: seq[Paragraph]
+    width*: Length
+    text*: string
+    element*: OxmlElement
+
+  TableColumn* = ref object of RootObj
+    cells*: seq[TableCell]
+    width*: Length
 
   TableRow* = ref object of RootObj
     cells*: seq[TableCell]
+    height*: Length
 
   DocxTable* = ref object of RootObj
     rows*: seq[TableRow]
+    columns*: seq[TableColumn]
     autofit*: bool
+    allow_autofit*: bool
     style*: string
     alignment*: WD_TABLE_ALIGNMENT
+    preferences*: OxmlElement
 
   Document* = ref object of BlockItemContainerObj
     paragraphs*: seq[Paragraph]
@@ -116,6 +129,10 @@ proc Mm*(src: int): Length =  # {{{1
 
 
 proc add_r*(self: OxmlElement): OxmlElement =  # {{{1
+    result = OxmlElement()
+
+
+proc get_or_add_tcPr*(self: OxmlElement): OxmlElement =  # {{{1
     result = OxmlElement()
 
 

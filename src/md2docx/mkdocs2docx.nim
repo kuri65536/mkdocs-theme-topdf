@@ -934,26 +934,34 @@ proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
                         classes: seq[string]): bool =
     if "table-3stamps" not_in classes:
             return false
-    #[
-        for col, wid in zip(tbl.columns,
+    var
+        mar: OxmlElement
+        row: TableRow
+    for tup in zip(tbl.columns,
                             [Mm(114), Mm(20), Mm(20), Mm(20)]):
+            let (col, wid) = tup
             col.cells[0].width = wid
+    block:
         row = tbl.rows[0]
         row.height = Mm(20)
-        mar = OxmlElement('w:tblCellMar')
+        mar = initOxmlElement("w:tblCellMar")
         tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
-        tbl.allow_autofit = True
-        tbl._tblPr.append(mar)
-        for ename, val in (('top', '0'), ('bottom', '0'),
-                           ('left', '108'), ('right', '108'), ):
-            i = OxmlElement('w:' + ename)
-            i.set(qn('w:w'), val)
-            i.set(qn('w:type'), 'dxa')
+        tbl.allow_autofit = true
+        tbl.preferences.append(mar)
+    for tup in [("top", "0"), ("bottom", "0"),
+                       ("left", "108"), ("right", "108"), ]:
+        let (ename, val) = tup
+        var i = initOxmlElement("w:" & ename)
+        i.set(qn("w:w"), val)
+        i.set(qn("w:type"), "dxa")
+        block:
             mar.append(i)
-        i = OxmlElement('w:tblInd')
-        i.set(qn('w:w'), "-6")
-        i.set(qn('w:type'), 'dxa')
+    var i = initOxmlElement("w:tblInd")
+    i.set(qn("w:w"), "-6")
+    i.set(qn("w:type"), "dxa")
+    block:
         mar.append(i)
+    #[
         """
             <w:tbl><w:tblPr>
               <w:tblStyle w:val="TableGrid"/>
@@ -970,33 +978,38 @@ proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
                   w:firstRow="1" w:lastColumn="0" w:firstColumn="1"
                   ...
         """
+    ]#
 
+    var
         n = 0
+    block:
         for para in row.cells[0].paragraphs:
             n += 1
         if n == 1:
             # style up <dt>subtitle<br>title</dt>
+            var para: Paragraph; var lines: seq[string]
             para = row.cells[0].paragraphs[-1]
             lines = para.text.split("\n")
             if len(lines) < 2:
                 para.style = common.Styles.get(self.output, "Title")
-                return True
+                return true
             para.text = lines[0]
-            para = row.cells[0].add_paragraph("\n".join(lines[1:]))
+            para = row.cells[0].add_paragraph(lines[1..^1].join("\n"))
 
-        for n, para in enumerate(row.cells[0].paragraphs):
+        for n, para in row.cells[0].paragraphs:
             if n == 0:
                 para.style = common.Styles.get(self.output, "Subtitle")
             else:
                 para.style = common.Styles.get(self.output, "Title")
-        for i in range(1, 4):
+        for i in 1..3:
             row.cells[i].paragraphs[0].style = common.Styles.get(
                     self.output, "Stamps")
-            if "\n" not in row.cells[i].text:
-                tcpr = row.cells[i]._element.get_or_add_tcPr()
-                borders = OxmlElement("w:tcBorders")
+            if "\n" not_in row.cells[i].text:
+                var tcpr: OxmlElement
+                tcpr = row.cells[i].element.get_or_add_tcPr()
+                var borders = initOxmlElement("w:tcBorders")
                 tcpr.append(borders)
-                bs = OxmlElement("w:tl2br")
+                var bs = initOxmlElement("w:tl2br")
                 borders.append(bs)
                 bs.set(qn("w:color"), "000000")
                 bs.set(qn("w:space"), "0")
@@ -1004,8 +1017,7 @@ proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
                 bs.set(qn("w:sz"), "4")  # 1pt
                 # can not set tl2br in LibreOffice.
                 # this code was confirmed by w:bottom and color 00FF00
-        return True
-    ]#
+    return true
 
 
 proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
