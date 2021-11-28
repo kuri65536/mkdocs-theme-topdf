@@ -93,6 +93,8 @@ proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): tuple[f: bool, s: string]
 proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                  ): tuple[f: bool, s: string]
+proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                 ): Option[string]
 proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,
                         cell: TableCell): void
@@ -315,12 +317,12 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         return (self.extract_details(elem), nil)
     elif elem.name == "img":
         return (self.extract_img(elem, para), nil)
+    elif elem.name == "svg":
+        return (self.extract_svg(elem, para), nil)
     block:
         if false:
             discard
         #[
-        elif elem.name == "svg":
-            return self.extract_svg(elem, para)
         elif elem.name in ("h1", "h2", "h3", "h4", "h5", "h6", ):
             return self.extract_title(elem)
         elif elem.name in ("pre", "code"):
@@ -735,19 +737,23 @@ proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         args = common.dot_to_page(w, h)
     para.add_run().add_picture(fname, args)
     return none(string)
-#[
 
-    def extract_svg(self, elem: Tag, para: Paragraph  # {{{1
-                    ) -> Optional[Text]:
+
+proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                 ): Option[string] =
         # [P10-1-11] convert to an imported svg.
-        fname = docx_svg_hack.dump_file(elem, "tmp")
+    var fname = docx_svg.dump_file(elem, "tmp")
+    #[
         docx_svg_hack.monkey()
+    ]#
 
+    var
         para = self.current_para_or_create(para)
         pic = para.add_run().add_picture(fname)
 
-        docx_svg_hack.compose_asvg(pic)
-        return None
+    docx_svg.compose_asvg(pic)
+    return none(string)
+#[
 
     def extract_title(self, elem: Tag) -> Optional[Text]:  # {{{1
         level = int(elem.name.lstrip("h"))

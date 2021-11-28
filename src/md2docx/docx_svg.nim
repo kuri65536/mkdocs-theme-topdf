@@ -5,14 +5,13 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import docx
+import ./private/parse_html
 #[
 from logging import warning as warn
 from lxml import etree  # type: ignore
 import os
 from tempfile import NamedTemporaryFile as Temporary
 from typing import (Callable, IO, Optional, Text, )
-
-from bs4.element import Tag  # type: ignore
 
 from docx.image import image
 from docx.oxml import OxmlElement  # type: ignore
@@ -119,7 +118,10 @@ w:name="_GoBack"/><w:r><w:rPr><w:noProof/></w:rPr>
 """
 
 
-def dump_file(elem: Tag, dname: Text) -> Text:  # {{{1
+]#
+proc dump_file*(elem: Tag, dname: string): string =  # {{{1
+    discard
+#[
     # [@P10-1-12] export a svg to an external file.
     dname, fname = "tmp", ""
     if not os.path.exists(dname):
