@@ -898,35 +898,38 @@ proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,  # {{{1
 
 proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,  # {{{1
                     bkname: string): string =
-    discard
-    #[
+    var
         ret = ""
-        if elem.name is None:  # NavigableString
-            ret = Text(elem.string)
+    if len(elem.name) < 1:  # NavigableString
+        ret = elem.string
+        block:
             common.docx_add_bookmark(para, bkname, ret)  # [@P8-2-11] for li
             return ret
+    block:
         for tag in elem.children:
-            content = self.extract_is_text(tag)
-            if isinstance(content, Text):
+            var bkname = ""
+            let (f, content, e) = self.extract_is_text(tag)
+            if not f and isNil(e):
                 # [@P8-2-12] for li, head of paragraph
-                ret += content
+                ret &= content
                 common.docx_add_bookmark(para, bkname, content)
                 bkname = ""
                 continue
-            if content is None:
+            if not f:
                 continue
             try:
+                var s: tuple[f: bool, s: string]
                 s = self.extract_inlines(
                         tag, para)
-                if isinstance(s, Text):
-                    ret += s
+                if not s.f:
+                    ret &= s.s
                 if len(bkname) > 0:
                     common.docx_add_bookmark(para, bkname, " ")  # [@P8-2-13]
             except common.ParseError:
-                pass
+                discard
         return ret
 
-]#
+
 proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
                         classes: seq[string]): bool =
     if "table-3stamps" not_in classes:
