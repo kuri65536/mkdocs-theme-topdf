@@ -178,19 +178,19 @@ proc has_width_and_parse*(classes: seq[string]  # {{{1
         n = parse_float_or_0(num)
         ret.add(Mm(n * base))
     return (src, ret)
-#[
 
-def count_tags_around_image(src: Tag) -> int:  # {{{1
-    "[@P14-1-12] image under a rule"
+
+proc count_tags_around_image*(src: Tag): int =  # {{{1
+    ## [@P14-1-12] image under a rule
+    var i: int
     i = 0
     for elem in src.children:
-        if elem.name is None:
+        if len(elem.name) < 1:
             continue
         i += 1
     return i
 
 
-]#
 proc classes_from_prev_sibling*(target: Tag): seq[string] =  # {{{1
     for elem in target.previous_siblings:
         if len(elem.name) < 1:
@@ -328,8 +328,9 @@ proc remove_temporaries*(): void =  # {{{1
         discard
 
 
+proc download_image*(url_doc: string, src: string): string =  # {{{1
+    discard
 #[
-def download_image(url_doc: Text, src: Text) -> Text:  # {{{1
     # absolute
     if src.startswith("http://"):
         fname = download_image_run(src)
@@ -421,7 +422,10 @@ def download_image_extract(url: Text) -> Text:  # {{{1
     return fname
 
 
-def image_width_and_height(src: Text) -> Tuple[int, int]:  # {{{1
+]#
+proc image_width_and_height*(src: string): tuple[w, h: int] =  # {{{1
+    discard
+#[
     try:
         return get_image_size.get_image_size(src)  # type: ignore
     except get_image_size.UnknownImageFormat:
@@ -441,7 +445,10 @@ def dot_to_mm(n: int) -> int:  # {{{1
     return mm  # type: ignore
 
 
-def dot_to_page(w: int, h: int) -> Dict[Text, int]:  # {{{1
+]#
+proc dot_to_page*(w, h: int): seq[tuple[k, v: string]] =  # {{{1
+    discard
+#[
     if w < 1 and h < 1:
         return {}
     if dot_to_mm(w) > Mm(210 - 40):

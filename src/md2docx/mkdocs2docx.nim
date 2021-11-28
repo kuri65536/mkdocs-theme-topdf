@@ -14,6 +14,7 @@ import system
 import tables
 
 import ./docx
+import ./docx_svg
 import ./docx_toc
 import ./etree
 import ./private/common
@@ -42,11 +43,9 @@ from docx.table import _Cell, Table  # type: ignore
 if sys.version_info.major == 3:
     from . import common
     from . import options
-    from . import docx_svg_hack
 else:
     import common  # type: ignore
     import options  # type: ignore
-    import docx_svg_hack  # type: ignore
 
 ]#
 
@@ -75,6 +74,7 @@ proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,
 proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph): string
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
                   pre: bool): tuple[f: bool, s: string]
+proc extract_details(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): tuple[s: Option[string], t: Tag]
@@ -82,6 +82,8 @@ proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                 ): tuple[f: bool, s: string]
 proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                    ): tuple[f: bool, s: string]
+proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                 ): Option[string]
 proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool, level: int,
                   blk: BlockItemContainer): Option[string] {.discardable.}
 proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,
@@ -309,14 +311,14 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         return (self.extract_list(elem, false, 1, self.output), nil)
     elif elem.name == "ol":
         return (self.extract_list(elem, true, 1, self.output), nil)
+    elif elem.name == "details":
+        return (self.extract_details(elem), nil)
+    elif elem.name == "img":
+        return (self.extract_img(elem, para), nil)
     block:
         if false:
             discard
         #[
-        elif elem.name == "details":
-            return self.extract_details(elem)
-        elif elem.name == "img":
-            return self.extract_img(elem, para)
         elif elem.name == "svg":
             return self.extract_svg(elem, para)
         elif elem.name in ("h1", "h2", "h3", "h4", "h5", "h6", ):
@@ -691,38 +693,49 @@ proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  # {{{1
             info("structure: li : " & (if len(ret) < 50: ret else: ret[0..50]))
     self.para = nil
     return none(string)
-#[
 
-    def extract_details(self, elem: Tag) -> Optional[Text]:
+
+proc extract_details(self: HtmlConvertDocx, elem: Tag  # {{{1
+                     ): Option[string] =
+    block:
         debg("structure: details: not implemented, skipped...")
-        return None
+    return none(string)
 
-    def extract_img(self, elem: Tag, para: Paragraph  # {{{1
-                    ) -> Optional[Text]:
+
+proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
+                 ): Option[string] =
+    var
+        fname: string
+        w, h: int
         para = self.current_para_or_create(para)
         # [@P14-1-11] center images at some rules.
+    block:
         if common.count_tags_around_image(elem.parent) <= 2:
             para.style = common.Styles.get(self.output, "Image")
 
-        src = elem.attrs.get("src", "")
+        var src = elem.attrs.getOrDefault("src", "")
         if len(src) < 1:
             warn("img-tag: was not specified 'src' attribute, ignored...")
-            return None
+            return none(string)
         fname = common.download_image(self.url_target, src)
         if len(fname) < 1:
-            warn("img-tag: can not download, ignored...: " + src)
-            return None
+            warn("img-tag: can not download, ignored...: " & src)
+            return none(string)
 
-        w, h = common.image_width_and_height(fname)
+        (w, h) = common.image_width_and_height(fname)
         if (w, h) == (0, 0):
             # TODO(shimoda): implement for svg
-            docx_svg_hack.monkey()
+            # docx_svg_hack.monkey()
+            var pic: DocxPicture
             pic = para.add_run().add_picture(fname)
-            docx_svg_hack.compose_asvg(pic)
-            return None
+            docx_svg.compose_asvg(pic)
+            return none(string)
+    var args: seq[tuple[k, v: string]]
+    block:
         args = common.dot_to_page(w, h)
-        para.add_run().add_picture(fname, **args)
-        return None
+    para.add_run().add_picture(fname, args)
+    return none(string)
+#[
 
     def extract_svg(self, elem: Tag, para: Paragraph  # {{{1
                     ) -> Optional[Text]:

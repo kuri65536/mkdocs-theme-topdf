@@ -4,6 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
+import docx
+#[
 from logging import warning as warn
 from lxml import etree  # type: ignore
 import os
@@ -130,7 +132,10 @@ def dump_file(elem: Tag, dname: Text) -> Text:  # {{{1
     return fname
 
 
-def compose_asvg(pic: Tag) -> None:  # {{{1
+]#
+proc compose_asvg*(pic: DocxPicture): void =  # {{{1
+    discard
+#[
     # [@P10-1-13] compose OOXML for SVG.
     embed = '{%s}embed' % (
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships")
@@ -267,4 +272,5 @@ def monkey() -> None:  # {{{1
 
 if __name__ == "__main__":
     pass
-# vi: ft=python:fdm=marker
+]#
+# vi: ft=nim:fdm=marker

@@ -50,6 +50,9 @@ type
   Runner* = ref object of RootObj
     r*: OxmlElement
 
+  DocxPicture* = ref object of OxmlElement
+    discard
+
   Paragraph* = ref object of RootObj
     alignment*: WD_ALIGN_PARAGRAPH
     raw*: OxmlElement
@@ -159,6 +162,12 @@ proc add_run*(self: Paragraph, src = "", style=""  # {{{1
 
 proc add_break*(self: Runner, typ: WD_BREAK  # {{{1
                     ): void =
+    discard
+
+
+proc add_picture*(self: Runner, fname: string,  # {{{1
+                  args: varargs[tuple[k, v: string]]
+                  ): DocxPicture {.discardable.} =
     discard
 
 
