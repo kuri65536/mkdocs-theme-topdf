@@ -14,6 +14,7 @@ import etree
 type
   Length* = enum
     zero = 0
+    low = 1
 
   WD_ALIGN_PARAGRAPH* = enum
     RIGHT = 1
@@ -55,11 +56,22 @@ type
     text*: string
     style*: string
 
+  TablePrefWidth* = ref object of OxmlElement
+    typ*: string
+    w*: Length
+
+  TablePreferences* = ref object of OxmlElement
+    tcW*: TablePrefWidth
+
+  TableCell2* = ref object of OxmlElement
+    tcPr*: TablePreferences
+
   TableCell* = ref object of BlockItemContainerObj
     paragraphs*: seq[Paragraph]
     width*: Length
     text*: string
     element*: OxmlElement
+    tc*: TableCell2
 
   TableColumn* = ref object of RootObj
     cells*: seq[TableCell]

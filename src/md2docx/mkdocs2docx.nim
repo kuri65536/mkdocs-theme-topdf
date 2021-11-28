@@ -1024,26 +1024,26 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
                             classes: seq[string]): bool {.discardable.} =
         # total width: 160mm
     var (cls, widths) = common.has_width_and_parse(classes)
-    #[
+    block:
         if len(widths) < 1:
             warn("width did not specified by class")
-            return False
+            return false
         warn("cell width set by %s" % cls)
         if Mm(0) in widths:
-            tbl.autofit = True
-            tbl.allow_autofit = True
-        for j, row in enumerate(tbl.rows):
-            for i, cell in enumerate(row.cells):
-                wid = widths[i] if i < len(widths) else 0
-                if wid < 1:
-                    info("cell(%d,%d): width set to auto" % (j, i))
-                    cell._tc.tcPr.tcW.type = 'auto'
-                    cell._tc.tcPr.tcW.w = 0
+            tbl.autofit = true
+            tbl.allow_autofit = true
+        for j, row in tbl.rows:
+            for i, cell in row.cells:
+                let wid = if i < len(widths): widths[i] else: Length(0)
+                if wid < Length(1):
+                    info("cell({j},{i}): width set to auto")
+                    cell.tc.tcPr.tcW.typ = "auto"
+                    cell.tc.tcPr.tcW.w = Length(0)
                     continue
-                info("cell(%d,%d): width set to %d" % (j, i, wid))
+                info("cell({j},{i}): width set to {wid}")
                 cell.width = wid
-        return True
-]#
+    return true
+
 
 proc style_list(self: HtmlConvertDocx, f_number: bool, level: int  # {{{1
                 ): info_list =
