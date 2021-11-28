@@ -100,6 +100,7 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,
                         cell: TableCell): void
 proc extract_text(self: HtmlConvertDocx, elem: Tag
                   ): tuple[f_none: bool, s: string]
+proc extract_title(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
                   ): tuple[f: bool, r: string]
@@ -319,12 +320,12 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         return (self.extract_img(elem, para), nil)
     elif elem.name == "svg":
         return (self.extract_svg(elem, para), nil)
+    elif elem.name in ["h1", "h2", "h3", "h4", "h5", "h6", ]:
+        return (self.extract_title(elem), nil)
     block:
         if false:
             discard
         #[
-        elif elem.name in ("h1", "h2", "h3", "h4", "h5", "h6", ):
-            return self.extract_title(elem)
         elif elem.name in ("pre", "code"):
             return self.extract_codeblock(elem)
         ]#
@@ -753,20 +754,23 @@ proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
     docx_svg.compose_asvg(pic)
     return none(string)
-#[
 
-    def extract_title(self, elem: Tag) -> Optional[Text]:  # {{{1
-        level = int(elem.name.lstrip("h"))
-        ret = Text(elem.text)
-        info("structure: hed: " + ret)
-        style = common.Styles.get(self.output, "Heading " + Text(level))
+
+proc extract_title(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
+    var level = elem.name.strip(leading = true, trailing = false, {'h'})
+    var ret = elem.text
+    info("structure: hed: " & ret)
+    var
+        style = common.Styles.get(self.output, "Heading " & level)
         para = self.output.add_paragraph("", style=style)
 
         # [@P8-2-13] add id for titles
-        html_id = elem.attrs.get("id", "")
-        common.docx_add_bookmark(para, "ahref_" + html_id, ret)
-        self.para = None
-        return None
+    let html_id = elem.attrs.getOrDefault("id", "")
+    common.docx_add_bookmark(para, "ahref_" & html_id, ret)
+    block:
+        self.para = nil
+    return none(string)
+#[
 
     def extract_codeblock(self, elem: Tag) -> Optional[Text]:  # {{{1
         ret = Text(elem.string)
