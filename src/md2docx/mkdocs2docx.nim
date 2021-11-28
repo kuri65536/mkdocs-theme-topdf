@@ -305,14 +305,14 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         return (self.extract_dldtdd(elem), nil)
     elif elem.name == "table":
         return (self.extract_table(elem), nil)
+    elif elem.name == "ul":
+        return (self.extract_list(elem, false, 1, self.output), nil)
+    elif elem.name == "ol":
+        return (self.extract_list(elem, true, 1, self.output), nil)
     block:
         if false:
             discard
         #[
-        elif elem.name == "ul":
-            return self.extract_list(elem, False, 1, self.output)
-        elif elem.name == "ol":
-            return self.extract_list(elem, True, 1, self.output)
         elif elem.name == "details":
             return self.extract_details(elem)
         elif elem.name == "img":
@@ -676,7 +676,8 @@ proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
     return none(string)
 
 
-proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  level: int,  # {{{1
+proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  # {{{1
+                  level: int,
                   blk: BlockItemContainer): Option[string] {.discardable.} =
     var
         ret = ""
@@ -846,44 +847,55 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
 proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,  # {{{1
                        elem: Tag, info: info_list,
                        blk: BlockItemContainer): string =
-    discard
-    #[
+    var
+        f = true
+        para = para
         ret = ""
-        for tag in elem.children:
-            if tag.name in ("p", "div", "ul", "ol"):
+    for tag in elem.children:
+        if tag.name in ["p", "div", "ul", "ol"]:
+            f = false
+            block:
                 break
-        else:
-            if para is None:
+    if f:
+        if isNil(para):
                 para = blk.add_paragraph("", info.style)
+        var
             bkname = self.bookmark_from_elem(elem)  # [@P8-2-11] mark for li-1
+        block:
             return self.extract_as_run(para, elem, bkname)
-        for tag in elem.children:
-            if tag.name in ("ul", "ol"):
+    for tag in elem.children:
+        if tag.name in ["ul", "ol"]:
+            block:
                 self.extract_list(tag, tag.name == "ol", info.level + 1, blk)
-                para = None
+            para = nil
+            block:
                 continue
-            elif tag.name in ("p", "div"):
-                ret += self.extract_list_subs(para, tag, info, blk)
+        elif tag.name in ["p", "div"]:
+            ret &= self.extract_list_subs(para, tag, info, blk)
+            block:
                 continue
 
-            if tag.name is None:
+        if len(tag.name) < 1:
+                var src = ""
                 src = tag.string
                 src = src.replace("\n", " ")
                 if len(src.strip()) > 0:
-                    if para is None:
+                    if isNil(para):
                         para = blk.add_paragraph("", info.style)
                     para.add_run(src)
-                    ret += src
+                    ret &= src
                 continue
+        block:
             try:
                 self.extract_inlines(tag, para)
                 continue
             except common.ParseError:
-                pass
+                discard
             warn("can't parse complex html...%s" % tag.name)
+    block:
         return ret
 
-]#
+
 proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,  # {{{1
                     bkname: string): string =
     discard

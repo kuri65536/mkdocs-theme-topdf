@@ -65,7 +65,7 @@ type
     style*: string
     alignment*: WD_TABLE_ALIGNMENT
 
-  Document* = ref object of RootObj
+  Document* = ref object of BlockItemContainerObj
     paragraphs*: seq[Paragraph]
     settings*: DocumentSettings
     sections*: seq[Section]
@@ -139,6 +139,11 @@ proc add_paragraph*(self: Document, text = "", style = ""  # {{{1
 
 
 proc add_paragraph*(self: TableCell): Paragraph =  # {{{1
+    discard
+
+
+proc add_paragraph*(self: BlockItemContainer, src = "", style=""  # {{{1
+                    ): Paragraph {.discardable.} =
     discard
 
 
