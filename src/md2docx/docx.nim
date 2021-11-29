@@ -114,6 +114,9 @@ proc initOxmlElement*(name: string): OxmlElement =  # {{{1
 
 
 proc initDocument*(): Document =  # {{{1
+    var styles = initTable[string, Style]()
+    styles["Table Grid"] = Style()
+    styles["List Bullet"] = Style()
     result = Document(
         settings: DocumentSettings(
             element: initOxmlElement("root")
@@ -124,7 +127,8 @@ proc initDocument*(): Document =  # {{{1
                     alignment: WD_ALIGN_PARAGRAPH.AP_LEFT,
                 )]
             )
-        )]
+        )],
+        styles: styles,
     )
 
 
@@ -203,7 +207,12 @@ proc merge*(a, b: TableCell): void =  # {{{1
 
 
 proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
-    discard
+    result = DocxTable()
+    for i in 1..rows:
+        var row = TableRow()
+        for i in 1..cols:
+            row.cells.add(TableCell())
+        result.rows.add(row)
 
 
 proc save*(self: Document, filename: string): void =  # {{{1

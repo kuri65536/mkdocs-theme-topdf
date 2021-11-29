@@ -33,7 +33,10 @@ type
   ParseError* = object of CatchableError
 
 
-var glb = Global()
+var glb = Global(
+        funcs_style_init: initTable[string,
+                                proc(self: StylesObj, doc: Document): string]()
+       )
 var Styles* = StylesObj()
 
 
@@ -213,6 +216,7 @@ proc table_cellspan*(e: Tag, keys: varargs[string]): seq[int] =  # {{{1
 
 iterator sorted_by_keys*[A, B](self: TableRef[A, B],  # {{{1
                                fn: proc(a, b: A): int): tuple[key: A, val: B] =
+    assert isNil(self) == false
     var keys: seq[A]
     for k in self.keys():
         keys.add(k)
@@ -234,18 +238,23 @@ proc table_update_rowcolspan*(dct: TableRef[tuple[r, c: int], Tag]  # {{{1
         for i in src:
             self.add(i)
 
+    # echo("rcspan: enter1")
     var
         rowspans: seq[seq[int]]
         ret = newTable[tuple[r, c: int], Tag]()
         (r, c) = (-1, 0)
+    # echo("rcspan: enter2")
     for tup, elem in sorted_by_keys(dct, cmp_rc):
+        # echo("rcspan: enter3")
         let (row, col) = tup
         if r != row:
-            rowspans = rowspans[1..^1]
-            rowspans = if len(rowspans) > 0: rowspans  else: @[@[0]]
+            rowspans = if len(rowspans) > 0: rowspans[1..^1] else: @[@[0]]
         (r, c) = (row, col)
-        while c in rowspans[0]:
-            c += 1
+        if len(rowspans) < 1:
+            c = 1
+        else:
+            while c in rowspans[0]:
+                c += 1
         var x, y: int
         (x, y) = table_cellspan(elem, "colspan", "rowspan")
         var cols = @[c]
@@ -254,7 +263,10 @@ proc table_update_rowcolspan*(dct: TableRef[tuple[r, c: int], Tag]  # {{{1
             for i in 1..x:
               if cols.contains(i):
                 cols.add(c + i)
-        rowspans[0].update(cols)
+        if len(rowspans) < 1:
+            rowspans = @[cols]
+        else:
+            rowspans[0].update(cols)
         if y != 0:
             for i in 1..y:
                 if i >= len(rowspans):
@@ -699,7 +711,7 @@ def style(name: Text  # {{{1
 proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
         if name in Styles.allocated:
             return name
-        if name in glb.funcs_style_init:
+        if name not_in glb.funcs_style_init:
             if name in doc.styles:
                 return name
             var msg = "not " & name & " in : "

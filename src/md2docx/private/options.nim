@@ -100,7 +100,9 @@ proc make_parser(): ArgumentParser =
 proc parse*(args: seq[string]): Options =  # {{{1
     var parser: ArgumentParser
     parser = make_parser()
-    return Options(fname_in: args[0])
+    var ret = initOptions()
+    ret.fname_in = args[0]
+    return ret
     #[
     nm = parser.parse_args(args)
     current = Options.copy_from(nm)

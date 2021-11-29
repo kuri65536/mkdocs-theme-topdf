@@ -547,12 +547,13 @@ proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
                     continue
                 ret[(row, col)] = cell
                 col += 1
-        return ret
+    return ret
 
 
 proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
     var
         dct = self.extract_table_tree(elem, 0)
+    echo("ext_tbl: enter => " & $isNil(dct))
     block:
         dct = common.table_update_rowcolspan(dct)  # [@P13-1-11] cell-span
         if len(dct) < 1:
@@ -584,6 +585,7 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
         tbl.style = common.Styles.get(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     for tup, subelem in sorted_by_keys(dct, cmp_rc):
+        echo("ext_tbl: " & $tup)
         var
             (row, col) = tup
             cell = tbl.rows[row].cells[col]
@@ -786,8 +788,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
         bkname = self.bookmark_from_elem(node)  # [@P8-2-14] mark for <p>
 
     var para: Paragraph = nil
-    for i in node.children:
-        let elem = cast[Tag](i)
+    for elem in node.children:
         let (s, tag) = self.extract_element(elem, para)
         if s.isSome:
             let
@@ -804,9 +805,9 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                     self.para = para
                 else:
                     para.add_run(ret)
-        elif s.isNone:
-            discard
-                self.extract_para(elem, level + 1)
+        elif not isNil(tag):
+            echo("ext_para: enter to child..." & tag.name)
+            discard self.extract_para(tag, level + 1)
         else:
                 if para != self.para:
                     para = self.para
