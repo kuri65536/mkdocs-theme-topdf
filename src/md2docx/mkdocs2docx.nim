@@ -24,10 +24,6 @@ import ./private/parse_html
 #[
 from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
-from typing import (Dict, Iterable, List, Optional, Text, Tuple, Union, )
-
-from bs4 import BeautifulSoup  # type: ignore
-from bs4.element import Tag  # type: ignore
 
 from docx import Document  # type: ignore
 from docx.blkcntnr import BlockItemContainer  # type: ignore
@@ -39,14 +35,6 @@ from docx.oxml.ns import qn  # type: ignore
 from docx.text.paragraph import Paragraph  # type: ignore
 from docx.shared import Mm  # type: ignore
 from docx.table import _Cell, Table  # type: ignore
-
-if sys.version_info.major == 3:
-    from . import common
-    from . import options
-else:
-    import common  # type: ignore
-    import options  # type: ignore
-
 ]#
 
 type
@@ -231,6 +219,7 @@ proc write_out(self: HtmlConvertDocx, fname: string): void =  # {{{1
 
 proc on_post_page(self: HtmlConvertDocx,  # {{{1
                   output_content: string): void =
+    parse_html.load(output_content)
     let dom = parse_html.find_element("body")
     block:
         discard self.extract_para(dom, 0)

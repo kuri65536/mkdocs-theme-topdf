@@ -17,6 +17,7 @@ type
     low = 1
 
   WD_ALIGN_PARAGRAPH* = enum
+    AP_LEFT = 0
     RIGHT = 1
 
   WD_TABLE_ALIGNMENT* = enum
@@ -113,7 +114,18 @@ proc initOxmlElement*(name: string): OxmlElement =  # {{{1
 
 
 proc initDocument*(): Document =  # {{{1
-    result = Document()
+    result = Document(
+        settings: DocumentSettings(
+            element: initOxmlElement("root")
+        ),
+        sections: @[Section(
+            header: Section(
+                paragraphs: @[Paragraph(
+                    alignment: WD_ALIGN_PARAGRAPH.AP_LEFT,
+                )]
+            )
+        )]
+    )
 
 
 proc initDocument*(fname: string): Document =  # {{{1
