@@ -55,15 +55,40 @@ proc save_render(self: Document): Stream =  # {{{1
             item.render(result)
 
 
-proc save_from_tmpl(z: var ZipArchive, fname: string): void =  # {{{1
-    var ztmp: ZipArchive
-    discard ztmp.open("tests/template.docx", fmRead)
-    defer: ztmp.close()
-
+proc save_from_tmpl(z: var ZipArchive, fname: string,  # {{{1
+                    strm: Stream): void =
     echo("save:tmpl: from template => " & fname)
-    var fs = ztmp.getStream(fname)
-    # defer: fs.close()  # duplicated in `getStream()`
-    z.addFile(fname, fs)
+    z.addFile(fname, strm)
+
+
+proc save_from_templates(z: var ZipArchive): bool =  # {{{1
+    const filename = "tests/template.docx"
+
+    ## a typical docx file includes these files.
+    var ztmp: ZipArchive
+    if not ztmp.open(filename, fmRead):
+        echo("can't open: " & filename)
+        return true
+    for i in ["[Content_Types].xml",
+              "_rels/.rels",
+              "customXml/item1.xml",
+              "customXml/itemProps1.xml",
+              "customXml/_rels/item1.xml.rels",
+              "docProps/app.xml",
+              "docProps/core.xml",
+              "docProps/thumbnail.jpeg",
+              "word/fontTable.xml",
+              "word/numbering.xml",
+              "word/header1.xml",
+              "word/settings.xml",
+              "word/stylesWithEffects.xml",
+              "word/theme/theme1.xml",
+              "word/webSettings.xml", ]:
+        var fs = ztmp.getStream(i)
+        # defer: fs.close()  # duplicated in `getStream()`
+        save_from_tmpl(z, i, fs)
+    ztmp.close()
+    return false
 
 
 proc save*(self: Document, filename: string): void =  # {{{1
@@ -72,23 +97,8 @@ proc save*(self: Document, filename: string): void =  # {{{1
         echo("can't open: " & filename)
         return
     echo("save:open: " & filename)
-
-    ## a typical docx file includes these files.
-    save_from_tmpl(z, "[Content_Types].xml")
-    save_from_tmpl(z, "_rels/.rels")
-    save_from_tmpl(z, "customXml/item1.xml")
-    save_from_tmpl(z, "customXml/itemProps1.xml")
-    save_from_tmpl(z, "customXml/_rels/item1.xml.rels")
-    save_from_tmpl(z, "docProps/app.xml")
-    save_from_tmpl(z, "docProps/core.xml")
-    save_from_tmpl(z, "docProps/thumbnail.jpeg")
-    save_from_tmpl(z, "word/fontTable.xml")
-    save_from_tmpl(z, "word/numbering.xml")
-    save_from_tmpl(z, "word/header1.xml")
-    save_from_tmpl(z, "word/settings.xml")
-    save_from_tmpl(z, "word/stylesWithEffects.xml")
-    save_from_tmpl(z, "word/theme/theme1.xml")
-    save_from_tmpl(z, "word/webSettings.xml")
+    if save_from_templates(z):
+        return
 
     var fs = self.save_render()
     echo("save:render: dump to zip (document.xml)")
