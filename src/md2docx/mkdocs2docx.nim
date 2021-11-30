@@ -14,6 +14,7 @@ import system
 import tables
 
 import ./docx
+import ./docx_render
 import ./docx_svg
 import ./docx_toc
 import ./etree
@@ -22,10 +23,8 @@ import ./private/logging
 import ./private/options
 import ./private/parse_html
 #[
-from logging import (debug as debg, info, warning as warn, )
 from lxml import etree  # type: ignore
 
-from docx import Document  # type: ignore
 from docx.blkcntnr import BlockItemContainer  # type: ignore
 from docx.enum.text import (
         WD_ALIGN_PARAGRAPH, WD_BREAK, )
@@ -50,6 +49,7 @@ type
     level: int
 
 
+# local functions {{{1
 proc bookmark_from_db(self: HtmlConvertDocx, s_href: string,
                       elem: Tag): bool
 proc bookmark_from_elem(self: HtmlConvertDocx, elem: Tag): string

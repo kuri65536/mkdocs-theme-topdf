@@ -102,6 +102,7 @@ proc parse*(args: seq[string]): Options =  # {{{1
     parser = make_parser()
     var ret = initOptions()
     ret.fname_in = args[0]
+    ret.fname_out = "a.docx"
     return ret
     #[
     nm = parser.parse_args(args)

@@ -41,25 +41,34 @@ type
     discard
   BlockItemContainer* = ref BlockItemContainerObj
 
+  SectionItem* = ref SectionItemObj
+  SectionItemObj* = object of RootObj
+  RunnerItem* = ref RunnerItemObj
+  RunnerItemObj* = object of RootObj
+
   Section* = ref object of RootObj
     page_width*, page_height*,
       left_margin*, right_margin*,
       top_margin*, bottom_margin*,
       header_distance*: Length
     header*: Section
+    items*: seq[SectionItem]
     paragraphs*: seq[Paragraph]
 
-  Runner* = ref object of RootObj
+  Runner* = ref RunnerObj
+  RunnerObj* = object of RunnerItemObj
     r*: OxmlElement
 
   DocxPicture* = ref object of OxmlElement
     discard
 
-  Paragraph* = ref object of RootObj
+  Paragraph* = ref ParagraphObj
+  ParagraphObj* = object of SectionItemObj
     alignment*: WD_ALIGN_PARAGRAPH
     raw*: OxmlElement
     text*: string
     style*: string
+    items*: seq[RunnerItem]
 
   TablePrefWidth* = ref object of OxmlElement
     typ*: string
@@ -86,7 +95,8 @@ type
     cells*: seq[TableCell]
     height*: Length
 
-  DocxTable* = ref object of RootObj
+  DocxTable* = ref DocxTableObj
+  DocxTableObj* = object of SectionItemObj
     rows*: seq[TableRow]
     columns*: seq[TableColumn]
     autofit*: bool
@@ -213,10 +223,6 @@ proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
         for i in 1..cols:
             row.cells.add(TableCell())
         result.rows.add(row)
-
-
-proc save*(self: Document, filename: string): void =  # {{{1
-    discard
 
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker
