@@ -6,16 +6,18 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
-import docx_element
+import streams
 
-type
-  RunnerItem* = ref RunnerItemObj
-  RunnerItemObj* = object of RootObj
+import ../docx_para
+import docx_render_runner
 
-  Runner* = ref RunnerObj
-  RunnerObj* = object of RunnerItemObj
-    text*: string
-    r*: OxmlElement
+
+proc render_para*(self: Paragraph, s: Stream): void =  # {{{1
+    s.write("""<w:p>""")
+    s.write("""<w:pPr><w:pStyle w:val="Title"/></w:pPr>""")
+    for i in self.items:
+        i.render_runner(s)
+    s.write("</w:p>")
 
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

@@ -27,4 +27,13 @@ type
     items*: seq[RunnerItem]
 
 
+proc initParagraph*(text: string): Paragraph =  # {{{1
+    ## .. todo:: shimoda sytle
+    result = Paragraph(
+        items: @[cast[RunnerItem](Runner(
+            text: text
+        ))]
+    )
+
+
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

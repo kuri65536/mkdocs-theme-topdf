@@ -33,6 +33,11 @@ proc warn*(msg: string): void =  # {{{1
     echo(msg)
 
 
+proc eror*(msg: string): void =  # {{{1
+    if level_base < ERROR: return
+    echo(msg)
+
+
 proc basicConfig*(level: int): void =  # {{{1
     level_base = level
 

@@ -31,9 +31,17 @@ type
   Style* = ref object of RootObj
     discard
 
-  BlockItemContainerObj* = object of RootObj
-    discard
   BlockItemContainer* = ref BlockItemContainerObj
+  BlockItemContainerObj* = object of RootObj
+    ##[ class for Tables or Sections
+        can be include: paragraphs or tables
+
+        - x paragraph  -> cannot be include tables.
+        - x table      -> cannot
+        - o table-cell -> can
+        - o section    -> can
+    ]##
+    items: seq[SectionItem]
 
   DocxPicture* = ref object of OxmlElement
     discard
@@ -146,7 +154,9 @@ proc text*(self: Paragraph): string =  # {{{1
 
 proc add_run*(self: Paragraph, src = "", style=""  # {{{1
               ): Runner {.discardable.} =
-    discard
+    ## .. todo:: shimoda sytle
+    result = Runner(text: src)
+    self.items.add(result)
 
 
 proc add_break*(self: Runner, typ = WD_BREAK.LINE  # {{{1
@@ -162,16 +172,22 @@ proc add_picture*(self: Runner, fname: string,  # {{{1
 
 proc add_paragraph*(self: Document, text = "", style = ""  # {{{1
                     ): Paragraph {.discardable.} =
-    discard
+    ## .. todo:: shimoda sytle
+    result = initParagraph(text)
+    self.sections[^1].items.add(result)
 
 
 proc add_paragraph*(self: TableCell): Paragraph =  # {{{1
-    discard
+    ## .. todo:: shimoda text and sytle
+    result = initParagraph("")
+    self.items.add(cast[SectionItem](result))
 
 
 proc add_paragraph*(self: BlockItemContainer, src = "", style=""  # {{{1
                     ): Paragraph {.discardable.} =
-    discard
+    ## .. todo:: shimoda sytle
+    result = initParagraph(src)
+    self.items.add(cast[SectionItem](result))
 
 
 proc merge*(a, b: TableCell): void =  # {{{1
@@ -185,6 +201,7 @@ proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
         for i in 1..cols:
             row.cells.add(TableCell())
         result.rows.add(row)
+    self.sections[^1].items.add(result)
 
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

@@ -16,6 +16,8 @@ import zip/zipfiles
 
 import docx
 import docx_para
+import docx_render/docx_render_docx
+import docx_render/docx_render_table
 import docx_runner
 import docx_section
 import private/logging
@@ -33,17 +35,15 @@ method render(self: Runner, s: Stream): void =  # {{{1
 
 
 method render(self: SectionItem, s: Stream): void {.base.} =  # {{{1
-    const tag = "w:tbl"
-    s.write("<" & tag & ">")
-    #[
-    for item in self.rows:
-        item.render(s)
-    ]#
-    s.write("</" & tag & ">")
+    eror("render: ???")
 
 
 method render(self: DocxTable, s: Stream): void =  # {{{1
-    s.write("")
+    const tag = "w:tbl"
+    s.write("<" & tag & ">")
+    warn("save:render: " & tag)
+    self.render_table(s)
+    s.write("</" & tag & ">")
 
 
 method render(self: Paragraph, s: Stream): void =  # {{{1
@@ -59,10 +59,13 @@ proc save_render(self: Document): Stream =  # {{{1
     result = newStringStream()
 
     warn("save:render: root => " & $len(self.sections))
+    save_prefix(result)
     for sec in self.sections:
         warn("save:render: section => " & $len(sec.items))
         for item in sec.items:
             item.render(result)
+    save_suffix(result)
+    result.setPosition(0)
 
 
 proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
