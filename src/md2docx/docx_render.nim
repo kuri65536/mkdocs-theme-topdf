@@ -6,8 +6,11 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
+import os
+import posix
 import streams
 import strutils
+import tables
 
 import zip/zipfiles
 
@@ -55,20 +58,16 @@ proc save_render(self: Document): Stream =  # {{{1
             item.render(result)
 
 
-proc save_from_tmpl(z: var ZipArchive, fname: string,  # {{{1
-                    strm: Stream): void =
-    echo("save:tmpl: from template => " & fname)
-    z.addFile(fname, strm)
-
-
-proc save_from_templates(z: var ZipArchive): bool =  # {{{1
-    const filename = "tests/template.docx"
+proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
+    const fname_tmp = "tests/template.docx"
 
     ## a typical docx file includes these files.
     var ztmp: ZipArchive
-    if not ztmp.open(filename, fmRead):
-        echo("can't open: " & filename)
+    if not ztmp.open(fname_tmp, fmRead):
+        echo("can't open: " & fname_tmp)
         return true
+
+    var tbl = initTable[string, tuple[f: File, n: string]]()
     for i in ["[Content_Types].xml",
               "_rels/.rels",
               "customXml/item1.xml",
@@ -84,20 +83,41 @@ proc save_from_templates(z: var ZipArchive): bool =  # {{{1
               "word/stylesWithEffects.xml",
               "word/theme/theme1.xml",
               "word/webSettings.xml", ]:
-        var fs = ztmp.getStream(i)
+        echo("save:tmpl: read => " & i)
+        var tmp = ".docx_render.XXXXXX"
+        var hnd = mkstemp(tmp)
+        var f: File
+        if not f.open(hnd, fmReadWriteExisting):
+            echo("can't open: " & $hnd & "->" & $tmp)
+            return true
+        tbl[i] = (f, tmp)
+        ztmp.extractFile(i, newFileStream(f))
         # defer: fs.close()  # duplicated in `getStream()`
-        save_from_tmpl(z, i, fs)
+        # save_from_tmpl(z, i, fs)
     ztmp.close()
+
+    proc clear(): void =
+        for i, tup in tbl.pairs():
+            tup.f.close()
+
+    if not z.open(filename, fmWrite):
+        echo("can't open: " & filename)
+        clear()
+        return true
+    echo("save:open: " & filename)
+
+    for i, tup in tbl.pairs():
+        var (f, fname) = tup
+        echo("save:tmpl: from template => " & i)
+        f.setFilePos(0)
+        z.addFile(i, newFileStream(tup.f))
+        discard os.tryRemoveFile(fname)
     return false
 
 
 proc save*(self: Document, filename: string): void =  # {{{1
     var z: ZipArchive
-    if not z.open(filename, fmWrite):
-        echo("can't open: " & filename)
-        return
-    echo("save:open: " & filename)
-    if save_from_templates(z):
+    if save_from_templates(z, filename):
         return
 
     var fs = self.save_render()
