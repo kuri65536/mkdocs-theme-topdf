@@ -10,16 +10,13 @@ import tables
 
 import etree
 
+import docx_element
+import docx_para
+import docx_section
+import docx_runner
+
 
 type
-  Length* = enum
-    zero = 0
-    low = 1
-
-  WD_ALIGN_PARAGRAPH* = enum
-    AP_LEFT = 0
-    RIGHT = 1
-
   WD_TABLE_ALIGNMENT* = enum
     LEFT = 0
     CENTER = 1
@@ -27,9 +24,6 @@ type
   WD_BREAK* = enum
     LINE = 0
     PAGE = 1
-
-  OxmlElement* = ref object of RootObj
-    name, text*: string
 
   DocumentSettings* = ref object of RootObj
     element*: OxmlElement
@@ -41,34 +35,8 @@ type
     discard
   BlockItemContainer* = ref BlockItemContainerObj
 
-  SectionItem* = ref SectionItemObj
-  SectionItemObj* = object of RootObj
-  RunnerItem* = ref RunnerItemObj
-  RunnerItemObj* = object of RootObj
-
-  Section* = ref object of RootObj
-    page_width*, page_height*,
-      left_margin*, right_margin*,
-      top_margin*, bottom_margin*,
-      header_distance*: Length
-    header*: Section
-    items*: seq[SectionItem]
-    paragraphs*: seq[Paragraph]
-
-  Runner* = ref RunnerObj
-  RunnerObj* = object of RunnerItemObj
-    r*: OxmlElement
-
   DocxPicture* = ref object of OxmlElement
     discard
-
-  Paragraph* = ref ParagraphObj
-  ParagraphObj* = object of SectionItemObj
-    alignment*: WD_ALIGN_PARAGRAPH
-    raw*: OxmlElement
-    text*: string
-    style*: string
-    items*: seq[RunnerItem]
 
   TablePrefWidth* = ref object of OxmlElement
     typ*: string
@@ -117,12 +85,6 @@ proc qn*(src: string): string =  # {{{1
     return src
 
 
-proc initOxmlElement*(name: string): OxmlElement =  # {{{1
-    result = OxmlElement(
-        name: name
-    )
-
-
 proc initDocument*(): Document =  # {{{1
     var styles = initTable[string, Style]()
     styles["Table Grid"] = Style()
@@ -133,9 +95,9 @@ proc initDocument*(): Document =  # {{{1
         ),
         sections: @[Section(
             header: Section(
-                paragraphs: @[Paragraph(
+                items: @[cast[SectionItem](Paragraph(
                     alignment: WD_ALIGN_PARAGRAPH.AP_LEFT,
-                )]
+                ))]
             )
         )],
         styles: styles,

@@ -6,16 +6,13 @@
 #
 # include {{{1
 import ./docx
+import ./docx_para
 import ./etree
 import ./private/parse_html
 #[
 import re
-from typing import Text
 
 from bs4.element import Tag  # type: ignore
-
-from docx import Document  # type: ignore
-from docx.text.paragraph import Paragraph  # type: ignore
 
 try:
     from . import common

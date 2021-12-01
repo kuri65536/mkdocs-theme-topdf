@@ -14,7 +14,10 @@ import system
 import tables
 
 import ./docx
+import ./docx_element
+import ./docx_para
 import ./docx_render
+import ./docx_section
 import ./docx_svg
 import ./docx_toc
 import ./etree
@@ -27,11 +30,10 @@ from lxml import etree  # type: ignore
 
 from docx.blkcntnr import BlockItemContainer  # type: ignore
 from docx.enum.text import (
-        WD_ALIGN_PARAGRAPH, WD_BREAK, )
+        WD_BREAK, )
 from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
 from docx.oxml import OxmlElement  # type: ignore
 from docx.oxml.ns import qn  # type: ignore
-from docx.text.paragraph import Paragraph  # type: ignore
 from docx.shared import Mm  # type: ignore
 from docx.table import _Cell, Table  # type: ignore
 ]#
@@ -41,7 +43,7 @@ type
     bookmarks_anchored: Table[string, string]
     url_target: string
     output: docx.Document
-    para: docx.Paragraph
+    para: Paragraph
 
   info_list = ref object of RootObj
     f_number: bool

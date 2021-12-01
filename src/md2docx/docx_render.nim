@@ -15,6 +15,10 @@ import tables
 import zip/zipfiles
 
 import docx
+import docx_para
+import docx_runner
+import docx_section
+import private/logging
 
 
 method render(self: RunnerItem, s: Stream): void {.base.} =  # {{{1
@@ -44,6 +48,7 @@ method render(self: DocxTable, s: Stream): void =  # {{{1
 
 method render(self: Paragraph, s: Stream): void =  # {{{1
     const tag = "w:p"
+    warn("save:render: para")
     s.write("<" & tag & ">")
     for item in self.items:
         item.render(s)
@@ -53,7 +58,9 @@ method render(self: Paragraph, s: Stream): void =  # {{{1
 proc save_render(self: Document): Stream =  # {{{1
     result = newStringStream()
 
+    warn("save:render: root => " & $len(self.sections))
     for sec in self.sections:
+        warn("save:render: section => " & $len(sec.items))
         for item in sec.items:
             item.render(result)
 

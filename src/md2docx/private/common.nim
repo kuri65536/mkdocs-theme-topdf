@@ -12,6 +12,8 @@ import strutils
 import tables
 
 import ../docx
+import ../docx_element
+import ../docx_para
 import logging
 import parse_html
 
@@ -42,14 +44,12 @@ var Styles* = StylesObj()
 
 #[
 import base64
-from logging import (debug as debg, error as eror, warning as warn, )
 import sys
 from tempfile import NamedTemporaryFile as Temporary
 from typing import (Callable, Dict, Iterable, List, Optional, Set,
                     Text, Tuple, )
 import zlib
 
-from docx import Document  # type: ignore
 from docx.enum.style import WD_STYLE_TYPE  # type: ignore
 from docx.enum.text import (                  # type: ignore
         WD_COLOR_INDEX, WD_LINE_SPACING, WD_PARAGRAPH_ALIGNMENT, )
