@@ -52,6 +52,10 @@ type
     style: string
     level: int
 
+  result_element = ref object of RootObj
+    text: string
+    elem: Tag
+
 
 # local functions {{{1
 proc bookmark_from_db(self: HtmlConvertDocx, s_href: string,
@@ -66,19 +70,19 @@ proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,
 proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph): string
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
                   pre: bool): tuple[f: bool, s: string]
-proc extract_codeblock(self: HtmlConvertDocx, elem: Tag): Option[string]
-proc extract_details(self: HtmlConvertDocx, elem: Tag): Option[string]
-proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag): Option[string]
+proc extract_codeblock(self: HtmlConvertDocx, elem: Tag): result_element
+proc extract_details(self: HtmlConvertDocx, elem: Tag): result_element
+proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                     ): tuple[s: Option[string], t: Tag]
+                     ): result_element
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                 ): tuple[f: bool, s: string]
 proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                    ): tuple[f: bool, s: string]
 proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                 ): Option[string]
+                 ): result_element
 proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool, level: int,
-                  blk: BlockItemContainer): Option[string] {.discardable.}
+                  blk: BlockItemContainer): result_element {.discardable.}
 proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,
                        elem: Tag, info: info_list,
                        blk: BlockItemContainer): string
@@ -87,14 +91,14 @@ proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph
 proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                  ): tuple[f: bool, s: string]
 proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                 ): Option[string]
-proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string]
+                 ): result_element
+proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,
                         cell: TableCell): void
 proc extract_text(self: HtmlConvertDocx, elem: Tag
                   ): tuple[f_none: bool, s: string]
-proc extract_title(self: HtmlConvertDocx, elem: Tag): Option[string]
-proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag): Option[string]
+proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element
+proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
                   ): tuple[f: bool, r: string]
 proc header_init(self: HtmlConvertDocx): void
@@ -103,6 +107,16 @@ proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,
                         classes: seq[string]): bool
 proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,
                             classes: seq[string]): bool {.discardable.}
+
+
+proc is_text(self: result_element): bool =  # {{{1
+    if isNil(self): return false
+    return not isNil(self.elem)
+
+
+proc is_elem(self: result_element): bool =  # {{{1
+    if isNil(self): return false
+    return isNil(self.elem)
 
 
 proc initHtmlConvertDocx(src: string): HtmlConvertDocx =  # {{{1
@@ -230,14 +244,16 @@ proc on_post_page(self: HtmlConvertDocx,  # {{{1
 
 
 proc extract_is_text(self: HtmlConvertDocx, elem: Tag  # {{{1
-                     ): tuple[f: bool, s: string, t: Tag] =
+                     ): result_element =
     if elem is ElementComment:
-        return (true, "", nil)  # ignore html comments
+        return nil  # ignore html comments
     if len(elem.name) > 0:
-        return (false, "", elem)
+        return result_element(elem: elem)
     block:
         let (f, s) = self.extract_text(elem)
-        return (f, s, nil)
+        if f:
+            return nil
+        return result_element(text: s)
 
 
 proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
@@ -271,59 +287,59 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                     ): tuple[s: Option[string], t: Tag] =
-    let (f1, is_text, tag) = self.extract_is_text(elem)
-    if f1:
-        return (none(string), nil)
-    if isNil(tag):
-        return (some(is_text), nil)
+                     ): result_element =
+    let res = self.extract_is_text(elem)
+    if isNil(res):
+        return nil
+    if not res.is_elem():
+        return res
 
     let classes = elem.attrs.getOrDefault("class", "").split(" ")
     block:
         if "doc-num" in classes:
             self.header_set(elem.string)
-            return (none(string), nil)
+            return nil
         if "toc" in classes:
             self.para = docx_toc.generate_toc(self.output, elem)
-            return (none(string), nil)
+            return nil
 
     try:
         let (f, s) = self.extract_inlines(elem, para)
         if f:
-            return (none(string), nil)
-        return (some(s), nil)
+            return nil
+        return result_element(text: s)
     except common.ParseError:
         discard
 
         # block elements
     if elem.name in ["script", "style"]:
-        return (none(string), nil)  # just ignore these elements.
+        return nil  # just ignore these elements.
     elif elem.name == "hr":
-        return (self.extract_pagebreak(elem), nil)
+        return self.extract_pagebreak(elem)
     elif elem.name == "dl":
-        return (self.extract_dldtdd(elem), nil)
+        return self.extract_dldtdd(elem)
     elif elem.name == "table":
-        return (self.extract_table(elem), nil)
+        return self.extract_table(elem)
     elif elem.name == "ul":
-        return (self.extract_list(elem, false, 1, self.output.current_block), nil)
+        return self.extract_list(elem, false, 1, self.output.current_block)
     elif elem.name == "ol":
-        return (self.extract_list(elem, true, 1, self.output.current_block), nil)
+        return self.extract_list(elem, true, 1, self.output.current_block)
     elif elem.name == "details":
-        return (self.extract_details(elem), nil)
+        return self.extract_details(elem)
     elif elem.name == "img":
-        return (self.extract_img(elem, para), nil)
+        return self.extract_img(elem, para)
     elif elem.name == "svg":
-        return (self.extract_svg(elem, para), nil)
+        return self.extract_svg(elem, para)
     elif elem.name in ["h1", "h2", "h3", "h4", "h5", "h6", ]:
-        return (self.extract_title(elem), nil)
+        return self.extract_title(elem)
     elif elem.name in ["pre", "code"]:
-        return (self.extract_codeblock(elem), nil)
+        return self.extract_codeblock(elem)
     elif elem.name in ["p", "div"]:
         discard
     else:
         discard  # for debug: import pdb; pdb.set_trace()
         # p, article or ...
-    return (none(string), elem)
+    return nil
 
 
 proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
@@ -346,16 +362,16 @@ proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         let tag = cast[Tag](i)
         block:
             n += 1
-        var (f, content, e) = self.extract_is_text(tag)
-        if f:
+        let res = self.extract_is_text(tag)
+        if isNil(res):
                 continue
-        if isNil(e):
-                para.add_run(content)
+        if res.is_text():
+            para.add_run(res.text)
         else:
+            var (f, content) = (false, "")
             (f, content) = self.extract_inlines(tag, para)
             if f:
                     continue
-        block:
             ret &= content
     block:
         if n < 1:
@@ -442,12 +458,11 @@ proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                 self.extract_anchor(tag, para)
                 continue
 
-        let (f, content, elem) = self.extract_is_text(tag)
-        block:
-            if not f and isNil(elem):
-                ret &= content
-            elif not isNil(elem):
-                raise newException(ParseError, "unknown pattern...")
+        let res = self.extract_is_text(tag)
+        if res.is_text():
+            ret &= res.text
+        elif isNil(res) or res.is_elem():
+            raise newException(ParseError, "unknown pattern..." & res.elem.name)
         if len(ret) > 0:
             var para: Paragraph
             para = self.current_para_or_create(para)
@@ -539,7 +554,7 @@ proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
                 continue
         block:
             if tag.name != "tr":
-                warn("table tree: %s in table" % tag.name)
+                warn(fmt"table tree: {tag.name} in table")
                 continue
         var (f_row, col, row) = (true, 0, (row + (if f_row: 1 else: 0)))
         block:
@@ -547,22 +562,22 @@ proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
                 if len(cell.name) < 1:
                     continue
                 if cell.name not_in ["th", "td", ]:
-                    warn("table tree: %s in tr" % cell.name)
+                    warn(fmt"table tree: {cell.name} in tr")
                     continue
                 ret[(row, col)] = cell
                 col += 1
     return ret
 
 
-proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
+proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
     var
         dct = self.extract_table_tree(elem, 0)
-    echo("ext_tbl: enter => " & $isNil(dct))
+    debg("ext_tbl: enter => " & $isNil(dct))
     block:
         dct = common.table_update_rowcolspan(dct)  # [@P13-1-11] cell-span
         if len(dct) < 1:
             warn("table: did not have any data" & elem.string)
-            return none(string)
+            return nil
 
     proc max_key[A, B](self: TableRef[A, B], fn: proc(src: A): int): int =
         var ret: seq[int]
@@ -581,7 +596,7 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
         n_col = max_key(dct, proc(x: tuple[r, c: int]): int = x.c) + 1
 
     block:
-        info("structure: tbl: {elem.name} ({n_row},{n_col})")
+        info(fmt"structure: tbl: {elem.name} ({n_row},{n_col})")
     var
         tbl = self.output.add_table(rows=n_row, cols=n_col)
     tbl.autofit = false
@@ -589,7 +604,7 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
         tbl.style = common.Styles.get(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     for tup, subelem in sorted_by_keys(dct, cmp_rc):
-        echo("ext_tbl: " & $tup)
+        info("ext_tbl: " & $tup)
         var
             (row, col) = tup
             cell = tbl.rows[row].cells[col]
@@ -610,20 +625,20 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
         classes = common.classes_from_prev_sibling(elem)
     block:
         self.style_table_width_from(tbl, classes)
-    return none(string)
+    return nil
 
 
 proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag  # {{{1
-                       ): Option[string] =
+                       ): result_element =
     if isNil(self.para):
             self.para = self.output.add_paragraph()
     else:
         self.para.add_run().add_break(WD_BREAK.PAGE)
-    return none(string)
+    return nil
 
 
 proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
-                    ): Option[string] =
+                    ): result_element =
     var
         n_row = 0
         n_col = 0
@@ -634,7 +649,7 @@ proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
         if "before-dl-table" not_in classes:
             warn("can not convert dl tags, " &
                  "docx does not have difinition lists")
-            return none(string)
+            return nil
 
         for tag in elem.children:
             if tag.name not_in ["dt", "dd"]:
@@ -665,14 +680,14 @@ proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
             self.extract_table_cell(tag, tbl.rows[n_row].cells[i])
     block:
         if self.style_table_stamps(tbl, classes):
-            return none(string)
+            return nil
         self.style_table_width_from(tbl, classes)
-    return none(string)
+    return nil
 
 
 proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  # {{{1
                   level: int,
-                  blk: BlockItemContainer): Option[string] {.discardable.} =
+                  blk: BlockItemContainer): result_element {.discardable.} =
     var
         ret = ""
         list_info = self.style_list(f_number, level)
@@ -684,18 +699,18 @@ proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  # {{{1
         block:
             info("structure: li : " & (if len(ret) < 50: ret else: ret[0..50]))
     self.para = nil
-    return none(string)
+    return nil
 
 
 proc extract_details(self: HtmlConvertDocx, elem: Tag  # {{{1
-                     ): Option[string] =
+                     ): result_element =
     block:
         debg("structure: details: not implemented, skipped...")
-    return none(string)
+    return nil
 
 
 proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                 ): Option[string] =
+                 ): result_element =
     var
         fname: string
         w, h: int
@@ -708,11 +723,11 @@ proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         var src = elem.attrs.getOrDefault("src", "")
         if len(src) < 1:
             warn("img-tag: was not specified 'src' attribute, ignored...")
-            return none(string)
+            return nil
         fname = common.download_image(self.url_target, src)
         if len(fname) < 1:
             warn("img-tag: can not download, ignored...: " & src)
-            return none(string)
+            return nil
 
         (w, h) = common.image_width_and_height(fname)
         if (w, h) == (0, 0):
@@ -721,16 +736,16 @@ proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             var pic: DocxPicture
             pic = para.add_run().add_picture(fname)
             docx_svg.compose_asvg(pic)
-            return none(string)
+            return nil
     var args: seq[tuple[k, v: string]]
     block:
         args = common.dot_to_page(w, h)
     para.add_run().add_picture(fname, args)
-    return none(string)
+    return nil
 
 
 proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                 ): Option[string] =
+                 ): result_element =
         # [P10-1-11] convert to an imported svg.
     var fname = docx_svg.dump_file(elem, "tmp")
     #[
@@ -742,10 +757,10 @@ proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         pic = para.add_run().add_picture(fname)
 
     docx_svg.compose_asvg(pic)
-    return none(string)
+    return nil
 
 
-proc extract_title(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
+proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
     var level = elem.name.strip(leading = true, trailing = false, {'h'})
     var ret = elem.text
     info("structure: hed: " & ret)
@@ -758,11 +773,11 @@ proc extract_title(self: HtmlConvertDocx, elem: Tag): Option[string] =  # {{{1
     common.docx_add_bookmark(para, "ahref_" & html_id, ret)
     block:
         self.para = nil
-    return none(string)
+    return nil
 
 
 proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
-                       ): Option[string] =
+                       ): result_element =
     var ret = elem.string
     var style: string
     var para: Paragraph
@@ -778,13 +793,13 @@ proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
             n += 1
         self.para = nil
         common.Styles.quote(para)
-    return none(string)
+    return nil
 
 
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                   ): tuple[f: bool, r: string] =
     block:
-        info(fmt"enter para...: {level}-{node.name}")
+        info(fmt"enter para...: lv{level}-{node.name}-{$len(node.children)}")
         if (node.name == "p" and
                 common.has_class(node, options.current.classes_ignore_p)):
             return (false, "")
@@ -793,10 +808,11 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
 
     var para: Paragraph = nil
     for elem in node.children:
-        let (s, tag) = self.extract_element(elem, para)
-        if s.isSome:
+        let res = self.extract_element(elem, para)
+        # let (s, tag) = self.extract_element(elem, para)
+        if res.is_text():
             let
-                ret = s.get()
+                ret = res.text
                 empty = ret.strip(chars = {'\n'})
             block:
                 if len(empty) < 1:
@@ -809,8 +825,9 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                     self.para = para
                 else:
                     para.add_run(ret)
-        elif not isNil(tag):
-            echo("ext_para: enter to child..." & tag.name)
+        elif res.is_elem():
+            let tag = res.elem
+            debg("ext_para: enter to child..." & tag.name)
             discard self.extract_para(tag, level + 1)
         else:
                 if para != self.para:
@@ -821,6 +838,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
 proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
                         cell: TableCell): void =
         # FIXME(shimoda): simplify complex code...
+    warn("ext:tbl:cell: (" & $len(elem.children) & ") => '" & elem.text & "'")
     var para = if len(cell.paragraphs) > 0: cell.paragraphs[^1] else: nil
     for tag in elem.children:
         var src: string
@@ -845,7 +863,8 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
             block:
                 continue
         else:
-                debg("can't extract %s in a table-cell" % tag.name)
+            debg(fmt"can't extract {tag.name} in a table-cell")
+            block:
                 continue
         if isNil(para):
                 para = cell.add_paragraph()
@@ -925,14 +944,16 @@ proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,  # {{{1
     block:
         for tag in elem.children:
             var bkname = ""
-            let (f, content, e) = self.extract_is_text(tag)
-            if not f and isNil(e):
+            let res = self.extract_is_text(tag)
+            if res.is_text():
+                let content = res.text
                 # [@P8-2-12] for li, head of paragraph
                 ret &= content
                 common.docx_add_bookmark(para, bkname, content)
                 bkname = ""
                 continue
-            if not f:
+            if res.is_elem():
+                eror("extract:run:child: unknown pattern..." & res.elem.name)
                 continue
             try:
                 var s: tuple[f: bool, s: string]
