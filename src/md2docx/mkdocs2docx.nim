@@ -30,6 +30,7 @@ import ./private/parse_html
 #[
 from lxml import etree  # type: ignore
 
+
 from docx.blkcntnr import BlockItemContainer  # type: ignore
 from docx.enum.text import (
         WD_BREAK, )
@@ -64,21 +65,22 @@ proc bookmark_from_elem(self: HtmlConvertDocx, elem: Tag): string
 proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
                             style = ""): Paragraph
 proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                    ): tuple[f: bool, s: string] {.discardable.}
+                    ): Option[string] {.discardable.}
 proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,
                     bkname: string): string {.discardable.}
-proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph): string
+proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph
+                ): Option[string]
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,
-                  pre: bool): tuple[f: bool, s: string]
+                  pre: bool): Option[string]
 proc extract_codeblock(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_details(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                      ): result_element
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                ): tuple[f: bool, s: string]
+                ): Option[string]
 proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                   ): tuple[f: bool, s: string]
+                   ): Option[string]
 proc extract_img(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                  ): result_element
 proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool, level: int,
@@ -87,20 +89,18 @@ proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,
                        elem: Tag, info: info_list,
                        blk: BlockItemContainer): string
 proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                    ): tuple[f: bool, s: string]
+                    ): Option[string]
 proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph
-                 ): tuple[f: bool, s: string]
+                 ): Option[string]
 proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                  ): result_element
 proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,
                         cell: TableCell): void
-proc extract_text(self: HtmlConvertDocx, elem: Tag
-                  ): tuple[f_none: bool, s: string]
+proc extract_text(self: HtmlConvertDocx, elem: Tag): Option[string]
 proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element
 proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag): result_element
-proc extract_para(self: HtmlConvertDocx, node: Tag, level: int
-                  ): tuple[f: bool, r: string]
+proc extract_para(self: HtmlConvertDocx, node: Tag, level: int): Option[string]
 proc header_init(self: HtmlConvertDocx): void
 proc style_list(self: HtmlConvertDocx, f_number: bool, level: int): info_list
 proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,
@@ -249,15 +249,14 @@ proc extract_is_text(self: HtmlConvertDocx, elem: Tag  # {{{1
         return nil  # ignore html comments
     if len(elem.name) > 0:
         return result_element(elem: elem)
-    block:
-        let (f, s) = self.extract_text(elem)
-        if f:
+    let s = self.extract_text(elem)
+    if s.isNone:
             return nil
-        return result_element(text: s)
+    return result_element(text: s.get())
 
 
 proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                     ): tuple[f: bool, s: string] {.discardable.} =
+                     ): Option[string] {.discardable.} =
     block:
         # inline elements
         if elem.name == "em":
@@ -269,7 +268,7 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         elif elem.name == "code":
             return self.extract_code(elem, para, pre=false)
         elif elem.name == "br":
-            return (false, self.extract_br(elem, para))
+            return self.extract_br(elem, para)
         elif elem.name == "a":
             return self.extract_anchor(elem, para)
         elif elem.name == "span" and common.has_class(elem, "katex-display"):
@@ -281,7 +280,7 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                 var para: Paragraph
                 para = self.current_para_or_create(para)
                 para.add_run(text)
-                return (false, text)
+                return some(text)
     raise newException(common.ParseError,
                        elem.name & " is not implemented, yet")
 
@@ -304,10 +303,10 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             return nil
 
     try:
-        let (f, s) = self.extract_inlines(elem, para)
-        if f:
+        let s = self.extract_inlines(elem, para)
+        if s.isNone:
             return nil
-        return result_element(text: s)
+        return result_element(text: s.get())
     except common.ParseError:
         discard
 
@@ -343,19 +342,19 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 
 proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
-                  ): tuple[f_none: bool, s: string] =
+                  ): Option[string] =
         if elem.string == "\n":
             if elem.parent.name in ["body", "div", ]:
-                return (true, "")
+                return none(string)
         var ret = elem.string
         # [@D4-19-1] treat \n as empty characters.
         ret = re.replace(ret, re" *\n *", " ")
         debg(ret.strip())
-        return (false, ret)
+        return some(ret)
 
 
 proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                ): string =
+                ): Option[string] =
         # sometime bs4 fails to parse `br` tag and surround text.
     var (n, ret, para) = (0, "", para)
     for i in elem.children:
@@ -368,21 +367,20 @@ proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
         if res.is_text():
             para.add_run(res.text)
         else:
-            var (f, content) = (false, "")
-            (f, content) = self.extract_inlines(tag, para)
-            if f:
+            let content = self.extract_inlines(tag, para)
+            if content.isNone:
                     continue
-            ret &= content
+            ret &= content.get()
     block:
         if n < 1:
             if isNil(para):
                 para = self.output.add_paragraph()
             para.add_run("\n")
-        return ret
+    return some(ret)
 
 
 proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                ): tuple[f: bool, s: string] =
+                ): Option[string] =
     proc add_para(): Paragraph =
         let
             style = common.Styles.get(self.output, "Caption")
@@ -393,30 +391,30 @@ proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     block:
         if "table-tag" in classes:
             common.docx_add_caption(add_para(), elem.text, "Table")
-            return (true, "")
+            return none(string)
         if common.has_prev_sibling(elem, "img", "svg"):
             common.docx_add_caption(add_para(), elem.text, "Figure")
-            return (true, "")
+            return none(string)
         if common.has_next_table(elem):
             common.docx_add_caption(add_para(), elem.text, "Table")
-            return (true, "")
+            return none(string)
 
     let
         para = self.current_para_or_create(para)
     block:
         para.add_run(elem.text, style="Emphasis")
-        return (true, "")
+    return none(string)
 
 
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,  # {{{1
-                  pre: bool): tuple[f: bool, s: string] =
+                  pre: bool): Option[string] =
     let s = elem.text
     if isNil(para):  # top level
         let
             style = common.Styles.get(self.output, "Quote")
         block:
             self.output.add_paragraph(s, style)
-        return (true, "")
+        return none(string)
     block:
         if false:
             discard
@@ -426,22 +424,22 @@ proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,  # {{{1
             var style: string
             style = common.Styles.get(self.output, "CodeChars")
             para.add_run(s, style=style)
-    return (true, "")
+    return none(string)
 
 
 proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                    ): tuple[f: bool, s: string] =
+                    ): Option[string] =
     let s = elem.text
     let
         style = common.Styles.get(self.output, "Strong")
         para = self.current_para_or_create(para)
     block:
         para.add_run(s, style=style)
-        return (true, "")
+    return none(string)
 
 
 proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                 ): tuple[f: bool, s: string] =
+                 ): Option[string] =
         # [@D4-99-001-1] treat sup elements
     var
         ret = ""
@@ -467,36 +465,36 @@ proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             var para: Paragraph
             para = self.current_para_or_create(para)
             para.add_run(ret)
-        return (true, "")
+        return none(string)
 
 
 proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                    ): tuple[f: bool, s: string] =
+                    ): Option[string] =
     let instr = elem.text
     let url = elem.attrs.getOrDefault("href", "")
     block:
         if len(url) < 1:
             let name = elem.attrs.getOrDefault("name", "")
             if len(name) < 1:
-                return (false, instr)
+                return some(instr)
             if self.bookmark_from_db(name, elem):
-                return (false, instr)
+                return some(instr)
             common.docx_add_bookmark(para, "ahref_" & name, instr)
-            return (true, "")
+            return none(string)
         if not url.startswith("#"):
             # TODO(shimoda): enable external link
-            return (false, instr)
+            return some(instr)
 
     let
         para = self.current_para_or_create(para)
         # remove "#"
     block:
         common.docx_add_hlink(para, instr, "ahref_" & url[1..^1])
-    return (true, "")
+    return none(string)
 
 
 proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
-                   ): tuple[f: bool, s: string] =
+                   ): Option[string] =
     ##[html sample: moved to test/docs/report-docx.md
     ]##
         # TODO(shimoda): convert to image?
@@ -508,7 +506,7 @@ proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
             self.para = self.output.add_paragraph(anno.text, style)
     else:
         raise newException(ParseError, "unknown pattern...")
-    return (true, "")
+    return none(string)
 
 
 proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
@@ -797,12 +795,12 @@ proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
 
 
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
-                  ): tuple[f: bool, r: string] =
+                  ): Option[string] =
     block:
         info(fmt"enter para...: lv{level}-{node.name}-{$len(node.children)}")
         if (node.name == "p" and
                 common.has_class(node, options.current.classes_ignore_p)):
-            return (false, "")
+            return some("")
     let
         bkname = self.bookmark_from_elem(node)  # [@P8-2-14] mark for <p>
 
@@ -832,7 +830,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
         else:
                 if para != self.para:
                     para = self.para
-    return (false, "")
+    return some("")
 
 
 proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
@@ -956,11 +954,9 @@ proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,  # {{{1
                 eror("extract:run:child: unknown pattern..." & res.elem.name)
                 continue
             try:
-                var s: tuple[f: bool, s: string]
-                s = self.extract_inlines(
-                        tag, para)
-                if not s.f:
-                    ret &= s.s
+                var s = self.extract_inlines(tag, para)
+                if s.isSome:
+                    ret &= s.get()
                 if len(bkname) > 0:
                     common.docx_add_bookmark(para, bkname, " ")  # [@P8-2-13]
             except common.ParseError:
