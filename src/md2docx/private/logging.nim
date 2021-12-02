@@ -6,6 +6,7 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
+import times
 
 const
     ALL* = 60
@@ -15,27 +16,44 @@ const
     WARNING* = 20
     ERROR* = 10
     FATAL* = 0
+    NOLOG* = -1
 var level_base = INFO
+
+
+proc putlog(msg: string): void =  # {{{1
+    let dt = times.now()
+    let pfx = dt.format("yy-MM-dd HH-mm-ss") & "." & dt.format("fff") & " "
+    echo(pfx & msg)
+
+
+proc verb*(msg: string): void =  # {{{1
+    if level_base < VERBOSE: return
+    putlog(":verbo: " & msg)
 
 
 proc debg*(msg: string): void =  # {{{1
     if level_base < DEBUG: return
-    echo(msg)
+    putlog(":debug: " & msg)
 
 
 proc info*(msg: string): void =  # {{{1
     if level_base < INFO: return
-    echo(msg)
+    putlog(":info : " & msg)
 
 
 proc warn*(msg: string): void =  # {{{1
     if level_base < WARNING: return
-    echo(msg)
+    putlog(":warn : " & msg)
 
 
 proc eror*(msg: string): void =  # {{{1
     if level_base < ERROR: return
-    echo(msg)
+    putlog(":error: " & msg)
+
+
+proc ftal*(msg: string): void =  # {{{1
+    if level_base < FATAL: return
+    putlog(":fatal: " & msg)
 
 
 proc basicConfig*(level: int): void =  # {{{1
