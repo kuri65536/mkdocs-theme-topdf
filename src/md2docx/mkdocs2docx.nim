@@ -14,11 +14,13 @@ import system
 import tables
 
 import ./docx
+import ./docx_common
 import ./docx_element
 import ./docx_para
 import ./docx_render
 import ./docx_section
 import ./docx_svg
+import ./docx_table
 import ./docx_toc
 import ./etree
 import ./private/common
@@ -303,9 +305,9 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     elif elem.name == "table":
         return (self.extract_table(elem), nil)
     elif elem.name == "ul":
-        return (self.extract_list(elem, false, 1, self.output), nil)
+        return (self.extract_list(elem, false, 1, self.output.current_block), nil)
     elif elem.name == "ol":
-        return (self.extract_list(elem, true, 1, self.output), nil)
+        return (self.extract_list(elem, true, 1, self.output.current_block), nil)
     elif elem.name == "details":
         return (self.extract_details(elem), nil)
     elif elem.name == "img":

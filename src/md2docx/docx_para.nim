@@ -6,6 +6,7 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
+import docx_common
 import docx_element
 import docx_runner
 
@@ -14,9 +15,6 @@ type
   WD_ALIGN_PARAGRAPH* = enum
     AP_LEFT = 0
     RIGHT = 1
-
-  SectionItem* = ref SectionItemObj
-  SectionItemObj* = object of RootObj
 
   Paragraph* = ref ParagraphObj
   ParagraphObj* = object of SectionItemObj

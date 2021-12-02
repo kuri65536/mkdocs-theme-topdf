@@ -10,10 +10,12 @@ import tables
 
 import etree
 
+import docx_common
 import docx_element
 import docx_para
-import docx_section
 import docx_runner
+import docx_section
+import docx_table
 
 
 type
@@ -31,37 +33,8 @@ type
   Style* = ref object of RootObj
     discard
 
-  BlockItemContainer* = ref BlockItemContainerObj
-  BlockItemContainerObj* = object of RootObj
-    ##[ class for Tables or Sections
-        can be include: paragraphs or tables
-
-        - x paragraph  -> cannot be include tables.
-        - x table      -> cannot
-        - o table-cell -> can
-        - o section    -> can
-    ]##
-    items: seq[SectionItem]
-
   DocxPicture* = ref object of OxmlElement
     discard
-
-  TablePrefWidth* = ref object of OxmlElement
-    typ*: string
-    w*: Length
-
-  TablePreferences* = ref object of OxmlElement
-    tcW*: TablePrefWidth
-
-  TableCell2* = ref object of OxmlElement
-    tcPr*: TablePreferences
-
-  TableCell* = ref object of BlockItemContainerObj
-    paragraphs*: seq[Paragraph]
-    width*: Length
-    text*: string
-    element*: OxmlElement
-    tc*: TableCell2
 
   TableColumn* = ref object of RootObj
     cells*: seq[TableCell]
@@ -81,7 +54,7 @@ type
     alignment*: WD_TABLE_ALIGNMENT
     preferences*: OxmlElement
 
-  Document* = ref object of BlockItemContainerObj
+  Document* = ref object of RootObj
     paragraphs*: seq[Paragraph]
     settings*: DocumentSettings
     sections*: seq[Section]
@@ -170,6 +143,10 @@ proc add_picture*(self: Runner, fname: string,  # {{{1
     discard
 
 
+proc `current_block`*(self: Document): BlockItemContainer =  # {{{1
+    return cast[BlockItemContainer](self.sections[^1])
+
+
 proc add_paragraph*(self: Document, text = "", style = ""  # {{{1
                     ): Paragraph {.discardable.} =
     ## .. todo:: shimoda sytle
@@ -199,7 +176,7 @@ proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
     for i in 1..rows:
         var row = TableRow()
         for i in 1..cols:
-            row.cells.add(TableCell())
+            row.cells.add(initTableCell())
         result.rows.add(row)
     self.sections[^1].items.add(result)
 

@@ -9,15 +9,24 @@ License::
 import streams
 
 import ../docx
+import ../docx_para
+import ../docx_table
+import ../private/logging
 import docx_render_para
+
+
+proc render_table*(self: DocxTable, s: Stream): void
 
 
 proc render_cell*(self: TableCell, s: Stream): void =  # {{{1
     s.write("""<w:tc><w:tcPr><w:tcW w:type="dxa" w:w="1134"/><w:tcBorders><w:tl2br
 w:color="000000" w:space="0" w:val="single" w:sz="4"/></w:tcBorders></w:tcPr>
     """)
-    for i in self.paragraphs:  ## .. todo:: shimoda change to blockitem.
-        i.render_para(s)
+    for i in self.items:
+        if i of Paragraph:
+            cast[Paragraph](i).render_para(s)
+        elif i of DocxTable:
+            cast[DocxTable](i).render_table(s)
     s.write("</w:tc>")
 
 
@@ -39,6 +48,7 @@ proc render_table*(self: DocxTable, s: Stream): void =  # {{{1
         s.write("<w:tr>")
         s.write("""<w:trPr><w:trHeight w:val="1134"/></w:trPr>""")
         for cell in row.cells:
+            eror("render:table: cell(" & $len(cell.items))
             cell.render_cell(s)
         s.write("</w:tr>")
 

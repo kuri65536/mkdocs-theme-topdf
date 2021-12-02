@@ -15,6 +15,7 @@ import tables
 import zip/zipfiles
 
 import docx
+import docx_common
 import docx_para
 import docx_render/docx_render_docx
 import docx_render/docx_render_table

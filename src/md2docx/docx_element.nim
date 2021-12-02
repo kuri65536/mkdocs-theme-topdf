@@ -8,10 +8,6 @@ License::
 ]##
 
 type
-  Length* = enum
-    zero = 0
-    low = 1
-
   OxmlElement* = ref object of RootObj
     name*, text*: string
 

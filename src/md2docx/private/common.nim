@@ -12,6 +12,7 @@ import strutils
 import tables
 
 import ../docx
+import ../docx_common
 import ../docx_element
 import ../docx_para
 import logging
