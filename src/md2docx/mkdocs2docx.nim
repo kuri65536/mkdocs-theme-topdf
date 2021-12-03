@@ -111,12 +111,12 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,
 
 proc is_text(self: result_element): bool =  # {{{1
     if isNil(self): return false
-    return not isNil(self.elem)
+    return isNil(self.elem)
 
 
 proc is_elem(self: result_element): bool =  # {{{1
     if isNil(self): return false
-    return isNil(self.elem)
+    return not isNil(self.elem)
 
 
 proc initHtmlConvertDocx(src: string): HtmlConvertDocx =  # {{{1
@@ -237,10 +237,13 @@ proc write_out(self: HtmlConvertDocx, fname: string): void =  # {{{1
 
 proc on_post_page(self: HtmlConvertDocx,  # {{{1
                   output_content: string): void =
+    info("mkdocs2dox: load html...")
     parse_html.load(output_content)
     let dom = parse_html.find_element("body")
+    info("mkdocs2dox: find body...")
     block:
         discard self.extract_para(dom, 0)
+    info("mkdocs2dox: parse finished...")
 
 
 proc extract_is_text(self: HtmlConvertDocx, elem: Tag  # {{{1
@@ -288,9 +291,7 @@ proc extract_inlines(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                      ): result_element =
     let res = self.extract_is_text(elem)
-    if isNil(res):
-        return nil
-    if not res.is_elem():
+    if res.is_text() or isNil(res):
         return res
 
     let classes = elem.attrs.getOrDefault("class", "").split(" ")
@@ -334,7 +335,7 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     elif elem.name in ["pre", "code"]:
         return self.extract_codeblock(elem)
     elif elem.name in ["p", "div"]:
-        discard
+        return res  # recurse to extarct_para...
     else:
         discard  # for debug: import pdb; pdb.set_trace()
         # p, article or ...
@@ -530,7 +531,7 @@ proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
         block:
             if len(tag.name) < 1:
                 continue
-            if tag.name == "thead":
+        if tag.name == "thead":
                 info("structure: tbl: enter thead")
                 ret = self.extract_table_tree(tag, 0)
                 continue
@@ -552,7 +553,7 @@ proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
                 continue
         block:
             if tag.name != "tr":
-                warn(fmt"table tree: {tag.name} in table")
+                warn(fmt"table tree: {tag.name} in {elem.name}")
                 continue
         var (f_row, col, row) = (true, 0, (row + (if f_row: 1 else: 0)))
         block:
@@ -568,9 +569,9 @@ proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
 
 
 proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
+    debg("extract:tbl: enter")
     var
         dct = self.extract_table_tree(elem, 0)
-    debg("ext_tbl: enter => " & $isNil(dct))
     block:
         dct = common.table_update_rowcolspan(dct)  # [@P13-1-11] cell-span
         if len(dct) < 1:
@@ -623,6 +624,7 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
         classes = common.classes_from_prev_sibling(elem)
     block:
         self.style_table_width_from(tbl, classes)
+    debg("extract:tbl: leave")
     return nil
 
 
@@ -807,7 +809,6 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
     var para: Paragraph = nil
     for elem in node.children:
         let res = self.extract_element(elem, para)
-        # let (s, tag) = self.extract_element(elem, para)
         if res.is_text():
             let
                 ret = res.text

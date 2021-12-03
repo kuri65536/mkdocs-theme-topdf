@@ -75,7 +75,7 @@ proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
     ## a typical docx file includes these files.
     var ztmp: ZipArchive
     if not ztmp.open(fname_tmp, fmRead):
-        echo("can't open: " & fname_tmp)
+        ftal("can't open: " & fname_tmp)
         return true
 
     var tbl = initTable[string, tuple[f: File, n: string]]()
@@ -94,12 +94,12 @@ proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
               "word/stylesWithEffects.xml",
               "word/theme/theme1.xml",
               "word/webSettings.xml", ]:
-        echo("save:tmpl: read => " & i)
+        info("save:tmpl: read => " & i)
         var tmp = ".docx_render.XXXXXX"
         var hnd = mkstemp(tmp)
         var f: File
         if not f.open(hnd, fmReadWriteExisting):
-            echo("can't open: " & $hnd & "->" & $tmp)
+            ftal("can't open: " & $hnd & "->" & $tmp)
             return true
         tbl[i] = (f, tmp)
         ztmp.extractFile(i, newFileStream(f))
@@ -112,14 +112,14 @@ proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
             tup.f.close()
 
     if not z.open(filename, fmWrite):
-        echo("can't open: " & filename)
+        ftal("can't open: " & filename)
         clear()
         return true
-    echo("save:open: " & filename)
+    info("save:open: " & filename)
 
     for i, tup in tbl.pairs():
         var (f, fname) = tup
-        echo("save:tmpl: from template => " & i)
+        debg("save:tmpl: from template => " & i)
         f.setFilePos(0)
         z.addFile(i, newFileStream(tup.f))
         discard os.tryRemoveFile(fname)
@@ -132,9 +132,9 @@ proc save*(self: Document, filename: string): void =  # {{{1
         return
 
     var fs = self.save_render()
-    echo("save:render: dump to zip (document.xml)")
+    info("save:render: dump to zip (document.xml)")
     z.addFile("word/document.xml", fs)
-    echo("save:render: close..." & filename)
+    info("save:render: close..." & filename)
     z.close()
 
 

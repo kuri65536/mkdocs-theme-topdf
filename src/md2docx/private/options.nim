@@ -103,7 +103,7 @@ proc parse*(args: seq[string]): Options =  # {{{1
     var ret = initOptions()
     ret.fname_in = args[0]
     ret.fname_out = "a.docx"
-    ret.level_debug = ALL
+    ret.level_debug = DEBUG
     return ret
     #[
     nm = parser.parse_args(args)

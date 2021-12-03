@@ -10,6 +10,8 @@ import streams
 import parsexml
 import tables
 
+import logging
+
 
 type
   XmlElement* = ref XmlElementObj
@@ -30,13 +32,15 @@ var current_dom: Tag
 
 proc parse_html_push*(self: var seq[Tag], name: string,  # {{{1
                       attrs: seq[tuple[k, v: string]]): Tag {.discardable.} =
-    # echo("parse_html:loop: tag => " & name)
+    verb("parse_html:loop: push tag  => " & name)
     var tag = Tag(name: name,
                   attrs: initTable[string, string]())
     for tup in attrs:
         let (k, v) = tup
         tag.attrs[k] = v
     if len(self) > 0:
+        verb("parse_html:loop: push tag  => (lv." & $len(self) & ")=(" &
+             $len(self[^1].children) & ")")
         self[^1].children.add(tag)
     self.add(tag)
     return tag
@@ -70,16 +74,17 @@ proc parse_html*(src: string): Tag =  # {{{1
     while true:
         x.next()
         var tmp: Tag = nil
-        # echo("parse_html:loop: " & $x.kind)
+        verb("parse_html:loop: " & $x.kind)
         case x.kind
         of xmlError: discard
         of xmlEof:   break
         of xmlElementStart: tmp = parse_html_push(stack, x.elementName, @[])
         of xmlElementClose:
             tmp = parse_html_push(stack, tag_opened, attrs)
-            tag_opened = ""
+            attrs = @[]; tag_opened = ""
         of xmlElementEnd:
             if len(stack) > 1:
+                verb("parse_html:loop: close tag => " & stack[^1].name)
                 stack.del(len(stack) - 1)
         of xmlElementOpen:
             attrs = @[]; tag_opened = x.elementName
@@ -96,7 +101,7 @@ proc parse_html*(src: string): Tag =  # {{{1
 
         if isNil(result) and not isNil(tmp):
             result = tmp
-            echo("parse_html:loop: root tag = " & tmp.name)
+            warn("parse_html:loop: root tag = " & tmp.name)
 
     x.close()
     return result
@@ -108,6 +113,7 @@ proc has_attr*(self: Tag, k: string): bool =  # {{{1
 
 proc find*(self: Tag, name: string): Tag =  # {{{1
     if self.name == name:
+        info("parse_html:find: found " & name & "(" & $len(self.children) & ")")
         return self
     for i in self.children:
         let ret = i.find(name)

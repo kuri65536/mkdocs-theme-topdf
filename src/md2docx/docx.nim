@@ -10,6 +10,7 @@ import tables
 
 import etree
 
+import ./private/logging
 import docx_common
 import docx_element
 import docx_para
@@ -127,7 +128,8 @@ proc text*(self: Paragraph): string =  # {{{1
 
 proc add_run*(self: Paragraph, src = "", style=""  # {{{1
               ): Runner {.discardable.} =
-    ## .. todo:: shimoda sytle
+    ## .. todo:: shimoda: add sytle
+    warn("docx:man:run: add " & src)
     result = Runner(text: src)
     self.items.add(result)
 
