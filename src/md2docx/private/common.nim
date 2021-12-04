@@ -28,19 +28,19 @@ type
     ]##
     allocated: seq[string]
 
+  fn_style = proc(self: StylesObj, doc: Document, name: string): string
+
   Global = ref object of RootObj
     seq_files: seq[string]
     numbers_of_captions: Table[string, int]
-    funcs_style_init: Table[string,
-                            proc(self: StylesObj, doc: Document): string]
+    funcs_style_init: Table[string, fn_style]
 
   ParseError* = object of CatchableError
 
 
 var glb = Global(
-        funcs_style_init: initTable[string,
-                                proc(self: StylesObj, doc: Document): string]()
-       )
+        funcs_style_init: initTable[string, fn_style]()
+)
 var Styles* = StylesObj()
 
 
@@ -70,20 +70,21 @@ except ImportError:
     f_not_online = True
 
 
-def parse_trailing_numbers(src: Text) -> Tuple[Text, int]:  # {{{1
-    ret_n, ret = 0, ""
-    for n, ch in enumerate(reversed(src)):
+]#
+proc parse_trailing_numbers(src: string): tuple[s: string, n: int] =  # {{{1
+    var (ret_n, ret) = (0, "")
+    for n, ch in reversed(src):
         if len(ret) > 0:
-            ret = ch + ret
+            ret = ch & ret
             continue
-        if ch not in "0123456789":
-            ret = ch
+        if ch not_in "0123456789":
+            ret = $ch
             continue
-        ret_n += ord(ch) - ord("0")
-    return ret.rstrip(), ret_n
+        ret_n += int(ch) - int('0')
+    return (ret.strip(leading = false, trailing = true), ret_n)
 
 
-    funcs_style_init: Dict[Text, Callable[['Styles', Document], Text]] = {}
+#[
     bookmark_id = 1
 
 
@@ -694,9 +695,7 @@ proc docx_add_hlink*(para: Paragraph, instr, name: string,  # {{{1
     text.text = instr
 
 
-proc style_add_init(name: string,  # {{{1
-                    fn: proc(self: StylesObj, d: Document): string
-                    ): void =
+proc style_add_init(name: string, fn: fn_style): void =  # {{{1
     debg("sytle:add:init: " & name)
     glb.funcs_style_init[name] = fn
 
@@ -712,7 +711,7 @@ proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
                 msg &= ", " & key
             raise newException(ParseError, msg)
         let fn = glb.funcs_style_init[name]
-        return fn(cls, doc)
+        return fn(cls, doc, name)
 
 
 proc init_heading(self: StylesObj, doc: Document, name: string  # {{{1
@@ -725,8 +724,7 @@ proc init_heading(self: StylesObj, doc: Document, name: string  # {{{1
     return name
 
 
-proc init_quote(self: StylesObj, doc: Document): string =  # {{{1
-    const name = "Quote"
+proc init_quote(self: StylesObj, doc: Document, name: string): string =  # {{{1
     let style = doc.styles[name]
     block:
         style.font.name = "SourceCodePro"
@@ -777,11 +775,10 @@ proc quote*(self: StylesObj, para: Paragraph): void =  # {{{1
         return name
 
 ]#
-proc init_image(self: StylesObj, doc: Document): string =  # {{{1
+proc init_image(self: StylesObj, doc: Document, name: string): string =  # {{{1
     ##[
         "[@P14-1-11] style for single images"
     ]##
-    const name = "Image"
     if name in doc.styles: return name
     let
         style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
@@ -790,26 +787,33 @@ proc init_image(self: StylesObj, doc: Document): string =  # {{{1
     style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.PA_CENTER
     block:
         return name
-#[
 
-    def init_list(self, doc: Document, name: Text) -> Text:  # {{{1
+
+proc init_list(self: StylesObj, doc: Document, name: string): string =  # {{{1
         # list items indent
-        org, n = parse_trailing_numbers(name)
-        org = Styles.get(doc, org)
-        if name in doc.styles:
+    var (org, n) = parse_trailing_numbers(name)
+    var style, style_org: Style
+    block:
+        if name == org:
+            if name in doc.styles:
+                return name
+            style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        elif name in doc.styles:
             style = doc.styles[name]
         else:
-            style_org = doc.styles[org]
             style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
-            style.base_style = style_org
-        fmt = style.paragraph_format
+            style.base_style = org
+    let fmt = style.paragraph_format
+    block:
         fmt.left_indent = Mm(12 + 12 * n)
         fmt.first_line_indent = Mm(-5)
         # [@P11-1-1] reduce extra spaces after paragraph
         fmt.space_after = Mm(1)
-        fmt.line_spacing = 1.0
+    fmt.line_spacing = Length(1)
+    block:
         fmt.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
 
+        #[
         """ failed to set
         ppr= i.element.get_or_add_pPr()
         ind = OxmlElement("w:ind")
@@ -817,13 +821,9 @@ proc init_image(self: StylesObj, doc: Document): string =  # {{{1
         ind.set(qn("w:left"), "%d" % Mm(25 + 20 * n))      # - <---hanging---|
         ind.set(qn("w:hanging"), "%d" % Mm(10 + 20 * n))   # ------left----->|
         """
+        ]#
         return name
-
-    (style("List Number"))(init_list)
-    (style("List Bullet"))(init_list)
-    for i in range(2, 10):
-        (style("List Number %d" % i))(init_list)
-        (style("List Bullet %d" % i))(init_list)
+#[
 
     @style("TOC Contents")
     def init_toc_contents(self, doc: Document, name: Text) -> Text:  # {{{1
@@ -897,11 +897,15 @@ proc init_image(self: StylesObj, doc: Document): string =  # {{{1
 ]#
 proc init*(offline: bool): void =  # {{{1
     for i in 1..10:
-        style_add_init("Heading " & $i,
-            proc(s: StylesObj, d: Document): string =
-                s.init_heading(d, "Heading " & $i))
+        style_add_init("Heading " & $i, init_heading)
     style_add_init("Quote", init_quote)
     style_add_init("Image", init_image)
+    style_add_init("List Number", init_list)
+    style_add_init("List Bullet", init_list)
+    for i in 2..10:
+        style_add_init("List Number " & $i, init_list)
+        style_add_init("List Bullet " & $i, init_list)
+
 
 #[
 

@@ -11,6 +11,9 @@ import tables
 import docx_common
 
 type
+  WD_LINE_SPACING* = enum
+    AT_LEAST = 1
+
   WD_STYLE_TYPE* = enum
     PARAGRAPH = 1
 
@@ -31,9 +34,11 @@ type
     color*: Color
 
   ParagraphFormat* = ref object of RootObj
-    line_spacing*,
-      left_indent*, right_indent*: Length
+    first_line_indent*, line_spacing*,
+      left_indent*, right_indent*,
+      space_after*: Length
     alignment*: WD_PARAGRAPH_ALIGNMENT
+    line_spacing_rule*: WD_LINE_SPACING
 
   Style* = ref object of RootObj
     name: string
@@ -57,7 +62,8 @@ proc initStyle*(): Style =  # {{{1
     result = Style(font: Font(
         color: Color()
       ), paragraph_format: ParagraphFormat(
-        alignment: WD_PARAGRAPH_ALIGNMENT.PA_BOTH
+        alignment: WD_PARAGRAPH_ALIGNMENT.PA_BOTH,
+        line_spacing_rule: WD_LINE_SPACING.AT_LEAST,
       ))
 
 
