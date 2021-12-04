@@ -12,6 +12,7 @@ type
   Length* = enum
     zero = 0
     low = 1
+    max = 100000
 
   BlockItemContainer* = ref BlockItemContainerObj
   BlockItemContainerObj* = object of RootObj
@@ -30,5 +31,8 @@ type
     ##[ class for children such as Paragraphs and Tables
     ]##
 
+
+proc Pt*(n: int): Length =  # {{{1
+    return Length(n)
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

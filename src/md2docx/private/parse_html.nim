@@ -34,7 +34,8 @@ proc parse_html_push*(self: var seq[Tag], name: string,  # {{{1
                       attrs: seq[tuple[k, v: string]]): Tag {.discardable.} =
     verb("parse_html:loop: push tag  => " & name)
     var tag = Tag(name: name,
-                  attrs: initTable[string, string]())
+                  attrs: initTable[string, string](),
+                  children: @[])
     for tup in attrs:
         let (k, v) = tup
         tag.attrs[k] = v

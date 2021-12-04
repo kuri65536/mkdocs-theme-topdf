@@ -187,6 +187,8 @@ proc has_width_and_parse*(classes: seq[string]  # {{{1
 
 proc count_tags_around_image*(src: Tag): int =  # {{{1
     ## [@P14-1-12] image under a rule
+    if isNil(src):
+        return 0
     var i: int
     i = 0
     for elem in src.children:
@@ -722,19 +724,23 @@ proc init_heading(self: StylesObj, doc: Document, name: string  # {{{1
     doc.styles[name].font.color.rgb = RGBColor(r: 0, g: 0, b: 0)
     return name
 
-#[
-    @style("Quote")  # {{{1
-    def init3(self, doc: Document, name: Text) -> Text:
-        style = doc.styles['Quote']
+
+proc init_quote(self: StylesObj, doc: Document): string =  # {{{1
+    const name = "Quote"
+    let style = doc.styles[name]
+    block:
         style.font.name = "SourceCodePro"
         style.font.size = Pt(8)
-        style.font.italic = False
-        fmt = doc.styles['Quote'].paragraph_format
+    style.font.italic = false
+    let fmt = style.paragraph_format
+    block:
         fmt.line_spacing = Pt(9)
-        fmt.left_indent = fmt.right_indent = Mm(10)
+    fmt.left_indent = Mm(10)
+    fmt.right_indent = fmt.left_indent
+    block:
         return name
 
-]#
+
 proc quote*(self: StylesObj, para: Paragraph): void =  # {{{1
     discard
     #[
@@ -886,7 +892,7 @@ proc init*(offline: bool): void =  # {{{1
         style_add_init("Heading " & $i,
             proc(s: StylesObj, d: Document): string =
                 s.init_heading(d, "Heading " & $i))
-    discard
+    style_add_init("Quote", init_quote)
 
 #[
 

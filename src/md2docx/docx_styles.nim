@@ -8,6 +8,8 @@ License::
 ]##
 import tables
 
+import docx_common
+
 type
   WD_STYLE_TYPE* = enum
     PARAGRAPH = 1
@@ -19,11 +21,19 @@ type
     rgb*: RGBColor
 
   Font* = ref object of RootObj
+    name*: string
+    size*: Length
+    italic*: bool
     color*: Color
+
+  ParagraphFormat* = ref object of RootObj
+    line_spacing*,
+      left_indent*, right_indent*: Length
 
   Style* = ref object of RootObj
     base_style*: string
     font*: Font
+    paragraph_format*: ParagraphFormat
 
   DocxStyles* = ref object of RootObj
     db: Table[string, Style]
@@ -32,12 +42,13 @@ type
 proc initStyle*(): Style =  # {{{1
     result = Style(font: Font(
         color: Color()
-    ))
+      ), paragraph_format: ParagraphFormat(
+      ))
 
 
 proc `[]`*(self: DocxStyles, name: string): Style =  # {{{1
     if name not_in self.db:
-        raise newException(ValueError, "dup.")
+        raise newException(ValueError, "not found")
     return self.db[name]
 
 
@@ -60,6 +71,7 @@ proc initDocxStyles*(): DocxStyles =  # {{{1
     )
     result.db["Table Grid"] = Style()
     result.db["List Bullet"] = Style()
+    result.db["Quote"] = initStyle()
     return result
 
 
