@@ -14,6 +14,10 @@ type
   WD_STYLE_TYPE* = enum
     PARAGRAPH = 1
 
+  WD_PARAGRAPH_ALIGNMENT* = enum
+    PA_CENTER = 1
+    PA_BOTH = 3
+
   RGBColor* = ref object of RootObj
     r*, g*, b*: int
 
@@ -29,9 +33,11 @@ type
   ParagraphFormat* = ref object of RootObj
     line_spacing*,
       left_indent*, right_indent*: Length
+    alignment*: WD_PARAGRAPH_ALIGNMENT
 
   Style* = ref object of RootObj
-    base_style*: string
+    name: string
+    base_style_name: string
     font*: Font
     paragraph_format*: ParagraphFormat
 
@@ -39,10 +45,19 @@ type
     db: Table[string, Style]
 
 
+proc `base_style=`*(self: Style, name: string): void =  # {{{1
+    self.base_style_name = name
+
+
+proc `base_style=`*(self: Style, src: Style): void =  # {{{1
+    self.base_style_name = src.name
+
+
 proc initStyle*(): Style =  # {{{1
     result = Style(font: Font(
         color: Color()
       ), paragraph_format: ParagraphFormat(
+        alignment: WD_PARAGRAPH_ALIGNMENT.PA_BOTH
       ))
 
 
@@ -59,7 +74,7 @@ proc contains*(self: DocxStyles, name: string): bool =  # {{{1
 proc add_style*(self: DocxStyles, name: string,  # {{{1
                 typ: WD_STYLE_TYPE): Style =
     if name in self:
-        raise newException(ValueError, "dup.")
+        raise newException(ValueError, "dup.: " & name)
     result = initStyle()
     self.db[name] = result
     return result
@@ -72,6 +87,7 @@ proc initDocxStyles*(): DocxStyles =  # {{{1
     result.db["Table Grid"] = Style()
     result.db["List Bullet"] = Style()
     result.db["Quote"] = initStyle()
+    result.db["Normal"] = initStyle()
     return result
 
 

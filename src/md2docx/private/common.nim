@@ -776,13 +776,21 @@ proc quote*(self: StylesObj, para: Paragraph): void =  # {{{1
         fmt.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         return name
 
-    @style("Image")  # {{{1
-    def init_image(self, doc: Document, name: Text) -> Text:
+]#
+proc init_image(self: StylesObj, doc: Document): string =  # {{{1
+    ##[
         "[@P14-1-11] style for single images"
+    ]##
+    const name = "Image"
+    if name in doc.styles: return name
+    let
         style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+    block:
         style.base_style = doc.styles["Normal"]
-        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.PA_CENTER
+    block:
         return name
+#[
 
     def init_list(self, doc: Document, name: Text) -> Text:  # {{{1
         # list items indent
@@ -893,6 +901,7 @@ proc init*(offline: bool): void =  # {{{1
             proc(s: StylesObj, d: Document): string =
                 s.init_heading(d, "Heading " & $i))
     style_add_init("Quote", init_quote)
+    style_add_init("Image", init_image)
 
 #[
 
