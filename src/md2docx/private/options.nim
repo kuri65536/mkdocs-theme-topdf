@@ -105,7 +105,7 @@ proc parse*(args: seq[string]): Options =  # {{{1
     current = ret
 
     ret.fname_in = args[0]
-    ret.fname_out = "a.docx"
+    ret.fname_out = args[1]
     ret.level_debug = DEBUG
     return ret
     #[

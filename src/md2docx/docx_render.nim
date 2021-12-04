@@ -18,21 +18,11 @@ import docx
 import docx_common
 import docx_para
 import docx_render/docx_render_docx
+import docx_render/docx_render_runner
 import docx_render/docx_render_table
 import docx_runner
 import docx_section
 import private/logging
-
-
-method render(self: RunnerItem, s: Stream): void {.base.} =  # {{{1
-    discard
-
-
-method render(self: Runner, s: Stream): void =  # {{{1
-    const tag = "w:r"
-    s.write("<" & tag & ">")
-    s.write("")
-    s.write("</" & tag & ">")
 
 
 method render(self: SectionItem, s: Stream): void {.base.} =  # {{{1
@@ -52,7 +42,7 @@ method render(self: Paragraph, s: Stream): void =  # {{{1
     warn("save:render: para")
     s.write("<" & tag & ">")
     for item in self.items:
-        item.render(s)
+        item.render_runner(s)
     s.write("</" & tag & ">")
 
 
