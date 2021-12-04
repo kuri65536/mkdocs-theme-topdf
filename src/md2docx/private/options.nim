@@ -100,7 +100,10 @@ proc make_parser(): ArgumentParser =
 proc parse*(args: seq[string]): Options =  # {{{1
     var parser: ArgumentParser
     parser = make_parser()
+
     var ret = initOptions()
+    current = ret
+
     ret.fname_in = args[0]
     ret.fname_out = "a.docx"
     ret.level_debug = DEBUG

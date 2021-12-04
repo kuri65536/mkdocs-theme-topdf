@@ -16,6 +16,7 @@ import docx_element
 import docx_para
 import docx_runner
 import docx_section
+import docx_styles
 import docx_table
 
 
@@ -30,9 +31,6 @@ type
 
   DocumentSettings* = ref object of RootObj
     element*: OxmlElement
-
-  Style* = ref object of RootObj
-    discard
 
   DocxPicture* = ref object of OxmlElement
     discard
@@ -60,7 +58,7 @@ type
     settings*: DocumentSettings
     sections*: seq[Section]
     tables*: seq[DocxTable]
-    styles*: Table[string, Style]
+    styles*: DocxStyles
 
 
 proc qn*(src: string): string =  # {{{1
@@ -68,9 +66,7 @@ proc qn*(src: string): string =  # {{{1
 
 
 proc initDocument*(): Document =  # {{{1
-    var styles = initTable[string, Style]()
-    styles["Table Grid"] = Style()
-    styles["List Bullet"] = Style()
+    var styles = initDocxStyles()
     result = Document(
         settings: DocumentSettings(
             element: initOxmlElement("root")

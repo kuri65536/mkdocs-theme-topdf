@@ -15,6 +15,7 @@ import ../docx
 import ../docx_common
 import ../docx_element
 import ../docx_para
+import ../docx_styles
 import logging
 import parse_html
 
@@ -689,26 +690,15 @@ proc docx_add_hlink*(para: Paragraph, instr, name: string,  # {{{1
     link.set(qn("w:anchor"), name)
     debg("link: " & name)
     text.text = instr
-#[
-
-def style(name: Text  # {{{1
-          ) -> Callable[[Callable[['Styles', Document, Text], Text]],
-                        Callable[['Styles', Document], Text]]:
-
-    def ret(fn: Callable[['Styles', Document, Text], Text]
-            ) -> Callable[['Styles', Document], Text]:
-
-        def new_fn(self: 'Styles', doc: Document) -> Text:
-            Styles.allocated.append(name)
-            return fn(self, doc, name)
-
-        glb.funcs_style_init[name] = new_fn
-        return new_fn
-
-    return ret
 
 
-]#
+proc style_add_init(name: string,  # {{{1
+                    fn: proc(self: StylesObj, d: Document): string
+                    ): void =
+    debg("sytle:add:init: " & name)
+    glb.funcs_style_init[name] = fn
+
+
 proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
         if name in Styles.allocated:
             return name
@@ -721,19 +711,18 @@ proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
             raise newException(ParseError, msg)
         let fn = glb.funcs_style_init[name]
         return fn(cls, doc)
+
+
+proc init_heading(self: StylesObj, doc: Document, name: string  # {{{1
+                  ): string =  # {{{1
+    var st: Style
+    if not doc.styles.contains(name):
+        st = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        st.base_style = "Heading 1"
+    doc.styles[name].font.color.rgb = RGBColor(r: 0, g: 0, b: 0)
+    return name
+
 #[
-
-    def init_heading(self, doc: Document, name: Text) -> Text:  # {{{1
-        # failure code.
-        # st = doc.styles.add_style('Heading2', WD_STYLE_TYPE.PARAGRAPH)
-        # st.base_style = doc.styles["Heading 1"]
-        # st.font.color.rgb = RGBColor(0, 0, 0)
-        doc.styles[name].font.color.rgb = RGBColor(0, 0, 0)
-        return name
-
-    for i in range(1, 10):
-        (style("Heading %d" % i))(init_heading)
-
     @style("Quote")  # {{{1
     def init3(self, doc: Document, name: Text) -> Text:
         style = doc.styles['Quote']
@@ -893,6 +882,10 @@ proc quote*(self: StylesObj, para: Paragraph): void =  # {{{1
         return name
 ]#
 proc init*(offline: bool): void =  # {{{1
+    for i in 1..10:
+        style_add_init("Heading " & $i,
+            proc(s: StylesObj, d: Document): string =
+                s.init_heading(d, "Heading " & $i))
     discard
 
 #[
