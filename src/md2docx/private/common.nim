@@ -34,12 +34,14 @@ type
     seq_files: seq[string]
     numbers_of_captions: Table[string, int]
     funcs_style_init: Table[string, fn_style]
+    bookmark_id: int
 
   ParseError* = object of CatchableError
 
 
 var glb = Global(
-        funcs_style_init: initTable[string, fn_style]()
+        funcs_style_init: initTable[string, fn_style](),
+        bookmark_id: 1
 )
 var Styles* = StylesObj()
 
@@ -84,11 +86,6 @@ proc parse_trailing_numbers(src: string): tuple[s: string, n: int] =  # {{{1
     return (ret.strip(leading = false, trailing = true), ret_n)
 
 
-#[
-    bookmark_id = 1
-
-
-]#
 proc has_class*(tag: Tag, names: varargs[string]): bool =  # {{{1
     const key = "class"
     if len(tag.name) < 1:
@@ -655,18 +652,17 @@ proc docx_bookmark_normalize(name: string): string =  # {{{1
 
 proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
                         ): void =
-    discard
-    #[
-    id_ = glb.bookmark_id
+    var id = glb.bookmark_id
 
-    def mark(tag: Text, name: Text) -> None:
-        mk = OxmlElement("w:bookmark" + tag)
-        mk.set(qn("w:id"), "%d" % id_)
+    proc mark(tag, name: string): void =
+        var mk = initOxmlElement("w:bookmark" & tag)
+        mk.set(qn("w:id"), $id)
         if len(name) > 0:
+            var name: string
             name = docx_bookmark_normalize(name)
             mk.set(qn("w:name"), name)
-            debg("book: " + name)
-        para._p.append(mk)
+            debg("book: " & name)
+        para.raw.append(mk)
 
     if len(name) > 0:
         mark("Start", name)
@@ -676,7 +672,6 @@ proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
     if len(name) > 0:
         mark("End", "")
         glb.bookmark_id += 1
-    ]#
 
 
 proc docx_add_hlink*(para: Paragraph, instr, name: string,  # {{{1

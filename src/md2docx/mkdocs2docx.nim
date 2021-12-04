@@ -119,6 +119,12 @@ proc is_elem(self: result_element): bool =  # {{{1
     return not isNil(self.elem)
 
 
+proc inner_string(self: Tag): string =  # {{{1
+    result = ""
+    for i in self.children:
+        result &= i.text
+
+
 proc initHtmlConvertDocx(src: string): HtmlConvertDocx =  # {{{1
     let self = HtmlConvertDocx()
     self.bookmarks_anchored = initTable[string, string]()
@@ -409,7 +415,7 @@ proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,  # {{{1
                   pre: bool): Option[string] =
-    let s = elem.text
+    let s = elem.inner_string
     if isNil(para):  # top level
         let
             style = common.Styles.get(self.output, "Quote")
@@ -762,7 +768,7 @@ proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
     var level = elem.name.strip(leading = true, trailing = false, {'h'})
-    var ret = elem.text
+    var ret = elem.inner_string
     info("structure: hed: " & ret)
     var
         style = common.Styles.get(self.output, "Heading " & level)
