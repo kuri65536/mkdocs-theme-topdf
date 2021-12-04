@@ -20,7 +20,7 @@ type
 
   Tag* = ref object of XmlElement
     children*: seq[Tag]
-    name*, string*, text*: string
+    name*, text*: string
     parent*: Tag
 
   ElementComment* = ref object of Tag
@@ -51,14 +51,16 @@ proc parse_html_conv*(name: string): string =  # {{{1
     case name:
     of "nbsp": return " "
     else:
-        echo("parse_html:entity: => " & name)
+        eror("parse_html:entity: ignored => " & name & " (not implemented)")
     return name
 
 
 proc register_data*(self: var seq[Tag], data: string): void =  # {{{1
     let tag = self[len(self) - 1]
-    tag.text &= data
-    # echo("parse_html:data: => " & tag.text)
+    var tmp = Tag(parent: tag, children: @[],
+                  name: "", text: data)
+    tag.children.add(tmp)
+    verb("parse_html:data: (" & tag.name & ") => " & tag.text)
 
 
 proc parse_html*(src: string): Tag =  # {{{1

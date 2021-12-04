@@ -297,7 +297,7 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     let classes = elem.attrs.getOrDefault("class", "").split(" ")
     block:
         if "doc-num" in classes:
-            self.header_set(elem.string)
+            self.header_set(elem.text)
             return nil
         if "toc" in classes:
             self.para = docx_toc.generate_toc(self.output, elem)
@@ -344,10 +344,10 @@ proc extract_element(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
                   ): Option[string] =
-        if elem.string == "\n":
+        if elem.text == "\n":
             if elem.parent.name in ["body", "div", ]:
                 return none(string)
-        var ret = elem.string
+        var ret = elem.text
         # [@D4-19-1] treat \n as empty characters.
         ret = re.replace(ret, re" *\n *", " ")
         debg(ret.strip())
@@ -575,7 +575,7 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
     block:
         dct = common.table_update_rowcolspan(dct)  # [@P13-1-11] cell-span
         if len(dct) < 1:
-            warn("table: did not have any data" & elem.string)
+            warn("table: did not have any data" & elem.text)
             return nil
 
     proc max_key[A, B](self: TableRef[A, B], fn: proc(src: A): int): int =
@@ -614,7 +614,7 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
             if x != 0 or y != 0:
                 if col + x >= n_col or row + y >= n_row:
                     raise newException(IndexError, "invalid colspan or " &
-                                       "rowspan in '" & elem.string)
+                                       "rowspan in '" & elem.text)
                 var cel2: TableCell
                 cel2 = tbl.rows[row + y].cells[col + x]
                 cell.merge(cel2)
@@ -778,7 +778,7 @@ proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
 
 proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
                        ): result_element =
-    var ret = elem.string
+    var ret = elem.text
     var style: string
     var para: Paragraph
     var n = 0
@@ -802,7 +802,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
         info(fmt"enter para...: lv{level}-{node.name}-{$len(node.children)}")
         if (node.name == "p" and
                 common.has_class(node, options.current.classes_ignore_p)):
-            return some("")
+            return none(string)
     let
         bkname = self.bookmark_from_elem(node)  # [@P8-2-14] mark for <p>
 
@@ -849,7 +849,7 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
             except common.ParseError:
                 discard
         if len(tag.name) < 1:
-                src = tag.string
+                src = tag.text
                 src = src.replace("\n", " ")
         elif tag.name in ["p", "div"]:
                 if isNil(para):
@@ -912,7 +912,7 @@ proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,  # {{{1
 
         if len(tag.name) < 1:
                 var src = ""
-                src = tag.string
+                src = tag.text
                 src = src.replace("\n", " ")
                 if len(src.strip()) > 0:
                     if isNil(para):
@@ -936,7 +936,7 @@ proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,  # {{{1
     var
         ret = ""
     if len(elem.name) < 1:  # NavigableString
-        ret = elem.string
+        ret = elem.text
         block:
             common.docx_add_bookmark(para, bkname, ret)  # [@P8-2-11] for li
             return ret
