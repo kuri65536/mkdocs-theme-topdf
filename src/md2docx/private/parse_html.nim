@@ -73,7 +73,14 @@ proc parse_html_conv*(name: string): string =  # {{{1
 
 
 proc register_data*(self: var seq[Tag], data: string): void =  # {{{1
+    if len(self) < 1:
+        return
     let tag = self[len(self) - 1]
+    if len(tag.children) > 0:
+        var prev = tag.children[^1]
+        if len(prev.name) < 1:
+            prev.text &= data
+            return
     var tmp = Tag(parent: tag, children: @[],
                   name: "", text: data)
     tag.children.add(tmp)
@@ -90,7 +97,7 @@ proc parse_html*(src: string): Tag =  # {{{1
     var attrs: seq[tuple[k, v: string]]
 
     var x: XmlParser
-    x.open(s, "tmp.html")
+    x.open(s, "tmp.html", {reportWhitespace})
     while true:
         x.next()
         var tmp: Tag = nil

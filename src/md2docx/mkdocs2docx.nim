@@ -701,7 +701,7 @@ proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  # {{{1
                 eror("extract:list: ignore direct child '" & tag.name & "'")
                 continue
         ret = self.extract_list_subs(nil, tag, list_info, blk)
-        verb("structure: li : " & (if len(ret) < 50: ret else: ret[0..50]))
+        verb("structure: li : " & (if len(ret) < 50: ret else: ret[0..49]))
     self.para = nil
     return nil
 
