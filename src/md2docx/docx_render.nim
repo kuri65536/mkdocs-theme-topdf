@@ -39,7 +39,7 @@ method render(self: DocxTable, s: Stream): void =  # {{{1
 
 method render(self: Paragraph, s: Stream): void =  # {{{1
     const tag = "w:p"
-    warn("save:render: para")
+    verb("save:render: para")
     s.write("<" & tag & ">")
     for item in self.items:
         item.render_runner(s)
@@ -84,7 +84,7 @@ proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
               "word/stylesWithEffects.xml",
               "word/theme/theme1.xml",
               "word/webSettings.xml", ]:
-        info("save:tmpl: read => " & i)
+        verb("save:tmpl: read => " & i)
         var tmp = ".docx_render.XXXXXX"
         var hnd = mkstemp(tmp)
         var f: File
@@ -109,7 +109,7 @@ proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
 
     for i, tup in tbl.pairs():
         var (f, fname) = tup
-        debg("save:tmpl: from template => " & i)
+        verb("save:tmpl: from template => " & i)
         f.setFilePos(0)
         z.addFile(i, newFileStream(tup.f))
         discard os.tryRemoveFile(fname)

@@ -6,10 +6,12 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
+
 import docx_common
 import docx_element
 import docx_runner
 
+import private/logging
 
 type
   WD_ALIGN_PARAGRAPH* = enum

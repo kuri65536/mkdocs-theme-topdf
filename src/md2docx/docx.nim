@@ -158,10 +158,10 @@ proc add_paragraph*(self: TableCell): Paragraph =  # {{{1
     self.items.add(cast[SectionItem](result))
 
 
-proc add_paragraph*(self: BlockItemContainer, src = "", style=""  # {{{1
+proc add_paragraph*(self: BlockItemContainer, text = "", style=""  # {{{1
                     ): Paragraph {.discardable.} =
     ## .. todo:: shimoda sytle
-    result = initParagraph(src)
+    result = initParagraph(text)
     self.items.add(cast[SectionItem](result))
 
 

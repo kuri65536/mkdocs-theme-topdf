@@ -661,7 +661,7 @@ proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
             var name: string
             name = docx_bookmark_normalize(name)
             mk.set(qn("w:name"), name)
-            debg("book: " & name)
+            warn("book: " & name)
         para.raw.append(mk)
 
     if len(name) > 0:

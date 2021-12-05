@@ -12,13 +12,12 @@ import docx_para
 
 
 type
-  Section* = ref object of RootObj
+  Section* = ref object of BlockItemContainerObj
     page_width*, page_height*,
       left_margin*, right_margin*,
       top_margin*, bottom_margin*,
       header_distance*: Length
     header*: Section
-    items*: seq[SectionItem]
 
 
 proc `paragraphs`*(self: Section): seq[Paragraph] =  # {{{1

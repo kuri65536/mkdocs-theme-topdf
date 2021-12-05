@@ -7,6 +7,7 @@ License::
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
 import streams
+import strutils
 
 import ../docx_runner
 import ../private/logging
@@ -17,7 +18,8 @@ method render_run(self: RunnerItem, s: Stream): void {.base.} =  # {{{1
 
 
 method render_run(self: Runner, s: Stream): void =  # {{{1
-    s.write("""<w:t xml:space="preserve">""" & self.text & "</w:t>")
+    let text = self.text.replace("<", "&lt;").replace(">", "&gt;")
+    s.write("""<w:t xml:space="preserve">""" & text & "</w:t>")
 
 
 proc render_runner*(self: RunnerItem, s: Stream): void =  # {{{1

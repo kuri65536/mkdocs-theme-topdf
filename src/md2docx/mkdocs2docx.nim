@@ -119,7 +119,7 @@ proc is_elem(self: result_element): bool =  # {{{1
     return not isNil(self.elem)
 
 
-proc inner_string(self: Tag): string =  # {{{1
+proc inner_text(self: Tag): string =  # {{{1
     result = ""
     for i in self.children:
         result &= i.text
@@ -261,6 +261,7 @@ proc extract_is_text(self: HtmlConvertDocx, elem: Tag  # {{{1
     let s = self.extract_text(elem)
     if s.isNone:
             return nil
+    debg("extract:is_text: " & s.get())
     return result_element(text: s.get())
 
 
@@ -356,7 +357,6 @@ proc extract_text(self: HtmlConvertDocx, elem: Tag  # {{{1
         var ret = elem.text
         # [@D4-19-1] treat \n as empty characters.
         ret = re.replace(ret, re" *\n *", " ")
-        debg(ret.strip())
         return some(ret)
 
 
@@ -415,7 +415,7 @@ proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,  # {{{1
                   pre: bool): Option[string] =
-    let s = elem.inner_string
+    let s = elem.inner_text
     if isNil(para):  # top level
         let
             style = common.Styles.get(self.output, "Quote")
@@ -700,6 +700,7 @@ proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  # {{{1
     for tag in elem.children:
         block:
             if tag.name != "li":
+                eror("extract:list: ignore direct child '" & tag.name & "'")
                 continue
         ret = self.extract_list_subs(nil, tag, list_info, blk)
         block:
@@ -768,8 +769,8 @@ proc extract_svg(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
     var level = elem.name.strip(leading = true, trailing = false, {'h'})
-    var ret = elem.inner_string
-    info("structure: hed: " & ret)
+    var ret = elem.inner_text
+    verb("structure: hed: " & ret)
     var
         style = common.Styles.get(self.output, "Heading " & level)
         para = self.output.add_paragraph("", style=style)
@@ -829,6 +830,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                     para = self.output.add_paragraph(ret)
                     self.para = para
                 else:
+                    debg("extract:para: add run: " & ret)
                     para.add_run(ret)
         elif res.is_elem():
             let tag = res.elem
@@ -893,22 +895,32 @@ proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,  # {{{1
         para = para
         ret = ""
     for tag in elem.children:
-        if tag.name in ["p", "div", "ul", "ol"]:
-            f = false
-            block:
-                break
-    if f:
+        var s = ""
+        if tag.name in ["ul", "ol"]:
+            self.extract_list(tag, tag.name == "ol", info.level + 1, blk)
+            para = nil
+            continue
+        elif len(tag.name) < 1:
+            s = tag.text
+            eror("extract:li: direct: " & s)
+        elif tag.name in ["p", "div"]:
+            s = tag.inner_text  ## .. todo:: shimoda: parse down to block...
+        else:
+            s = tag.inner_text  ## .. todo:: shimoda: parse down to block...
         if isNil(para):
-                para = blk.add_paragraph("", info.style)
+            para = blk.add_paragraph(s, info.style)
+        else:
+            para.add_run(s)
+        ret &= s
+    return ret
+    #[
+    if f:
         var
             bkname = self.bookmark_from_elem(elem)  # [@P8-2-11] mark for li-1
         block:
             return self.extract_as_run(para, elem, bkname)
     for tag in elem.children:
         if tag.name in ["ul", "ol"]:
-            block:
-                self.extract_list(tag, tag.name == "ol", info.level + 1, blk)
-            para = nil
             block:
                 continue
         elif tag.name in ["p", "div"]:
@@ -933,8 +945,7 @@ proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,  # {{{1
             except common.ParseError:
                 discard
             warn("can't parse complex html...%s" % tag.name)
-    block:
-        return ret
+    ]#
 
 
 proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,  # {{{1
