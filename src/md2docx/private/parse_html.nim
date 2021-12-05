@@ -48,12 +48,12 @@ proc parse_html_push*(self: var seq[Tag], name: string,  # {{{1
     if name in ["meta", "link"]:
         return nil
     debg("parse_html:loop: push tag(" & $len(self) & ") => " & name)
-    var tag = Tag(name: name)
+    var tag = Tag(name: name,
+                  attrs: initTable[string, string](), )
     if name in ["br"]:
         self[^1].children.add(tag)
         return tag
 
-    tag.attrs = initTable[string, string]()
     tag.children = @[]
     for tup in attrs:
         let (k, v) = tup
@@ -177,7 +177,60 @@ proc previous_siblings*(self: Tag): seq[Tag] =  # {{{1
     discard
 
 
+proc quote_attrs(src: Stream): Stream =  # {{{1
+    result = newStringStream()
+    type state_t = enum
+        outtag, tag_start, tag_name, tag_in,
+        tag_attr_name, tag_attr_name_end,
+        tag_attr_value_quoted, tag_attr_value_unquoted,
+        tag_closing,
+    var (st, buf) = (state_t.outtag, "")
+    while true:
+        if src.atEnd: break
+        var ch = src.readChar()
+        case st
+        of state_t.outtag:
+            if ch == '<': st = state_t.tag_start
+        of state_t.tag_start:
+            st = if ch == '/': state_t.tag_closing
+                 else:         state_t.tag_name
+        of state_t.tag_closing:
+            if ch == '>': st = state_t.outtag
+        of state_t.tag_name:
+            if ch == ' ': st = state_t.tag_in
+        of state_t.tag_in:
+            if ch == '>': st = state_t.outtag
+            if ch == ' ': discard
+            else:         st = state_t.tag_attr_name
+        of state_t.tag_attr_name:
+            if ch == '=': st = state_t.tag_attr_name_end
+        of state_t.tag_attr_name_end:
+            if ch == ' ':   discard
+            elif ch == '"': st = state_t.tag_attr_value_quoted
+            else:
+                result.write('"')
+                st = state_t.tag_attr_value_unquoted
+        of state_t.tag_attr_value_unquoted:
+            if ch == ' ':
+                result.write('"')
+                st = state_t.tag_in
+        of state_t.tag_attr_value_quoted:
+            if ch == '"':   st = state_t.tag_in
+        result.write(ch)
+    result.setPosition(0)
+    return result
+
+
 proc load*(src: string): void =  # {{{1
-    current_content = src
+    var strm = newStringStream(src)
+    let sout = quote_attrs(strm)
+    strm.close()
+    current_content = sout.readAll()
+    sout.close()
+    when true:
+        let dump = newFileStream("aaa.html", fmWrite)
+        dump.write(current_content)
+        dump.close()
+
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker
