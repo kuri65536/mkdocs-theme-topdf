@@ -30,12 +30,31 @@ var current_content: string
 var current_dom: Tag
 
 
+proc parse_html_push_closed*(self: var seq[Tag], name: string,  # {{{1
+                             attrs: seq[tuple[k, v: string]]
+                             ): Tag {.discardable.} =
+    debg("parse_html:loop: push closed tag(" & $len(self) & ") => " & name)
+    var tag = Tag(name: name,
+                  attrs: initTable[string, string](), )
+    for tup in attrs:
+        let (k, v) = tup
+        tag.attrs[k] = v
+    self[^1].children.add(tag)
+    return tag
+
+
 proc parse_html_push*(self: var seq[Tag], name: string,  # {{{1
                       attrs: seq[tuple[k, v: string]]): Tag {.discardable.} =
-    verb("parse_html:loop: push tag  => " & name)
-    var tag = Tag(name: name,
-                  attrs: initTable[string, string](),
-                  children: @[])
+    if name in ["meta", "link"]:
+        return nil
+    debg("parse_html:loop: push tag(" & $len(self) & ") => " & name)
+    var tag = Tag(name: name)
+    if name in ["br"]:
+        self[^1].children.add(tag)
+        return tag
+
+    tag.attrs = initTable[string, string]()
+    tag.children = @[]
     for tup in attrs:
         let (k, v) = tup
         tag.attrs[k] = v
@@ -86,7 +105,10 @@ proc parse_html*(src: string): Tag =  # {{{1
             tmp = parse_html_push(stack, tag_opened, attrs)
             attrs = @[]; tag_opened = ""
         of xmlElementEnd:
-            if len(stack) > 1:
+            if len(tag_opened) > 0:  # self closed tag.
+                tmp = parse_html_push_closed(stack, tag_opened, attrs)
+                attrs = @[]; tag_opened = ""
+            elif len(stack) > 1:
                 verb("parse_html:loop: close tag => " & stack[^1].name)
                 stack.del(len(stack) - 1)
         of xmlElementOpen:
