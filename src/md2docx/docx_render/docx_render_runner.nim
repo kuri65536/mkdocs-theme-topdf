@@ -54,7 +54,9 @@ proc render_runner*(self: RunnerItem, s: Stream): void =  # {{{1
     if len(self.r.children) < 1:
         return
     if self.r.name == "w:r":
+        discard #[
         s.write("""<w:rPr><w:rStyle w:val="Strong"/></w:rPr>""")
+        ]#
     self.render_run(s)
     s.write("</" & self.r.name & ">")
 

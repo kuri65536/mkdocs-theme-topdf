@@ -9,16 +9,26 @@ License::
 import streams
 
 import ../docx_para
+import ../private/logging
+import docx_render_common
 import docx_render_runner
 
 
-proc render_para*(self: Paragraph, s: Stream): void =  # {{{1
+method render*(self: Paragraph, s: Stream): void =  # {{{1
+    const tag = "w:p"
     s.write("\n")
-    s.write("""<w:p>""")
-    s.write("""<w:pPr><w:pStyle w:val="Title"/></w:pPr>""")
-    for i in self.items:
-        i.render_runner(s)
-    s.write("</w:p>")
+    verb("save:render: para")
+    s.write("<" & tag & ">")
+
+    if len(self.style) > 0:
+        verb("render:para: pStyle =>" & self.style)
+        s.write("<w:pPr><w:pStyle w:val=\"" & self.style & "\" /></w:pPr>")
+    else:
+        s.write("""<w:pPr><w:pStyle w:val="Normal" /></w:pPr>""")
+
+    for item in self.items:
+        item.render_runner(s)
+    s.write("</" & tag & ">")
 
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

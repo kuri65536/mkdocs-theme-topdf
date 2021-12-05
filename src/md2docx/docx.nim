@@ -121,23 +121,29 @@ proc `current_block`*(self: Document): BlockItemContainer =  # {{{1
     return cast[BlockItemContainer](self.sections[^1])
 
 
-proc add_paragraph*(self: Document, text = "", style = ""  # {{{1
+proc add_empty_paragraph*(self: Document, style = ""  # {{{1
+                          ): Paragraph {.discardable.} =
+    result = initParagraph()
+    if len(style) > 0:
+        result.style = style
+    self.sections[^1].items.add(result)
+
+
+proc add_paragraph*(self: Document, text, style: string  # {{{1
                     ): Paragraph {.discardable.} =
-    ## .. todo:: shimoda sytle
-    result = initParagraph(text)
+    result = initParagraph(text, style)
     self.sections[^1].items.add(result)
 
 
 proc add_paragraph*(self: TableCell): Paragraph =  # {{{1
-    ## .. todo:: shimoda text and sytle
-    result = initParagraph("")
+    result = initParagraph("", "Normal")
     self.items.add(cast[SectionItem](result))
 
 
-proc add_paragraph*(self: BlockItemContainer, text = "", style=""  # {{{1
+proc add_paragraph*(self: BlockItemContainer, text = "", style="Normal"  # {{{1
                     ): Paragraph {.discardable.} =
     ## .. todo:: shimoda sytle
-    result = initParagraph(text)
+    result = initParagraph(text, style)
     self.items.add(cast[SectionItem](result))
 
 

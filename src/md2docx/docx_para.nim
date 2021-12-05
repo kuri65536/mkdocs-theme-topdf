@@ -25,9 +25,16 @@ type
     items*: seq[RunnerItem]
 
 
-proc initParagraph*(text: string): Paragraph =  # {{{1
+proc initParagraph*(): Paragraph =  # {{{1
     ## .. todo:: shimoda sytle
     result = Paragraph(
+        style: "Normal", items: @[])
+
+
+proc initParagraph*(text, style: string): Paragraph =  # {{{1
+    ## .. todo:: shimoda sytle
+    result = Paragraph(
+        style: style,
         items: @[initRunnerItem(text)])
 
 
@@ -37,7 +44,7 @@ proc dump*(self: Paragraph): void =  # {{{1
 
 
 proc add_raw*(self: Paragraph, src: OxmlElement): void =  # {{{1
-    debg("manip:para: add_raw(" & $len(self.items) & ") => " & src.name)
+    verb("manip:para: add_raw(" & $len(self.items) & ") => " & src.name)
     self.items.add(RunnerItem(r: src))
 
 

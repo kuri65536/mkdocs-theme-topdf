@@ -17,6 +17,7 @@ import zip/zipfiles
 import docx
 import docx_common
 import docx_para
+import docx_render/docx_render_common
 import docx_render/docx_render_docx
 import docx_render/docx_render_runner
 import docx_render/docx_render_table
@@ -25,24 +26,11 @@ import docx_section
 import private/logging
 
 
-method render(self: SectionItem, s: Stream): void {.base.} =  # {{{1
-    eror("render: ???")
-
-
 method render(self: DocxTable, s: Stream): void =  # {{{1
     const tag = "w:tbl"
     s.write("<" & tag & ">")
     warn("save:render: " & tag)
     self.render_table(s)
-    s.write("</" & tag & ">")
-
-
-method render(self: Paragraph, s: Stream): void =  # {{{1
-    const tag = "w:p"
-    verb("save:render: para")
-    s.write("<" & tag & ">")
-    for item in self.items:
-        item.render_runner(s)
     s.write("</" & tag & ">")
 
 

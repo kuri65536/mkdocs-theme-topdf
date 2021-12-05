@@ -37,7 +37,7 @@ proc initTableCell*(): TableCell =  # {{{1
             ),
         ),
         items: @[cast[SectionItem](
-            initParagraph("")
+            initParagraph("", "Normal")
         )],
     )
 

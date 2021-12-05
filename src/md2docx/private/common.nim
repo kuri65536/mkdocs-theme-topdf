@@ -658,7 +658,7 @@ proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
     proc mark(tag, name: string): void =
         var mk = initOxmlElement("w:bookmark" & tag)
         mk.set(qn("w:id"), $id)
-        if len(name) > 0:
+        block:
             var name = name
             name = docx_bookmark_normalize(name)
             mk.set(qn("w:name"), name)
@@ -910,7 +910,7 @@ proc init_title(self: StylesObj, doc: Document, name: string): string =  # {{{1
 
 proc init*(offline: bool): void =  # {{{1
     for i in 1..10:
-        style_add_init("Heading " & $i, init_heading)
+        style_add_init("Heading" & $i, init_heading)
     style_add_init("Quote", init_quote)
     style_add_init("Image", init_image)
     style_add_init("List Number", init_list)

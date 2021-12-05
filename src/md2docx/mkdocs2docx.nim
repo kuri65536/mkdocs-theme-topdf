@@ -379,7 +379,7 @@ proc extract_br(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     block:
         if n < 1:
             if isNil(para):
-                para = self.output.add_paragraph()
+                para = self.output.add_paragraph("", "Normal")
             para.add_run("\n")
     return some(ret)
 
@@ -635,9 +635,8 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
 proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag  # {{{1
                        ): result_element =
     if isNil(self.para):
-            self.para = self.output.add_paragraph()
-    else:
-        self.para.add_run().add_break(WD_BREAK.PAGE)
+        self.para = self.output.add_empty_paragraph()
+    self.para.add_run().add_break(WD_BREAK.PAGE)
     return nil
 
 
@@ -768,9 +767,9 @@ proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
     var level = elem.name.strip(leading = true, trailing = false, {'h'})
     var ret = elem.inner_text
     verb("structure: hed: " & ret)
-    var
-        style = common.Styles.get(self.output, "Heading " & level)
-        para = self.output.add_paragraph("", style=style)
+    var style = common.Styles.get(self.output, "Heading" & level)
+    var para = self.output.add_empty_paragraph()
+    para.style = style
 
         # [@P8-2-13] add id for titles
     let html_id = elem.attrs.getOrDefault("id", "")
@@ -824,7 +823,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                     para = self.current_para_or_create(para)
                     common.docx_add_bookmark(para, bkname, ret)
                 elif isNil(para):
-                    para = self.output.add_paragraph(ret)
+                    para = self.output.add_paragraph(ret, "Normal")
                     self.para = para
                 else:
                     debg("extract:para: add run: " & ret)
@@ -1112,7 +1111,7 @@ proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,  # {{{1
     if not isNil(para):
             return para
     if len(style) < 1:
-        let para = self.output.add_paragraph()
+        let para = self.output.add_paragraph("", "Normal")
         self.para = para
         block:
             return para

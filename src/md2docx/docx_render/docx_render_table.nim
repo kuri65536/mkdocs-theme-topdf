@@ -12,6 +12,7 @@ import ../docx
 import ../docx_para
 import ../docx_table
 import ../private/logging
+import docx_render_common
 import docx_render_para
 
 
@@ -24,7 +25,7 @@ w:color="000000" w:space="0" w:val="single" w:sz="4"/></w:tcBorders></w:tcPr>
     """)
     for i in self.items:
         if i of Paragraph:
-            cast[Paragraph](i).render_para(s)
+            i.render(s)
         elif i of DocxTable:
             cast[DocxTable](i).render_table(s)
     s.write("</w:tc>")
