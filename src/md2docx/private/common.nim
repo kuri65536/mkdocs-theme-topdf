@@ -696,7 +696,7 @@ proc style_add_init(name: string, fn: fn_style): void =  # {{{1
 
 
 proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
-        if name in Styles.allocated:
+        if name in cls.allocated:
             return name
         if name not_in glb.funcs_style_init:
             if name in doc.styles:
@@ -706,7 +706,8 @@ proc get*(cls: StylesObj, doc: Document, name: string): string =  # {{{1
                 msg &= ", " & key
             raise newException(ParseError, msg)
         let fn = glb.funcs_style_init[name]
-        return fn(cls, doc, name)
+        result = fn(cls, doc, name)
+        Styles.allocated.add(name)
 
 
 proc init_heading(self: StylesObj, doc: Document, name: string  # {{{1
@@ -867,14 +868,19 @@ proc init_cell_header(self: StylesObj, doc: Document, name: string  # {{{1
     style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.PA_CENTER
     block:
         return name
-#[
 
-    @style("CellNormal")  # {{{1
-    def init_cell_normal(self, doc: Document, name: Text) -> Text:
+
+proc init_cell_normal(self: StylesObj, doc: Document, name: string  # {{{1
+                      ): string =
+    #[
         "[@P13-2-12] style for cells"
+    ]#
+    let
         style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
-        style.base_style = doc.styles["Normal"]
+    style.base_style = "Normal"
+    block:
         return name
+#[
 
     @style("Subtitle")  # {{{1
     def init_subtitle(self, doc: Document, name: Text) -> Text:
@@ -908,7 +914,7 @@ proc init*(offline: bool): void =  # {{{1
         style_add_init("List Bullet " & $i, init_list)
 
     style_add_init("CellHeader", init_cell_header)
-
+    style_add_init("CellNormal", init_cell_normal)
 #[
 
 
