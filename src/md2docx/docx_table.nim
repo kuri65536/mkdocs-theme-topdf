@@ -31,6 +31,11 @@ type
 
 proc initTableCell*(): TableCell =  # {{{1
     result = TableCell(
+        tc: TableCell2(
+            tcPr: TablePreferences(
+                tcW: TablePrefWidth()
+            ),
+        ),
         items: @[cast[SectionItem](
             initParagraph("")
         )],

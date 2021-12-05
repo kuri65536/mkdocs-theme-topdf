@@ -1036,7 +1036,7 @@ proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
         if n == 1:
             # style up <dt>subtitle<br>title</dt>
             var para: Paragraph; var lines: seq[string]
-            para = row.cells[0].paragraphs[-1]
+            para = row.cells[0].paragraphs[^1]
             lines = para.text.split("\n")
             if len(lines) < 2:
                 para.style = common.Styles.get(self.output, "Title")
@@ -1084,7 +1084,7 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
             for i, cell in row.cells:
                 let wid = if i < len(widths): widths[i] else: Length(0)
                 if wid < Length(1):
-                    info("cell({j},{i}): width set to auto")
+                    info(fmt"cell({j},{i}): width set to auto")
                     cell.tc.tcPr.tcW.typ = "auto"
                     cell.tc.tcPr.tcW.w = Length(0)
                     continue

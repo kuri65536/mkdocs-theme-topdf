@@ -892,18 +892,22 @@ proc init_cell_normal(self: StylesObj, doc: Document, name: string  # {{{1
         style.font.color.rgb = RGBColor(0, 0, 0)
         return name
 
-    @style("Title")  # {{{1
-    def init_title(self, doc: Document, name: Text) -> Text:
-        style = doc.styles[name]
-        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+]#
+proc init_title(self: StylesObj, doc: Document, name: string): string =  # {{{1
+    let style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+    style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.PA_CENTER
+    block:
         style.font.size = Pt(20)
-        style.font.color.rgb = RGBColor(0, 0, 0)
+    style.font.color.rgb = RGBColor(r: 0, g: 0, b: 0)
+    ##[ ..todo:: shimoda: implement...
         ppr = style.element.get_or_add_pPr()   # remove border
         seq = ppr.xpath("w:pBdr")
         if len(seq) > 0:
             ppr.remove(seq[0])
+    ]##
+    block:
         return name
-]#
+
 proc init*(offline: bool): void =  # {{{1
     for i in 1..10:
         style_add_init("Heading " & $i, init_heading)
@@ -917,6 +921,7 @@ proc init*(offline: bool): void =  # {{{1
 
     style_add_init("CellHeader", init_cell_header)
     style_add_init("CellNormal", init_cell_normal)
+    style_add_init("Title", init_title)
 #[
 
 

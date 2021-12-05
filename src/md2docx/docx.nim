@@ -146,13 +146,16 @@ proc merge*(a, b: TableCell): void =  # {{{1
 
 
 proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
-    result = DocxTable()
+    result = DocxTable(
+        preferences: initOxmlElement("w:tblPr")
+    )
     for i in 1..rows:
         var row = TableRow()
         for i in 1..cols:
             row.cells.add(initTableCell())
         result.rows.add(row)
     self.sections[^1].items.add(result)
+
 
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker
