@@ -261,7 +261,7 @@ proc extract_is_text(self: HtmlConvertDocx, elem: Tag  # {{{1
     let s = self.extract_text(elem)
     if s.isNone:
             return nil
-    debg("extract:is_text: " & s.get())
+    verb("extract:is_text: " & s.get())
     return result_element(text: s.get())
 
 
@@ -477,7 +477,7 @@ proc extract_sup(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
 
 proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                     ): Option[string] =
-    let instr = elem.text
+    let instr = elem.inner_text
     let url = elem.attrs.getOrDefault("href", "")
     block:
         if len(url) < 1:
@@ -703,8 +703,7 @@ proc extract_list(self: HtmlConvertDocx, elem: Tag, f_number: bool,  # {{{1
                 eror("extract:list: ignore direct child '" & tag.name & "'")
                 continue
         ret = self.extract_list_subs(nil, tag, list_info, blk)
-        block:
-            info("structure: li : " & (if len(ret) < 50: ret else: ret[0..50]))
+        verb("structure: li : " & (if len(ret) < 50: ret else: ret[0..50]))
     self.para = nil
     return nil
 
@@ -806,7 +805,7 @@ proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
 proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                   ): Option[string] =
     block:
-        info(fmt"enter para...: lv{level}-{node.name}-{$len(node.children)}")
+        info(fmt"extract:para: enter para...: lv{level}-{node.name}-{$len(node.children)}")
         if (node.name == "p" and
                 common.has_class(node, options.current.classes_ignore_p)):
             return none(string)
@@ -834,7 +833,6 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
                     para.add_run(ret)
         elif res.is_elem():
             let tag = res.elem
-            debg("ext_para: enter to child..." & tag.name)
             discard self.extract_para(tag, level + 1)
         else:
                 if para != self.para:
@@ -902,7 +900,7 @@ proc extract_list_subs(self: HtmlConvertDocx, para: Paragraph,  # {{{1
             continue
         elif len(tag.name) < 1:
             s = tag.text
-            eror("extract:li: direct: " & s)
+            verb("extract:li: direct: " & s)
         elif tag.name in ["p", "div"]:
             s = tag.inner_text  ## .. todo:: shimoda: parse down to block...
         else:
