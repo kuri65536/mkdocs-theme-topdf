@@ -640,7 +640,7 @@ proc docx_add_caption*(para: Paragraph, title, caption: string): void =  # {{{1
 
 
 proc docx_bookmark_normalize(name: string): string =  # {{{1
-    var name = ""
+    var name = name
     if len(name) > 32:
         # [@P8-1-1]
         var (pfx, sfx) = (name[0..32], name[32..^1])
@@ -658,11 +658,11 @@ proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
         var mk = initOxmlElement("w:bookmark" & tag)
         mk.set(qn("w:id"), $id)
         if len(name) > 0:
-            var name: string
+            var name = name
             name = docx_bookmark_normalize(name)
             mk.set(qn("w:name"), name)
-            warn("book: " & name)
-        para.raw.append(mk)
+            verb("book: " & name)
+        para.add_raw(mk)
 
     if len(name) > 0:
         mark("Start", name)
@@ -677,17 +677,18 @@ proc docx_add_bookmark*(para: Paragraph, name, instr: string  # {{{1
 proc docx_add_hlink*(para: Paragraph, instr, name: string,  # {{{1
                      ): void =
     let link = initOxmlElement("w:hyperlink")
-    para.raw.append(link)
+    para.add_raw(link)
     let run = initOxmlElement("w:r")
     link.append(run)
-    let text = initOxmlElement("w:t")
+    var text = initOxmlElement("w:t")
+    text.text = instr
     run.append(text)
 
-    var name: string
+    var name = name
     name = docx_bookmark_normalize(name)
     link.set(qn("w:anchor"), name)
-    debg("link: " & name)
-    text.text = instr
+    debg("manip:para:link: " & name & ":" & instr)
+    para.dump()
 
 
 proc style_add_init(name: string, fn: fn_style): void =  # {{{1

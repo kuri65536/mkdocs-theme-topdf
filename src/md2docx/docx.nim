@@ -61,10 +61,6 @@ type
     styles*: DocxStyles
 
 
-proc qn*(src: string): string =  # {{{1
-    return src
-
-
 proc initDocument*(): Document =  # {{{1
     var styles = initDocxStyles()
     result = Document(
@@ -86,32 +82,12 @@ proc initDocument*(fname: string): Document =  # {{{1
     result = Document()
 
 
-proc append*(self: OxmlElement, src: Element): void =  # {{{1
-    discard
-
-
-proc append*(self: ptr OxmlElement, src: OxmlElement): void =  # {{{1
-    discard
-
-
-proc append*(self, src: OxmlElement): void =  # {{{1
-    discard
-
-
-proc set*(self: OxmlElement, name, val: string): void =  # {{{1
-    discard
-
-
 proc Mm*(src: float): Length =  # {{{1
     discard
 
 
 proc Mm*(src: int): Length =  # {{{1
     discard
-
-
-proc add_r*(self: OxmlElement): OxmlElement =  # {{{1
-    result = OxmlElement()
 
 
 proc get_or_add_tcPr*(self: OxmlElement): OxmlElement =  # {{{1
@@ -125,7 +101,7 @@ proc text*(self: Paragraph): string =  # {{{1
 proc add_run*(self: Paragraph, src = "", style=""  # {{{1
               ): Runner {.discardable.} =
     ## .. todo:: shimoda: add sytle
-    warn("docx:man:run: add " & src)
+    verb("manip:para: add_run " & src)
     result = initRunner(src)
     self.items.add(result)
 

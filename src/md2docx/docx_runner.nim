@@ -14,10 +14,10 @@ import docx_element
 type
   RunnerItem* = ref RunnerItemObj
   RunnerItemObj* = object of RootObj
+    r*: OxmlElement
 
   Runner* = ref RunnerObj
   RunnerObj* = object of RunnerItemObj
-    r*: OxmlElement
 
 
 proc `text`*(self: Runner): string =  # {{{1
@@ -30,7 +30,7 @@ proc `text`*(self: Runner): string =  # {{{1
 
 proc initRunner*(text: string): Runner =  # {{{1
     let t = OxmlElement(name: "w:t", text: text)
-    let r = OxmlElement(children: @[t])
+    let r = OxmlElement(name: "w:r", children: @[t])
     result = Runner(r: r)
 
 

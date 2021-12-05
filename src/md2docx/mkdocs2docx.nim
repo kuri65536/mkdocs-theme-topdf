@@ -183,11 +183,9 @@ proc header_init(self: HtmlConvertDocx): void =  # {{{1
     let
         v = "urn:schemas-microsoft-com:vml"
         w10 = "urn:schemas-microsoft-com:office:word"
-    let
-        r = para.raw.add_r()
     let pict = initOxmlElement("w:pict")
     block:
-        r.append(pict)
+        para.add_raw(pict)
     let rect = etree.initElement(fmt"{v}rect")
     block:
         pict.append(rect)
@@ -1043,7 +1041,7 @@ proc style_table_stamps(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
             if len(lines) < 2:
                 para.style = common.Styles.get(self.output, "Title")
                 return true
-            para.text = lines[0]
+            para.add_run(lines[0])
             para = row.cells[0].add_paragraph(lines[1..^1].join("\n"))
 
         for n, para in row.cells[0].paragraphs:

@@ -21,8 +21,6 @@ type
   Paragraph* = ref ParagraphObj
   ParagraphObj* = object of SectionItemObj
     alignment*: WD_ALIGN_PARAGRAPH
-    raw*: OxmlElement
-    text*: string
     style*: string
     items*: seq[RunnerItem]
 
@@ -31,6 +29,16 @@ proc initParagraph*(text: string): Paragraph =  # {{{1
     ## .. todo:: shimoda sytle
     result = Paragraph(
         items: @[initRunnerItem(text)])
+
+
+proc dump*(self: Paragraph): void =  # {{{1
+    for n, i in self.items:
+        debg("dump:para: dump(" & $n & ") => " & i.r.name)
+
+
+proc add_raw*(self: Paragraph, src: OxmlElement): void =  # {{{1
+    debg("manip:para: add_raw(" & $len(self.items) & ") => " & src.name)
+    self.items.add(RunnerItem(r: src))
 
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

@@ -13,6 +13,7 @@ import docx_render_runner
 
 
 proc render_para*(self: Paragraph, s: Stream): void =  # {{{1
+    s.write("\n")
     s.write("""<w:p>""")
     s.write("""<w:pPr><w:pStyle w:val="Title"/></w:pPr>""")
     for i in self.items:
