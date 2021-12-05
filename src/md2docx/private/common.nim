@@ -855,13 +855,19 @@ proc init_list(self: StylesObj, doc: Document, name: string): string =  # {{{1
         style.font.size = Pt(8)
         return name
 
-    @style("CellHeader")  # {{{1
-    def init_cell_header(self, doc: Document, name: Text) -> Text:
+]#
+proc init_cell_header(self: StylesObj, doc: Document, name: string  # {{{1
+                      ): string =
+    #[
         "[@P13-2-11] style for header cells"
+    ]#
+    let
         style = doc.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
-        style.base_style = doc.styles["Normal"]
-        style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    style.base_style = "Normal"
+    style.paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.PA_CENTER
+    block:
         return name
+#[
 
     @style("CellNormal")  # {{{1
     def init_cell_normal(self, doc: Document, name: Text) -> Text:
@@ -901,6 +907,7 @@ proc init*(offline: bool): void =  # {{{1
         style_add_init("List Number " & $i, init_list)
         style_add_init("List Bullet " & $i, init_list)
 
+    style_add_init("CellHeader", init_cell_header)
 
 #[
 
