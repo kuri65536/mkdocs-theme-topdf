@@ -7,6 +7,7 @@ License::
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
 import streams
+import strutils
 import parsexml
 import tables
 
@@ -50,10 +51,6 @@ proc parse_html_push*(self: var seq[Tag], name: string,  # {{{1
     debg("parse_html:loop: push tag(" & $len(self) & ") => " & name)
     var tag = Tag(name: name,
                   attrs: initTable[string, string](), )
-    if name in ["br"]:
-        self[^1].children.add(tag)
-        return tag
-
     tag.children = @[]
     for tup in attrs:
         let (k, v) = tup
@@ -199,9 +196,10 @@ proc quote_attrs(src: Stream): Stream =  # {{{1
         of state_t.tag_name:
             if ch == ' ': st = state_t.tag_in
         of state_t.tag_in:
-            if ch == '>': st = state_t.outtag
             if ch == ' ': discard
-            else:         st = state_t.tag_attr_name
+            elif ch == '>': st = state_t.outtag
+            elif ch == '/': st = state_t.tag_closing
+            else:           st = state_t.tag_attr_name
         of state_t.tag_attr_name:
             if ch == '=': st = state_t.tag_attr_name_end
         of state_t.tag_attr_name_end:
@@ -214,6 +212,9 @@ proc quote_attrs(src: Stream): Stream =  # {{{1
             if ch == ' ':
                 result.write('"')
                 st = state_t.tag_in
+            elif ch == '>':
+                result.write('"')
+                st = state_t.outtag
         of state_t.tag_attr_value_quoted:
             if ch == '"':   st = state_t.tag_in
         result.write(ch)
@@ -221,12 +222,32 @@ proc quote_attrs(src: Stream): Stream =  # {{{1
     return result
 
 
+proc fix_br(src: Stream): Stream =  # {{{1
+    ##[ nim's parsexml treat `<br />` to `<br></br>`.
+        but `<br>` cannot be handled as single tag.
+    ]##
+    result = newStringStream()
+    while true:
+        if src.atEnd: break
+        var line = src.readLine()
+        if line.contains("<br>"):
+            line = line.replace("<br>", "<br />")
+        result.write(line & "\n")
+    result.setPosition(0)
+    return result
+
+
 proc load*(src: string): void =  # {{{1
-    var strm = newStringStream(src)
-    let sout = quote_attrs(strm)
-    strm.close()
-    current_content = sout.readAll()
-    sout.close()
+    var strm1 = cast[Stream](newStringStream(src))
+    var strm2 = quote_attrs(strm1)
+    strm1.close()
+
+    strm1 = fix_br(strm2)
+    strm2.close()
+
+    current_content = strm1.readAll()
+    strm1.close()
+
     when true:
         let dump = newFileStream("aaa.html", fmWrite)
         dump.write(current_content)
