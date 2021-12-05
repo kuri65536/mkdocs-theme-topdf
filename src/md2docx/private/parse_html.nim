@@ -34,7 +34,7 @@ var current_dom: Tag
 proc parse_html_push_closed*(self: var seq[Tag], name: string,  # {{{1
                              attrs: seq[tuple[k, v: string]]
                              ): Tag {.discardable.} =
-    debg("parse_html:loop: push closed tag(" & $len(self) & ") => " & name)
+    verb("parse_html:loop: push closed tag(" & $len(self) & ") => " & name)
     var tag = Tag(name: name,
                   attrs: initTable[string, string](), )
     for tup in attrs:
@@ -48,7 +48,7 @@ proc parse_html_push*(self: var seq[Tag], name: string,  # {{{1
                       attrs: seq[tuple[k, v: string]]): Tag {.discardable.} =
     if name in ["meta", "link"]:
         return nil
-    debg("parse_html:loop: push tag(" & $len(self) & ") => " & name)
+    verb("parse_html:loop: push tag(" & $len(self) & ") => " & name)
     var tag = Tag(name: name,
                   attrs: initTable[string, string](), )
     tag.children = @[]
@@ -58,6 +58,7 @@ proc parse_html_push*(self: var seq[Tag], name: string,  # {{{1
     if len(self) > 0:
         verb("parse_html:loop: push tag  => (lv." & $len(self) & ")=(" &
              $len(self[^1].children) & ")")
+        tag.parent = self[^1]
         self[^1].children.add(tag)
     self.add(tag)
     return tag
@@ -167,11 +168,21 @@ proc parents*(self: Tag): seq[Tag] =  # {{{1
 
 
 proc next_siblings*(self: Tag): seq[Tag] =  # {{{1
-    discard
+    result = @[]
+    var f = false
+    for i in self.parent.children:
+        if i == self:
+            f = true; continue
+        if f:
+            result.add(i)
 
 
 proc previous_siblings*(self: Tag): seq[Tag] =  # {{{1
-    discard
+    result = @[]
+    for i in self.parent.children:
+        if i == self:
+            return
+        result.add(i)
 
 
 proc quote_attrs(src: Stream): Stream =  # {{{1

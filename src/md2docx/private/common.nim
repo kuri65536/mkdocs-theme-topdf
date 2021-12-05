@@ -197,9 +197,10 @@ proc count_tags_around_image*(src: Tag): int =  # {{{1
 
 
 proc classes_from_prev_sibling*(target: Tag): seq[string] =  # {{{1
-    for elem in target.previous_siblings:
+    for elem in reversed(target.previous_siblings):
         if len(elem.name) < 1:
             continue
+        verb("prev_sibling: " & $elem.attrs)
         var ret = elem.attrs.getOrDefault("class", "").split(" ")
         return ret
     return @[]
