@@ -82,14 +82,6 @@ proc initDocument*(fname: string): Document =  # {{{1
     result = Document()
 
 
-proc Mm*(src: float): Length =  # {{{1
-    discard
-
-
-proc Mm*(src: int): Length =  # {{{1
-    discard
-
-
 proc get_or_add_tcPr*(self: OxmlElement): OxmlElement =  # {{{1
     result = OxmlElement()
 

@@ -32,7 +32,16 @@ type
     ]##
 
 
+proc Mm*(src: float): Length =  # {{{1
+    discard
+
+
+proc Mm*(src: int): Length =  # {{{1
+    discard
+
+
 proc Pt*(n: int): Length =  # {{{1
     return Length(n)
+
 
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker
