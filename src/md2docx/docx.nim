@@ -126,7 +126,7 @@ proc add_run*(self: Paragraph, src = "", style=""  # {{{1
               ): Runner {.discardable.} =
     ## .. todo:: shimoda: add sytle
     warn("docx:man:run: add " & src)
-    result = Runner(text: src)
+    result = initRunner(src)
     self.items.add(result)
 
 

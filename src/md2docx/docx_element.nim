@@ -6,10 +6,14 @@ License::
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
+import tables
+
 
 type
   OxmlElement* = ref object of RootObj
     name*, text*: string
+    attrs*: Table[string, string]
+    children*: seq[OxmlElement]
 
 
 proc initOxmlElement*(name: string): OxmlElement =  # {{{1

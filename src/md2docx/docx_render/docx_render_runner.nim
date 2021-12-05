@@ -8,9 +8,23 @@ License::
 ]##
 import streams
 import strutils
+import tables
 
+import ../docx_element
 import ../docx_runner
 import ../private/logging
+
+
+proc to_string(self: OxmlElement): string =  # {{{1
+    result = "<" & self.name
+    for k, v in self.attrs.pairs():
+        result &= " " & k & "=\"" & v & "\""
+    if len(self.children) < 1:
+        return result & " />"
+    result &= ">"
+    for i in self.children:
+        result &= i.to_string()
+    return result & "</" & self.name & ">"
 
 
 method render_run(self: RunnerItem, s: Stream): void {.base.} =  # {{{1
@@ -18,8 +32,12 @@ method render_run(self: RunnerItem, s: Stream): void {.base.} =  # {{{1
 
 
 method render_run(self: Runner, s: Stream): void =  # {{{1
-    let text = self.text.replace("<", "&lt;").replace(">", "&gt;")
-    s.write("""<w:t xml:space="preserve">""" & text & "</w:t>")
+    for i in self.r.children:
+        if i.name == "w:t":
+            let text = self.text.replace("<", "&lt;").replace(">", "&gt;")
+            s.write("""<w:t xml:space="preserve">""" & text & "</w:t>")
+        else:
+            s.write(i.to_string())
 
 
 proc render_runner*(self: RunnerItem, s: Stream): void =  # {{{1
