@@ -871,7 +871,7 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
         if isNil(para):
                 para = cell.add_paragraph()
         block:
-            info("table: %s" % src)  # (row, col, src))
+            info("table: " & src)  # (row, col, src))
             para.add_run(src)
 
         # [@P13-2-13] style for cells
@@ -1075,7 +1075,7 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
         if len(widths) < 1:
             warn("width did not specified by class")
             return false
-        warn("cell width set by %s" % cls)
+        warn("cell width set by " & cls)
         if Mm(0) in widths:
             tbl.autofit = true
             tbl.allow_autofit = true
@@ -1087,7 +1087,7 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
                     cell.tc.tcPr.tcW.typ = "auto"
                     cell.tc.tcPr.tcW.w = Length(0)
                     continue
-                info("cell({j},{i}): width set to {wid}")
+                info(fmt"cell({j},{i}): width set to {$int(wid)}")
                 cell.width = wid
     return true
 

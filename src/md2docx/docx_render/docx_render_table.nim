@@ -9,6 +9,7 @@ License::
 import streams
 
 import ../docx
+import ../docx_common
 import ../docx_para
 import ../docx_table
 import ../private/logging
@@ -20,9 +21,16 @@ proc render_table*(self: DocxTable, s: Stream): void
 
 
 proc render_cell*(self: TableCell, s: Stream): void =  # {{{1
-    s.write("""<w:tc><w:tcPr><w:tcW w:type="dxa" w:w="1134"/><w:tcBorders><w:tl2br
-w:color="000000" w:space="0" w:val="single" w:sz="4"/></w:tcBorders></w:tcPr>
-    """)
+    s.write("<w:tc>")
+    var pr = ""
+    if self.width != Length.not_set:
+        debg("render:cell:width => " & $int(self.width))
+        pr &= "<w:tcW w:type=\"dxa\" w:w=\"" & $int(self.width) & "\"/>"
+    when true:
+        pr &= """<w:tcBorders><w:tl2br w:color="000000" w:space="0"
+                   w:val="single" w:sz="4"/></w:tcBorders>"""
+    if len(pr) > 0:
+        s.write("<w:tcPr>" & pr & "</w:tcPr>")
     for i in self.items:
         if i of Paragraph:
             i.render(s)

@@ -9,7 +9,8 @@ License::
 
 
 type
-  Length* = enum
+  Length* = enum  # dxa (1/1440 inch)
+    not_set = -200000
     zero = 0
     low = 1
     max = 100000
@@ -33,11 +34,13 @@ type
 
 
 proc Mm*(src: float): Length =  # {{{1
-    discard
+    ##[ - 25.4mm = 1inch  -> 1440 dxa
+    ]##
+    return Length(int(1440.0 * src / 25.4 + 0.5))
 
 
 proc Mm*(src: int): Length =  # {{{1
-    discard
+    return Mm(float(src))
 
 
 proc Pt*(n: int): Length =  # {{{1

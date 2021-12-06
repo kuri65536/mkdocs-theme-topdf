@@ -31,6 +31,7 @@ type
 
 proc initTableCell*(): TableCell =  # {{{1
     result = TableCell(
+        width: Length.not_set,
         tc: TableCell2(
             tcPr: TablePreferences(
                 tcW: TablePrefWidth()
