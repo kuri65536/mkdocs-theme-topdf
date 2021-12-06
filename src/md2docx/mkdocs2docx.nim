@@ -63,7 +63,7 @@ proc bookmark_from_db(self: HtmlConvertDocx, s_href: string,
                       elem: Tag): bool
 proc bookmark_from_elem(self: HtmlConvertDocx, elem: Tag): string
 proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,
-                            style = ""): Paragraph
+                            ): Paragraph
 proc extract_anchor(self: HtmlConvertDocx, elem: Tag, para: Paragraph
                     ): Option[string] {.discardable.}
 proc extract_as_run(self: HtmlConvertDocx, para: Paragraph, elem: Tag,
@@ -407,7 +407,7 @@ proc extract_em(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     let
         para = self.current_para_or_create(para)
     block:
-        para.add_run(elem.text, style="Emphasis")
+        para.add_run(elem.inner_text, style="Emphasis")
     return none(string)
 
 
@@ -434,7 +434,7 @@ proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,  # {{{1
 
 proc extract_strong(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
                     ): Option[string] =
-    let s = elem.text
+    let s = elem.inner_text
     let
         style = common.Styles.get(self.output, "Strong")
         para = self.current_para_or_create(para)
@@ -636,7 +636,7 @@ proc extract_pagebreak(self: HtmlConvertDocx, elem: Tag  # {{{1
                        ): result_element =
     if isNil(self.para):
         self.para = self.output.add_empty_paragraph()
-    self.para.add_run().add_break(WD_BREAK.PAGE)
+    self.para.add_break(WD_BREAK.PAGE)
     return nil
 
 
@@ -781,19 +781,19 @@ proc extract_title(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
 
 proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
                        ): result_element =
-    var ret = elem.text
+    var ret = elem.inner_text
     var style: string
-    var para: Paragraph
-    var n = 0
-    info("structure: pre: " & ret.splitlines()[0])
+    var lines = ret.split('\n')
+    info("structure: pre: " & lines[0])
     block:
         style = common.Styles.get(self.output, "Quote")
         # [@D4-21-1] parse lines and add runs and breaks for them.
-        for line in ret.split('\n'):
-            if n == 0:
-                para = self.output.add_paragraph("", style=style)
-            para.add_run(line).add_break()
-            n += 1
+    var para = self.output.add_paragraph(lines[0], style=style)
+    if len(lines) > 1:
+        for line in lines[1..^1]:
+            para.add_break()
+            para.add_run(line)
+    block:
         self.para = nil
         common.Styles.quote(para)
     return nil
@@ -1107,15 +1107,10 @@ proc style_list(self: HtmlConvertDocx, f_number: bool, level: int  # {{{1
 
 
 proc current_para_or_create(self: HtmlConvertDocx, para: Paragraph,  # {{{1
-                            style = ""): Paragraph =
+                            ): Paragraph =
     if not isNil(para):
             return para
-    if len(style) < 1:
-        let para = self.output.add_paragraph("", "Normal")
-        self.para = para
-        block:
-            return para
-    let para = self.output.add_paragraph("", style)
+    let para = self.output.add_empty_paragraph("Normal")
     block:
         self.para = para
         return para

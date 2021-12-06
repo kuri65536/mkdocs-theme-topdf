@@ -92,15 +92,15 @@ proc text*(self: Paragraph): string =  # {{{1
 
 proc add_run*(self: Paragraph, src = "", style=""  # {{{1
               ): Runner {.discardable.} =
-    ## .. todo:: shimoda: add sytle
     verb("manip:para: add_run " & src)
-    result = initRunner(src)
+    result = initRunner(src, style)
     self.items.add(result)
 
 
-proc add_break*(self: Runner, typ = WD_BREAK.LINE  # {{{1
-                    ): void =
-    discard
+proc add_break*(self: Paragraph, typ = WD_BREAK.LINE  # {{{1
+                ): Runner {.discardable.} =
+    result = initRunner("")
+    self.items.add(result)
 
 
 proc add_picture*(self: Runner, fname: string,  # {{{1

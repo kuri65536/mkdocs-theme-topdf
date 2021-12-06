@@ -18,6 +18,7 @@ type
 
   Runner* = ref RunnerObj
   RunnerObj* = object of RunnerItemObj
+    style*: string
 
 
 proc `text`*(self: Runner): string =  # {{{1
@@ -28,10 +29,10 @@ proc `text`*(self: Runner): string =  # {{{1
     return result
 
 
-proc initRunner*(text: string): Runner =  # {{{1
+proc initRunner*(text: string, style = ""): Runner =  # {{{1
     let t = OxmlElement(name: "w:t", text: text)
     let r = OxmlElement(name: "w:r", children: @[t])
-    result = Runner(r: r)
+    result = Runner(r: r, style: style)
 
 
 proc initRunnerItem*(text: string): RunnerItem =  # {{{1
