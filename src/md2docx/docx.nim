@@ -21,10 +21,6 @@ import docx_table
 
 
 type
-  WD_TABLE_ALIGNMENT* = enum
-    LEFT = 0
-    CENTER = 1
-
   WD_BREAK* = enum
     LINE = 0
     PAGE = 1
@@ -34,24 +30,6 @@ type
 
   DocxPicture* = ref object of OxmlElement
     discard
-
-  TableColumn* = ref object of RootObj
-    cells*: seq[TableCell]
-    width*: Length
-
-  TableRow* = ref object of RootObj
-    cells*: seq[TableCell]
-    height*: Length
-
-  DocxTable* = ref DocxTableObj
-  DocxTableObj* = object of SectionItemObj
-    rows*: seq[TableRow]
-    columns*: seq[TableColumn]
-    autofit*: bool
-    allow_autofit*: bool
-    style*: string
-    alignment*: WD_TABLE_ALIGNMENT
-    preferences*: OxmlElement
 
   Document* = ref object of RootObj
     paragraphs*: seq[Paragraph]

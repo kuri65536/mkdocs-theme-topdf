@@ -19,6 +19,7 @@ import ./docx_element
 import ./docx_para
 import ./docx_render
 import ./docx_section
+import ./docx_styles
 import ./docx_svg
 import ./docx_table
 import ./docx_toc

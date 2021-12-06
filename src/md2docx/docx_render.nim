@@ -23,6 +23,7 @@ import docx_render/docx_render_runner
 import docx_render/docx_render_table
 import docx_runner
 import docx_section
+import docx_table
 import private/logging
 
 

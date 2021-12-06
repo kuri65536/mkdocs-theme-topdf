@@ -21,6 +21,10 @@ type
     PA_CENTER = 1
     PA_BOTH = 3
 
+  WD_TABLE_ALIGNMENT* = enum
+    LEFT = 0
+    CENTER = 1
+
   RGBColor* = ref object of RootObj
     r*, g*, b*: int
 
