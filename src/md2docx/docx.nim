@@ -131,7 +131,7 @@ proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
         preferences: initOxmlElement("w:tblPr")
     )
     for i in 1..rows:
-        var row = TableRow()
+        var row = TableRow(height: Length.not_set)
         for i in 1..cols:
             row.cells.add(initTableCell())
         result.rows.add(row)

@@ -47,4 +47,12 @@ proc Pt*(n: int): Length =  # {{{1
     return Length(n)
 
 
+proc is_percent*(self: Length): bool =  # {{{1
+    return (int(self) and 0x1000_0000) != 0
+
+
+proc percent_to_int*(self: Length): int =  # {{{1
+    return int(self) and 0x0FFF_FFFF
+
+
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker

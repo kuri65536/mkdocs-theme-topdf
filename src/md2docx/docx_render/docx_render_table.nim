@@ -22,10 +22,10 @@ proc render_table*(self: DocxTable, s: Stream): void
 
 proc render_cell*(self: TableCell, s: Stream): void =  # {{{1
     s.write("<w:tc>")
-    var pr = ""
-    if self.width != Length.not_set:
-        debg("render:cell:width => " & $int(self.width))
-        pr &= "<w:tcW w:type=\"dxa\" w:w=\"" & $int(self.width) & "\"/>"
+    var pr = self.width.render_length("w", true)
+    if len(pr) > 0:
+        debg("render:cell:width => " & pr)
+        pr = "<w:tcW " & pr & "/>"
     when true:
         pr &= """<w:tcBorders><w:tl2br w:color="000000" w:space="0"
                    w:val="single" w:sz="4"/></w:tcBorders>"""
@@ -55,7 +55,9 @@ proc render_table*(self: DocxTable, s: Stream): void =  # {{{1
 
     for r, row in self.rows:
         s.write("<w:tr>")
-        s.write("""<w:trPr><w:trHeight w:val="1134"/></w:trPr>""")
+        var h = row.height.render_length("val", false)
+        if len(h) > 0:
+            s.write("<w:trPr><w:trHeight " & h & "/></w:trPr>")
         for c, cell in row.cells:
             eror("render:table: cell(" & $len(cell.items))
             assert len(cell.items) > 0, "at table (" & $r & "," & $c & ")"
