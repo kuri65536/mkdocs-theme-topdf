@@ -204,95 +204,6 @@ proc classes_from_prev_sibling*(target: Tag): seq[string] =  # {{{1
         var ret = elem.attrs.getOrDefault("class", "").split(" ")
         return ret
     return @[]
-
-
-proc table_cellspan*(e: Tag, keys: varargs[string]): seq[int] =  # {{{1
-    var ret: seq[int] = @[]
-    for key in keys:
-        if e.has_attr(key):
-            let n = parseInt(e.attrs.getOrDefault(key, "0"))
-            ret.add(n - 1)
-        else:
-            ret.add(0)
-    return ret
-
-
-iterator sorted_by_keys*[A, B](self: TableRef[A, B],  # {{{1
-                               fn: proc(a, b: A): int): tuple[key: A, val: B] =
-    assert isNil(self) == false
-    var keys: seq[A]
-    for k in self.keys():
-        keys.add(k)
-    for k in sorted(keys, fn):
-        yield (k, self[k])
-
-
-proc table_update_rowcolspan*(dct: TableRef[tuple[r, c: int], Tag]  # {{{1
-                              ): TableRef[tuple[r, c: int], Tag] =
-    ## [@P13-1-13] alignment cell potisions
-    proc cmp_rc(a, b: tuple[r, c: int]): int =
-        if a.r > b.r: return 1
-        if a.r < b.r: return -1
-        if a.c > b.c: return 1
-        if a.c < b.c: return -1
-        return 0
-
-    proc update(self: var seq[int], src: seq[int]): void =
-        for i in src:
-            self.add(i)
-
-    # echo("rcspan: enter1")
-    var
-        rowspans: seq[seq[int]]
-        ret = newTable[tuple[r, c: int], Tag]()
-        (r, c) = (-1, 0)
-    # echo("rcspan: enter2")
-    for tup, elem in sorted_by_keys(dct, cmp_rc):
-        # echo("rcspan: enter3")
-        let (row, col) = tup
-        if r != row:
-            rowspans = if len(rowspans) > 0: rowspans[1..^1] else: @[@[0]]
-        (r, c) = (row, col)
-        if len(rowspans) < 1:
-            c = 1
-        else:
-            while c in rowspans[0]:
-                c += 1
-        var x, y: int
-        (x, y) = table_cellspan(elem, "colspan", "rowspan")
-        var cols = @[c]
-        ret[(r, c)] = elem
-        if x != 0:
-            for i in 1..x:
-              if cols.contains(i):
-                cols.add(c + i)
-        if len(rowspans) < 1:
-            rowspans = @[cols]
-        else:
-            rowspans[0].update(cols)
-        if y != 0:
-            for i in 1..y:
-                if i >= len(rowspans):
-                    rowspans.add(cols)
-                else:
-                    rowspans[i].update(cols)
-    #[
-    """while True:  # dump cells information
-        r, msg = -1, ""
-        for (row, col), elem in sorted(ret.items(), key=lambda x: x[0]):
-            x, y = table_cellspan(elem, "colspan", "rowspan")
-            if r != row:
-                warn("common.table:" + msg[1:])
-                msg, r = "", row
-            msg += ",(%d,%d" % (row, col)
-            if x > 0 or y > 0:
-                msg += "-%d,%d" % (x, y)
-            msg += ")"
-        if len(msg):
-            warn("common.table:" + msg[1:])
-        break"""
-    ]#
-    return ret
 #[
 
 
@@ -693,7 +604,7 @@ proc docx_add_hlink*(para: Paragraph, instr, name: string,  # {{{1
 
 
 proc style_add_init(name: string, fn: fn_style): void =  # {{{1
-    debg("sytle:add:init: " & name)
+    verb("sytle:add:init: " & name)
     glb.funcs_style_init[name] = fn
 
 

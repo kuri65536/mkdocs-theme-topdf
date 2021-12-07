@@ -53,11 +53,12 @@ proc render_table*(self: DocxTable, s: Stream): void =  # {{{1
         s.write("""<w:gridCol w:w="2409"/>""")
     s.write("</w:tblGrid>")
 
-    for row in self.rows:
+    for r, row in self.rows:
         s.write("<w:tr>")
         s.write("""<w:trPr><w:trHeight w:val="1134"/></w:trPr>""")
-        for cell in row.cells:
+        for c, cell in row.cells:
             eror("render:table: cell(" & $len(cell.items))
+            assert len(cell.items) > 0, "at table (" & $r & "," & $c & ")"
             cell.render_cell(s)
         s.write("</w:tr>")
 

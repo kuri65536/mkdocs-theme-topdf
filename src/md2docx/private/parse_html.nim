@@ -31,6 +31,12 @@ var current_content: string
 var current_dom: Tag
 
 
+proc inner_text*(self: Tag): string =  # {{{1
+    result = ""
+    for i in self.children:
+        result &= i.text
+
+
 proc parse_html_push_closed*(self: var seq[Tag], name: string,  # {{{1
                              attrs: seq[tuple[k, v: string]]
                              ): Tag {.discardable.} =
@@ -139,6 +145,17 @@ proc parse_html*(src: string): Tag =  # {{{1
 
 proc has_attr*(self: Tag, k: string): bool =  # {{{1
     return self.attrs.hasKey(k)
+
+
+proc attrs_to_ints*(e: Tag, keys: varargs[string]): seq[int] =  # {{{1
+    var ret: seq[int] = @[]
+    for key in keys:
+        if e.has_attr(key):
+            let n = parseInt(e.attrs.getOrDefault(key, "0"))
+            ret.add(n - 1)
+        else:
+            ret.add(0)
+    return ret
 
 
 proc find*(self: Tag, name: string): Tag =  # {{{1

@@ -28,21 +28,10 @@ import ./private/common
 import ./private/logging
 import ./private/options
 import ./private/parse_html
-#[
-from lxml import etree  # type: ignore
+import ./private/parse_html_table
 
 
-from docx.blkcntnr import BlockItemContainer  # type: ignore
-from docx.enum.text import (
-        WD_BREAK, )
-from docx.enum.table import WD_TABLE_ALIGNMENT  # type: ignore
-from docx.oxml import OxmlElement  # type: ignore
-from docx.oxml.ns import qn  # type: ignore
-from docx.shared import Mm  # type: ignore
-from docx.table import _Cell, Table  # type: ignore
-]#
-
-type
+type  # {{{1
   HtmlConvertDocx = ref object of RootObj
     bookmarks_anchored: Table[string, string]
     url_target: string
@@ -118,12 +107,6 @@ proc is_text(self: result_element): bool =  # {{{1
 proc is_elem(self: result_element): bool =  # {{{1
     if isNil(self): return false
     return not isNil(self.elem)
-
-
-proc inner_text(self: Tag): string =  # {{{1
-    result = ""
-    for i in self.children:
-        result &= i.text
 
 
 proc initHtmlConvertDocx(src: string): HtmlConvertDocx =  # {{{1
@@ -515,89 +498,25 @@ proc extract_katex(self: HtmlConvertDocx, elem: Tag, para: Paragraph  # {{{1
     return none(string)
 
 
-proc extract_table_tree(self: HtmlConvertDocx, elem: Tag, row: int  # {{{1
-                        ): TableRef[tuple[r, c: int], Tag] =
-    proc num_row(dct: TableRef[tuple[r: int, c: int], Tag]): int =
-        var
-            ret = -1
-        for row, col in dct.keys():
-                ret = max(ret, row)
-        block:
-            return ret + 1
-
-    proc update(self, src: TableRef[tuple[r: int, c: int], Tag]): void =
-        for k, v in src.pairs():
-            self[k] = v
-
-    var
-        ret = newTable[tuple[r, c: int], Tag]()
-    var f_row = false
-    for tag in elem.children:
-        block:
-            if len(tag.name) < 1:
-                continue
-        if tag.name == "thead":
-                info("structure: tbl: enter thead")
-                ret = self.extract_table_tree(tag, 0)
-                continue
-        if tag.name == "tbody":
-            block:
-                info("structure: tbl: enter tbody")
-            var ret2: TableRef[tuple[r, c: int], Tag]
-            block:
-                ret2 = self.extract_table_tree(tag, num_row(ret))
-                ret.update(ret2)
-                continue
-        if tag.name == "tfoot":
-            block:
-                warn("structure: tbl: enter tfoot")
-            var ret2: TableRef[tuple[r, c: int], Tag]
-            block:
-                ret2 = self.extract_table_tree(tag, num_row(ret))
-                ret.update(ret2)
-                continue
-        block:
-            if tag.name != "tr":
-                warn(fmt"table tree: {tag.name} in {elem.name}")
-                continue
-        var (f_row, col, row) = (true, 0, (row + (if f_row: 1 else: 0)))
-        block:
-            for cell in tag.children:
-                if len(cell.name) < 1:
-                    continue
-                if cell.name not_in ["th", "td", ]:
-                    warn(fmt"table tree: {cell.name} in tr")
-                    continue
-                ret[(row, col)] = cell
-                col += 1
-    return ret
-
-
 proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
-    debg("extract:tbl: enter")
-    var
-        dct = self.extract_table_tree(elem, 0)
-    block:
-        dct = common.table_update_rowcolspan(dct)  # [@P13-1-11] cell-span
-        if len(dct) < 1:
+    debg("extract:table: enter")
+    var tree = parse_table_tree(elem)
+    if len(tree) < 1:
             warn("table: did not have any data" & elem.text)
             return nil
+    if self.output.current_para_or_table() of DocxTable:
+        debg("extract:table: add a para before a table")
+        self.output.add_paragraph("", "Normal")
 
-    proc max_key[A, B](self: TableRef[A, B], fn: proc(src: A): int): int =
-        var ret: seq[int]
-        for tup in self.keys(): ret.add(fn(tup))
-        return max(ret)
+    proc rowcol(): tuple[r, c: int] =
+        var (r0, c0) = (-1, -1)
+        for tup in tree:
+            let (r, c, e) = tup
+            r0 = if r > r0: r else: r0
+            c0 = if c > c0: c else: c0
+        return (r0 + 1, c0 + 1)
 
-    proc cmp_rc(a, b: tuple[r, c: int]): int =
-        if a.r > b.r: return 1
-        if a.r < b.r: return -1
-        if a.c > b.c: return 1
-        if a.c < b.c: return -1
-        return 0
-
-    var
-        n_row = max_key(dct, proc(x: tuple[r, c: int]): int = x.r) + 1
-        n_col = max_key(dct, proc(x: tuple[r, c: int]): int = x.c) + 1
+    var (n_row, n_col) = rowcol()
 
     block:
         info(fmt"structure: tbl: {elem.name} ({n_row},{n_col})")
@@ -607,14 +526,16 @@ proc extract_table(self: HtmlConvertDocx, elem: Tag): result_element =  # {{{1
     block:
         tbl.style = common.Styles.get(self.output, "Table Grid")
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-    for tup, subelem in sorted_by_keys(dct, cmp_rc):
-        info("ext_tbl: " & $tup)
+    for tup in tree:
+        info("extract:table: " & $tup)
+        var (row, col, subelem) = tup
+        if col == -1:
+            continue  ## .. todo:: do nothing for row elements.
         var
-            (row, col) = tup
             cell = tbl.rows[row].cells[col]
             # [@P13-1-12] merging spaned cells
-            xy = common.table_cellspan(subelem, "colspan", "rowspan")
-        var (x, y) = (xy[0], xy[1])
+            x, y: int
+        (x, y) = subelem.attrs_to_ints("colspan", "rowspan")
         block:
             if x != 0 or y != 0:
                 if col + x >= n_col or row + y >= n_row:
@@ -665,6 +586,9 @@ proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
             n_col = max(i, n_col)
 
         info(fmt"structure: tbl: {elem.name} ({n_row},{n_col})")
+    if self.output.current_para_or_table() of DocxTable:
+        debg("extract:dldtd: add a para before a table")
+        self.output.add_paragraph("", "Normal")
     var tbl: DocxTable
     block:
         tbl = self.output.add_table(rows=n_row, cols=n_col)
@@ -841,7 +765,8 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
 proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
                         cell: TableCell): void =
         # FIXME(shimoda): simplify complex code...
-    warn("ext:tbl:cell: (" & $len(elem.children) & ") => '" & elem.text & "'")
+    warn("extract:table:cell: (" & $len(elem.children) & ") => '" &
+         elem.inner_text & "'")
     var para = if len(cell.paragraphs) > 0: cell.paragraphs[^1] else: nil
     for tag in elem.children:
         var src: string
@@ -870,9 +795,9 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
             block:
                 continue
         if isNil(para):
-                para = cell.add_paragraph()
-        block:
-            info("table: " & src)  # (row, col, src))
+            para = cell.add_paragraph(src)
+        else:
+            info("extract:table:cell: add run: " & src)  # (row, col, src))
             para.add_run(src)
 
         # [@P13-2-13] style for cells
@@ -1076,7 +1001,7 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
         if len(widths) < 1:
             warn("width did not specified by class")
             return false
-        warn("cell width set by " & cls)
+        verb("cell width set by " & cls)
         if Mm(0) in widths:
             tbl.autofit = true
             tbl.allow_autofit = true
@@ -1084,11 +1009,11 @@ proc style_table_width_from(self: HtmlConvertDocx, tbl: DocxTable,  # {{{1
             for i, cell in row.cells:
                 let wid = if i < len(widths): widths[i] else: Length(0)
                 if wid < Length(1):
-                    info(fmt"cell({j},{i}): width set to auto")
+                    verb(fmt"cell({j},{i}): width set to auto")
                     cell.tc.tcPr.tcW.typ = "auto"
                     cell.tc.tcPr.tcW.w = Length(0)
                     continue
-                info(fmt"cell({j},{i}): width set to {$int(wid)}")
+                verb(fmt"cell({j},{i}): width set to {$int(wid)}")
                 cell.width = wid
     return true
 

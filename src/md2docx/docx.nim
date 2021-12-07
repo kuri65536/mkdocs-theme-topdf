@@ -32,10 +32,10 @@ type
     discard
 
   Document* = ref object of RootObj
-    paragraphs*: seq[Paragraph]
+    paragraphs*: seq[Paragraph]  ## .. todo:: shimoda to a property
     settings*: DocumentSettings
     sections*: seq[Section]
-    tables*: seq[DocxTable]
+    tables*: seq[DocxTable]      ## .. todo:: shimoda to a property
     styles*: DocxStyles
 
 
@@ -91,6 +91,10 @@ proc `current_block`*(self: Document): BlockItemContainer =  # {{{1
     return cast[BlockItemContainer](self.sections[^1])
 
 
+proc `current_para_or_table`*(self: Document): SectionItem =  # {{{1
+    return cast[SectionItem](self.sections[^1].items[^1])
+
+
 proc add_empty_paragraph*(self: Document, style = ""  # {{{1
                           ): Paragraph {.discardable.} =
     result = initParagraph()
@@ -122,6 +126,7 @@ proc merge*(a, b: TableCell): void =  # {{{1
 
 
 proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
+    verb("manip:table: add (" & $rows & "," & $cols & ")")
     result = DocxTable(
         preferences: initOxmlElement("w:tblPr")
     )

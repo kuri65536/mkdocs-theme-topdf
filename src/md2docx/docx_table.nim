@@ -59,9 +59,7 @@ proc initTableCell*(): TableCell =  # {{{1
                 tcW: TablePrefWidth()
             ),
         ),
-        items: @[cast[SectionItem](
-            initParagraph("", "Normal")
-        )],
+        items: @[],
     )
 
 
