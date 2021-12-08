@@ -21,10 +21,6 @@ import docx_table
 
 
 type
-  WD_BREAK* = enum
-    LINE = 0
-    PAGE = 1
-
   DocumentSettings* = ref object of RootObj
     element*: OxmlElement
 
@@ -72,12 +68,6 @@ proc add_run*(self: Paragraph, src = "", style=""  # {{{1
               ): Runner {.discardable.} =
     verb("manip:para: add_run " & src)
     result = initRunner(src, style)
-    self.items.add(result)
-
-
-proc add_break*(self: Paragraph, typ = WD_BREAK.LINE  # {{{1
-                ): Runner {.discardable.} =
-    result = initRunner("")
     self.items.add(result)
 
 

@@ -10,6 +10,7 @@ License::
 import docx_common
 import docx_element
 import docx_runner
+import docx_styles
 
 import private/logging
 
@@ -35,12 +36,24 @@ proc initParagraph*(text, style: string): Paragraph =  # {{{1
     ## .. todo:: shimoda sytle
     result = Paragraph(
         style: style,
-        items: @[initRunnerItem(text)])
+        items: @[cast[RunnerItem](initRunner(text))])
 
 
 proc dump*(self: Paragraph): void =  # {{{1
     for n, i in self.items:
         debg("dump:para: dump(" & $n & ") => " & i.r.name)
+
+
+proc add_break*(self: Paragraph, typ = WD_BREAK.LINE  # {{{1
+                ): void =
+    var ret: RunnerItem
+    if len(self.items) < 1:
+        ret = Runner()
+        self.items.add(ret)
+    else:
+        ret = self.items[^1]
+    var brk = OxmlElement(name: "w:br")
+    ret.r.children.add(brk)
 
 
 proc add_raw*(self: Paragraph, src: OxmlElement): void =  # {{{1

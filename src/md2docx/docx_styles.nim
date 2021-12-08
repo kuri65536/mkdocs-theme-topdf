@@ -11,6 +11,10 @@ import tables
 import docx_common
 
 type
+  WD_BREAK* = enum
+    LINE = 0
+    PAGE = 1
+
   WD_LINE_SPACING* = enum
     AT_LEAST = 1
 

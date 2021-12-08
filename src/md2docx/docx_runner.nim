@@ -35,8 +35,4 @@ proc initRunner*(text: string, style = ""): Runner =  # {{{1
     result = Runner(r: r, style: style)
 
 
-proc initRunnerItem*(text: string): RunnerItem =  # {{{1
-    result = initRunner(text)
-
-
 # vi: ft=nim:ts=4:sw=4:tw=80:fdm=marker
