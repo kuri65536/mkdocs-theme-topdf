@@ -27,7 +27,7 @@ proc render_cell*(self: TableCell, s: Stream): void =  # {{{1
     s.write("<w:tc>")
     var pr = self.width.render_length("w", true)
     if len(pr) > 0:
-        debg("render:cell:width => " & pr)
+        verb("render:cell:width => " & pr)
         pr = "<w:tcW " & pr & "/>"
     when true:
         pr &= """<w:tcBorders><w:tl2br w:color="000000" w:space="0"
@@ -83,7 +83,7 @@ proc render_table*(self: DocxTable, s: Stream): void =  # {{{1
         if len(h) > 0:
             s.write("<w:trPr><w:trHeight " & h & "/></w:trPr>")
         for c, cell in row.cells:
-            eror("render:table: cell(" & $len(cell.items))
+            verb("render:table: cell(" & $len(cell.items))
             assert len(cell.items) > 0, "at table (" & $r & "," & $c & ")"
             cell.render_cell(s)
         s.write("</w:tr>")

@@ -401,9 +401,11 @@ proc extract_code(self: HtmlConvertDocx, elem: Tag, para: Paragraph,  # {{{1
     if isNil(para):  # top level
         let
             style = common.Styles.get(self.output, "Quote")
+        warn("extract:code: new para => " & s)
         block:
             self.output.add_paragraph(s, style)
         return none(string)
+    warn("extract:code: new runner => " & s)
     block:
         if false:
             discard
@@ -585,7 +587,7 @@ proc extract_dldtdd(self: HtmlConvertDocx, elem: Tag  # {{{1
             i += 1
             n_col = max(i, n_col)
 
-        info(fmt"structure: tbl: {elem.name} ({n_row},{n_col})")
+        verb(fmt"structure: tbl: {elem.name} ({n_row},{n_col})")
     if self.output.current_para_or_table() of DocxTable:
         debg("extract:dldtd: add a para before a table")
         self.output.add_paragraph("", "Normal")
@@ -709,7 +711,7 @@ proc extract_codeblock(self: HtmlConvertDocx, elem: Tag  # {{{1
     var ret = elem.inner_text
     var style: string
     var lines = ret.split('\n')
-    info("structure: pre: " & lines[0])
+    info(fmt"structure: cblk({elem.name}): {len(lines)}-{lines[0]}...")
     block:
         style = common.Styles.get(self.output, "Quote")
         # [@D4-21-1] parse lines and add runs and breaks for them.
@@ -765,7 +767,7 @@ proc extract_para(self: HtmlConvertDocx, node: Tag, level: int  # {{{1
 proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
                         cell: TableCell): void =
         # FIXME(shimoda): simplify complex code...
-    warn("extract:table:cell: (" & $len(elem.children) & ") => '" &
+    verb("extract:table:cell: (" & $len(elem.children) & ") => '" &
          elem.inner_text & "'")
     var para = if len(cell.paragraphs) > 0: cell.paragraphs[^1] else: nil
     for tag in elem.children:
@@ -797,7 +799,7 @@ proc extract_table_cell(self: HtmlConvertDocx, elem: Tag,  # {{{1
         if isNil(para):
             para = cell.add_paragraph(src)
         else:
-            info("extract:table:cell: add run: " & src)  # (row, col, src))
+            verb("extract:table:cell: add run: " & src)  # (row, col, src))
             para.add_run(src)
 
         # [@P13-2-13] style for cells

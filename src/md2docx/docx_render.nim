@@ -30,7 +30,7 @@ import private/logging
 method render(self: DocxTable, s: Stream): void =  # {{{1
     const tag = "w:tbl"
     s.write("<" & tag & ">")
-    warn("save:render: " & tag)
+    verb("save:render: " & tag)
     self.render_table(s)
     s.write("</" & tag & ">")
 
@@ -38,10 +38,10 @@ method render(self: DocxTable, s: Stream): void =  # {{{1
 proc save_render(self: Document): Stream =  # {{{1
     result = newStringStream()
 
-    warn("save:render: root => " & $len(self.sections))
+    verb("save:render: root => " & $len(self.sections))
     save_prefix(result)
     for sec in self.sections:
-        warn("save:render: section => " & $len(sec.items))
+        verb("save:render: section => " & $len(sec.items))
         for item in sec.items:
             item.render(result)
     save_suffix(result)

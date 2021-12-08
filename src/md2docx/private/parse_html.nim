@@ -32,9 +32,11 @@ var current_dom: Tag
 
 
 proc inner_text*(self: Tag): string =  # {{{1
+    if len(self.children) < 1:
+        return self.text
     result = ""
     for i in self.children:
-        result &= i.text
+        result &= i.inner_text()
 
 
 proc parse_html_push_closed*(self: var seq[Tag], name: string,  # {{{1
