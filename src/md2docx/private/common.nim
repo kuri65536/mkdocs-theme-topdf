@@ -824,11 +824,11 @@ proc init*(offline: bool): void =  # {{{1
         style_add_init("Heading" & $i, init_heading)
     style_add_init("Quote", init_quote)
     style_add_init("Image", init_image)
-    style_add_init("List Number", init_list)
-    style_add_init("List Bullet", init_list)
+    style_add_init("ListNumber", init_list)
+    style_add_init("ListBullet", init_list)
     for i in 2..10:
-        style_add_init("List Number " & $i, init_list)
-        style_add_init("List Bullet " & $i, init_list)
+        style_add_init("ListNumber " & $i, init_list)
+        style_add_init("ListBullet " & $i, init_list)
 
     style_add_init("CellHeader", init_cell_header)
     style_add_init("CellNormal", init_cell_normal)

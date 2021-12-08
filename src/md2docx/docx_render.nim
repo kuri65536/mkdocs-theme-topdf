@@ -70,9 +70,12 @@ proc save_from_templates(z: var ZipArchive, filename: string): bool =  # {{{1
               "word/numbering.xml",
               "word/header1.xml",
               "word/settings.xml",
+              "word/styles.xml",
               "word/stylesWithEffects.xml",
               "word/theme/theme1.xml",
-              "word/webSettings.xml", ]:
+              "word/webSettings.xml",
+              "word/_rels/document.xml.rels",
+              ]:
         verb("save:tmpl: read => " & i)
         var tmp = ".docx_render.XXXXXX"
         var hnd = mkstemp(tmp)

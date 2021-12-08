@@ -1024,7 +1024,7 @@ proc style_list(self: HtmlConvertDocx, f_number: bool, level: int  # {{{1
                 ): info_list =
     var
         style = ""
-        style_base = if f_number: "List Number" else: "List Bullet"
+        style_base = if f_number: "ListNumber" else: "ListBullet"
     block:
         if level > 1:
             style = style_base & " " & $level
