@@ -7,6 +7,7 @@ License::
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ]##
 import streams
+import strformat
 
 import ../docx
 import ../docx_common
@@ -42,7 +43,8 @@ proc render_cell*(self: TableCell, s: Stream): void =  # {{{1
 
 
 proc render_preferences(self: DocxTable): string =  # {{{1
-    var p = """<w:tblStyle w:val="TableGrid"/>"""
+    let sname = if len(self.style) < 1: "TableGrid" else: self.style
+    var p = fmt"""<w:tblStyle w:val="{sname}"/>"""
     p &= """<w:tblW w:type="auto" w:w="0"/>"""
     p &= """<w:tblLayout w:type="fixed"/>"""
     p &= """<w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0"/>"""
