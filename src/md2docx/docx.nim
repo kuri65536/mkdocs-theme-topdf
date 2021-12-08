@@ -128,6 +128,7 @@ proc merge*(a, b: TableCell): void =  # {{{1
 proc add_table*(self: Document, rows, cols: int): DocxTable =  # {{{1
     verb("manip:table: add (" & $rows & "," & $cols & ")")
     result = DocxTable(
+        alignment: WD_TABLE_ALIGNMENT.TA_NOTSET,
         preferences: initOxmlElement("w:tblPr")
     )
     for i in 1..rows:

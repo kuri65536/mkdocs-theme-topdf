@@ -10,8 +10,10 @@ import streams
 
 import ../docx
 import ../docx_common
+import ../docx_element
 import ../docx_para
 import ../docx_table
+import ../docx_styles
 import ../private/logging
 import docx_render_common
 import docx_render_para
@@ -32,21 +34,41 @@ proc render_cell*(self: TableCell, s: Stream): void =  # {{{1
     if len(pr) > 0:
         s.write("<w:tcPr>" & pr & "</w:tcPr>")
     for i in self.items:
-        if i of Paragraph:
+        if i of docx_para.Paragraph:
             i.render(s)
         elif i of DocxTable:
             cast[DocxTable](i).render_table(s)
     s.write("</w:tc>")
 
 
+proc render_preferences(self: DocxTable): string =  # {{{1
+    var p = """<w:tblStyle w:val="TableGrid"/>"""
+    p &= """<w:tblW w:type="auto" w:w="0"/>"""
+    p &= """<w:tblLayout w:type="fixed"/>"""
+    p &= """<w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0"/>"""
+    p &= self.alignment.to_xml()
+
+    var flags = {0}
+    for elem in self.preferences.children:
+        if elem.name == "w:tblCellMar":
+            ##[ ex::
+                <w:tblCellMar>
+                  <w:top w:w="0" w:type="dxa"/> <w:bottom w:w="0" w:type="dxa"/>
+                  <w:left w:w="108" w:type="dxa"/> <w:right w:w="108" w:type="dxa"/>
+                  <w:tblInd w:w="-6" w:type="dxa"/>
+                </w:tblCellMar>
+            ]##
+            p &= elem.to_xml()
+        else:
+            warn("render:table:prefs: ignored: " & elem.name)
+
+    if len(p) < 1:
+        return ""
+    return "<w:tblPr>" & p & "</w:tblPr>"
+
+
 proc render_table*(self: DocxTable, s: Stream): void =  # {{{1
-    s.write("""<w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:type="auto" w:w="0"/>
-<w:jc w:val="left"/>
-<w:tblLayout w:type="fixed"/><w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0"/>
-<w:tblCellMar><w:top w:w="0" w:type="dxa"/>
-<w:bottom w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/>
-<w:right w:w="108" w:type="dxa"/><w:tblInd w:w="-6" w:type="dxa"/>
-</w:tblCellMar></w:tblPr>""")
+    s.write(self.render_preferences())
 
     s.write("<w:tblGrid>")
     for item in self.columns:

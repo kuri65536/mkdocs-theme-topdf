@@ -26,6 +26,23 @@ proc initOxmlElement*(name: string): OxmlElement =  # {{{1
     )
 
 
+proc to_xml*(self: OxmlElement): string =  # {{{1
+    var r = "<" & self.name
+    if len(self.attrs) < 1:
+        if len(self.children) < 1:
+            return r & "/>"
+
+    for attr, val in self.attrs.pairs():
+        r &= " " & attr & "=\"" & val & "\""
+    if len(self.children) < 1:
+        return r & "/>"
+    r &= ">"
+
+    for elem in self.children:
+        r &= elem.to_xml()
+    return r & "</" & self.name & ">"
+
+
 proc append*(self: ptr OxmlElement, src: OxmlElement): void =  # {{{1
     discard
 

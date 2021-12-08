@@ -22,6 +22,7 @@ type
     PA_BOTH = 3
 
   WD_TABLE_ALIGNMENT* = enum
+    TA_NOTSET = -1
     LEFT = 0
     CENTER = 1
 
@@ -52,6 +53,17 @@ type
 
   DocxStyles* = ref object of RootObj
     db: Table[string, Style]
+
+
+
+proc to_xml*(self: WD_TABLE_ALIGNMENT): string =  # {{{1
+    ## ex: `<w:jc w:val="left"/>`
+    var ret = ""
+    case self:
+    of WD_TABLE_ALIGNMENT.TA_NOTSET: return ""
+    of WD_TABLE_ALIGNMENT.LEFT:      ret = "left"
+    of WD_TABLE_ALIGNMENT.CENTER:    ret = "center"
+    return "<w:jc w:val=\"" & ret & "\"/>"
 
 
 proc `base_style=`*(self: Style, name: string): void =  # {{{1
